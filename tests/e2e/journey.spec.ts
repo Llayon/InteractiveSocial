@@ -126,6 +126,38 @@ test.describe('full user journey (Telegram mock mode)', () => {
     await expect(page.getByTestId('quiz-screen')).toBeVisible()
     await expectNoRuntimeErrors(page, errorCollector)
   })
+
+  // G08: evidence of the *real* share-card asset at its native 1080×1350 size.
+  // Per the approved plan this is NOT a new product feature — it renders the
+  // actual public/share-cards/result_<id>.png so the vision critic can compare
+  // it 1:1 against references/share-card.png.
+  test('share-card asset evidence in native 1080×1350 rendering', async ({
+    page,
+    errorCollector,
+  }, testInfo) => {
+    await page.goto('/?mock=1')
+    await page.getByTestId('start-cta').click()
+    await answerAllQuestions(page)
+    await expect(page.getByTestId('result-screen')).toBeVisible({ timeout: 5_000 })
+
+    const resultId = await page.getByTestId('result-card').getAttribute('data-result-id')
+    expect(resultId).toBeTruthy()
+
+    await page.setViewportSize({ width: 1080, height: 1350 })
+    await page.goto(`/share-cards/result_${resultId}.png`)
+    const img = page.locator('img')
+    await expect(img).toBeVisible()
+    const natural = await img.evaluate((el: HTMLImageElement) => ({
+      width: el.naturalWidth,
+      height: el.naturalHeight,
+    }))
+    expect(natural).toEqual({ width: 1080, height: 1350 })
+    await page.screenshot({
+      path: `gauntlet/reports/evidence/${testInfo.project.name}/04-share-card.png`,
+    })
+
+    await expectNoRuntimeErrors(page, errorCollector)
+  })
 })
 
 /** Continue answering from question `startIndex+1` (1-based progress). */
