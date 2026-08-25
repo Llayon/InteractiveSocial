@@ -69,9 +69,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
 
   let userId: number
   try {
+    console.info(`[share] attempt resultId=${resultId} initDataLen=${initDataRaw.length}`)
     ;({ userId } = validateInitData(initDataRaw, token))
   } catch (error) {
-    void error
+    console.info(
+      `[share] initData rejected: ${error instanceof Error ? error.message : 'unknown error'}`,
+    )
     fail(res, 401, 'invalid_init_data')
     return
   }
