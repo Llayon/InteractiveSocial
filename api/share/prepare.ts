@@ -113,6 +113,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
 
     const json = (await apiResponse.json().catch(() => null)) as TelegramApiResponse | null
 
+    // Diagnostic logging (no secrets/personal data in payloads).
+    console.info(
+      `[share] telegram status=${apiResponse.status} body=${JSON.stringify(json)} resultId=${resultId}`,
+    )
+
     if (json && json.ok && json.result && typeof json.result.id === 'string') {
       res.status(200).json({ ok: true, id: json.result.id })
       return
