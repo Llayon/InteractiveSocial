@@ -73,7 +73,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     ;({ userId } = validateInitData(initDataRaw, token))
   } catch (error) {
     console.info(
-      `[share] initData rejected: ${error instanceof Error ? error.message : 'unknown error'}`,
+      `[share] initData rejected: ${error instanceof Error ? `${error.name} ${error.message}`.trim() : String(error)}`,
     )
     fail(res, 401, 'invalid_init_data')
     return
