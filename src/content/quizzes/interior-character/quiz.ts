@@ -1,5 +1,5 @@
-import { results } from './results'
-import type { Question, Quiz } from '../../../features/quiz/schema'
+import { results } from './results.js'
+import type { Question, Quiz } from '../../../features/quiz/schema.js'
 
 /**
  * APPROVED PRODUCT CONTENT — LOCKED.

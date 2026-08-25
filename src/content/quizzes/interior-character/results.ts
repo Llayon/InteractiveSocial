@@ -1,4 +1,4 @@
-import type { Result } from '../../../features/quiz/schema'
+import type { Result } from '../../../features/quiz/schema.js'
 
 /**
  * APPROVED PRODUCT CONTENT — LOCKED.

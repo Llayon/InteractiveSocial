@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { quizzes } from '../../src/content/quizzes'
-import { validateInitData } from '../_lib/initData'
+import { quizzes } from '../../src/content/quizzes/index.js'
+import { validateInitData } from '../_lib/initData.js'
 
 const activeQuiz = quizzes[0]
 

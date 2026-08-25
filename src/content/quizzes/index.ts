@@ -1,5 +1,5 @@
-import { loadQuiz } from '../../features/quiz/schema'
-import { interiorCharacterQuiz } from './interior-character/quiz'
+import { loadQuiz } from '../../features/quiz/schema.js'
+import { interiorCharacterQuiz } from './interior-character/quiz.js'
 
 /**
  * Active quiz registry. New personality quizzes are added here as pure
