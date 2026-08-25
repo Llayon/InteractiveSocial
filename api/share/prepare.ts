@@ -53,6 +53,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   const resultId = typeof body?.resultId === 'string' ? body.resultId : ''
   const initDataRaw = typeof body?.initDataRaw === 'string' ? body.initDataRaw : ''
 
+  console.info(
+    `[share] attempt resultId=${resultId} initDataLen=${initDataRaw.length} hasBody=${Boolean(body)}`,
+  )
+
   if (!/^[a-z]+$/.test(resultId)) {
     fail(res, 400, 'invalid_request')
     return
@@ -69,7 +73,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
 
   let userId: number
   try {
-    console.info(`[share] attempt resultId=${resultId} initDataLen=${initDataRaw.length}`)
     ;({ userId } = validateInitData(initDataRaw, token))
   } catch (error) {
     console.info(
