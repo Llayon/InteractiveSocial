@@ -1,0 +1,66 @@
+/*
+ * Design tokens — restrained editorial lifestyle aesthetic.
+ * Warm ivory base, warm graphite text, deep burgundy accent.
+ * Display serif for editorial moments, clean sans for UI.
+ */
+:root {
+  --bg: #f6f2ec;
+  --surface: #fffdf9;
+  --ink: #29241e;
+  --muted: #8b8175;
+  --accent: #6e2b2b;
+  --accent-ink: #fdf9f4;
+  --accent-soft: #efe3dd;
+  --line: rgba(41, 36, 30, 0.14);
+  --radius-s: 8px;
+  --radius-m: 12px;
+  --radius-l: 14px;
+  --shadow-soft: 0 1px 2px rgba(41, 36, 30, 0.05), 0 4px 14px rgba(41, 36, 30, 0.06);
+
+  --font-display: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
+  --font-ui:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+
+  --space-s: 12px;
+  --space-m: 20px;
+  --space-l: 32px;
+
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  min-width: 360px;
+}
+
+#root {
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding-top: var(--safe-top);
+  padding-bottom: var(--safe-bottom);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
