@@ -144,7 +144,7 @@ test.describe('full user journey (Telegram mock mode)', () => {
     expect(resultId).toBeTruthy()
 
     await page.setViewportSize({ width: 1080, height: 1350 })
-    await page.goto(`/share-cards/result_${resultId}.png`)
+    await page.goto(`/share-cards/result_${resultId}.jpg`)
     const img = page.locator('img')
     await expect(img).toBeVisible()
     const natural = await img.evaluate((el: HTMLImageElement) => ({

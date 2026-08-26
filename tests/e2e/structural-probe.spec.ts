@@ -187,7 +187,7 @@ async function assertTouchTargets(page: import('@playwright/test').Page): Promis
   expect(tooSmall).toEqual([])
 }
 
-/** `.screen` width constraint: max-width 480, nothing wider than the viewport. */
+/** `.screen` width constraint: max-width 480 on mobile, 600 on desktop (>=720px), nothing wider than the viewport. */
 async function assertContentWidth(page: import('@playwright/test').Page): Promise<void> {
   const report = await page.evaluate(() => {
     return Array.from(document.querySelectorAll('.screen')).map((s) => ({
@@ -196,8 +196,9 @@ async function assertContentWidth(page: import('@playwright/test').Page): Promis
     }))
   })
   const vw = page.viewportSize()!.width
+  const expectedMax = vw >= 720 ? '600px' : '480px'
   for (const rep of report) {
-    expect(rep.maxWidth, 'screen max-width must be 480px').toBe('480px')
+    expect(rep.maxWidth, `screen max-width must be ${expectedMax}`).toBe(expectedMax)
     expect(rep.scrollWidth).toBeLessThanOrEqual(vw + 1)
   }
 }

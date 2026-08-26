@@ -442,7 +442,14 @@
   }
 
   .result-card__hero {
-    max-height: 640px;
+    /* Keep the approved 4:5 card ratio on wide screens too; the artwork is
+       already 1080×1350 so no visual crop happens, the cap only bounds size. */
+    aspect-ratio: 4 / 5;
+    width: 100%;
+    max-width: 480px;
+    height: auto;
+    margin: 0 auto;
+    object-fit: cover;
     object-position: center;
   }
 

@@ -19,7 +19,7 @@ export function ResultCard({ quiz, result, children }: ResultCardProps) {
     <article className="result-card" data-testid="result-card" data-result-id={result.id}>
       <img
         className="result-card__hero"
-        src={`${SHARE_IMAGE_PATH}/${result.shareImage}.png`}
+        src={`${SHARE_IMAGE_PATH}/${result.shareImage}.jpg`}
         alt={`Обложка результата: ${result.title}`}
         data-testid="result-hero"
       />
