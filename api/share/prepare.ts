@@ -83,9 +83,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   }
 
   const deepLink = `https://t.me/${botUsername}/${appShortName}?startapp=share_${result.id}`
-  // InlineQueryResultPhoto requires a JPEG URL (PNG is not accepted by
-  // Telegram for photo results), so the shared card uses the .jpg asset.
+  // InlineQueryResultPhoto requires JPEG URLs (PNG is not accepted by
+  // Telegram for photo results), so the shared card uses .jpg assets.
+  // thumbnail_url is a REQUIRED field of InlineQueryResultPhoto — omitting
+  // it fails with 400 PHOTO_THUMB_URL_EMPTY (verified in production logs).
   const imageUrl = `${appBaseUrl.replace(/\/$/, '')}/share-cards/${result.shareImage}.jpg`
+  const thumbUrl = `${appBaseUrl.replace(/\/$/, '')}/share-cards/${result.shareImage}_thumb.jpg`
   const messageText = [
     `${result.title} — ${result.subtitle}`,
     '',
@@ -113,6 +116,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
           title: result.title,
           description: result.shareQuote,
           photo_url: imageUrl,
+          photo_width: 1080,
+          photo_height: 1350,
+          thumbnail_url: thumbUrl,
           // Caption carries the message text (1024-char limit is ample here).
           caption: messageText,
           reply_markup: {
