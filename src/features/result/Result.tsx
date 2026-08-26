@@ -11,7 +11,9 @@ export interface ResultScreenProps {
   onRestart: () => void
 }
 
-/** Result screen: editorial reveal + share loop + restart. */
+const CHANNEL_URL = 'https://t.me/takeiteasybefore'
+
+/** Result screen: editorial reveal + share loop + restart + channel promo. */
 export function ResultScreen({ quiz, resultId, telegram, onRestart }: ResultScreenProps) {
   const result = getResultById(quiz, resultId)
   if (!result) {
@@ -30,6 +32,15 @@ export function ResultScreen({ quiz, resultId, telegram, onRestart }: ResultScre
         >
           {quiz.restartCta}
         </button>
+        <a
+          className="button button--ghost result__channel"
+          href={CHANNEL_URL}
+          target="_blank"
+          rel="noreferrer"
+          data-testid="channel-link"
+        >
+          ✨ Бюро историй — читать канал
+        </a>
       </ResultCard>
     </section>
   )

@@ -75,6 +75,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     return
   }
 
+  // Promo channel appended as a second button row on every shared message
+  // (configurable, falls back to the Бюро историй channel).
+  const promoChannelUrl =
+    process.env.PROMO_CHANNEL_URL && process.env.PROMO_CHANNEL_URL.trim().length > 0
+      ? process.env.PROMO_CHANNEL_URL.trim()
+      : 'https://t.me/takeiteasybefore'
+
   const deepLink = `https://t.me/${botUsername}/${appShortName}?startapp=share_${result.id}`
   // InlineQueryResultPhoto requires JPEG URLs (PNG is not accepted by
   // Telegram for photo results), so the shared card uses .jpg assets.
@@ -115,7 +122,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
           // Caption carries the message text (1024-char limit is ample here).
           caption: messageText,
           reply_markup: {
-            inline_keyboard: [[{ text: 'Пройти тест', url: deepLink }]],
+            inline_keyboard: [
+              [{ text: 'Пройти тест', url: deepLink }],
+              [{ text: '✨ Бюро историй', url: promoChannelUrl }],
+            ],
           },
         },
       }),

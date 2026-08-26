@@ -388,6 +388,12 @@
   margin: 0 auto;
 }
 
+.result__channel {
+  margin: -6px auto 0;
+  text-decoration: none;
+  font-size: 0.85rem;
+}
+
 .share {
   display: flex;
   flex-direction: column;
