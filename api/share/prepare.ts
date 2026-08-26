@@ -53,10 +53,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   const resultId = typeof body?.resultId === 'string' ? body.resultId : ''
   const initDataRaw = typeof body?.initDataRaw === 'string' ? body.initDataRaw : ''
 
-  console.info(
-    `[share] attempt resultId=${resultId} initDataLen=${initDataRaw.length} hasBody=${Boolean(body)}`,
-  )
-
   if (!/^[a-z]+$/.test(resultId)) {
     fail(res, 400, 'invalid_request')
     return
@@ -74,10 +70,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   let userId: number
   try {
     ;({ userId } = validateInitData(initDataRaw, token))
-  } catch (error) {
-    console.info(
-      `[share] initData rejected: ${error instanceof Error ? `${error.name} ${error.message}`.trim() : String(error)}`,
-    )
+  } catch {
     fail(res, 401, 'invalid_init_data')
     return
   }
@@ -131,10 +124,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
 
     const json = (await apiResponse.json().catch(() => null)) as TelegramApiResponse | null
 
-    // Diagnostic logging (no secrets/personal data in payloads).
-    console.info(
-      `[share] telegram status=${apiResponse.status} body=${JSON.stringify(json)} resultId=${resultId}`,
-    )
+    // Warn only on real failures; successful responses are not logged
+    // (payloads contain no secrets/personal data either way).
+    if (!json || !json.ok) {
+      console.warn(`[share] telegram status=${apiResponse.status} desc=${json?.description ?? 'unparseable'}`)
+    }
 
     if (json && json.ok && json.result && typeof json.result.id === 'string') {
       res.status(200).json({ ok: true, id: json.result.id })
