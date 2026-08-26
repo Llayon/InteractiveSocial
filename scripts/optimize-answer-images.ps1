@@ -11,7 +11,7 @@ Add-Type -AssemblyName System.Drawing
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
-$refs = Join-Path $root 'references'
+$refs = Join-Path $root 'assets-source'
 $out  = Join-Path $root 'public\answers'
 
 # source file -> public key (width x height target)
