@@ -1,6 +1,6 @@
-# Converts question-answer artwork (references/q*-*.png) into optimized
-# landscape JPEGs under public/answers/, keyed by assetKey (q1-a … q2-d):
-#   public/answers/q1-a.jpg  …  public/answers/q2-d.jpg
+# Converts question-answer artwork (assets-source/q*-*.png) into optimized
+# landscape JPEGs under public/answers/, named exactly like content assetKeys:
+#   public/answers/q1_a.jpg  …  public/answers/q2_d.jpg
 #
 # Source art is 1672x941; we downscale to 1200x675 (same 16:9, retina-ready
 # for ~120px-tall cards) and tune JPEG quality so each stays ~150 KB.
@@ -14,16 +14,16 @@ $root = Split-Path -Parent $PSScriptRoot
 $refs = Join-Path $root 'assets-source'
 $out  = Join-Path $root 'public\answers'
 
-# source file -> public key (width x height target)
+# source file -> target public key (WIDTH x HEIGHT)
 $mapping = [ordered]@{
-  'q1-a.png' = @{ key = 'q1-a'; w = 1200; h = 675 }
-  'q1-b.png' = @{ key = 'q1-b'; w = 1200; h = 675 }
-  'q1-c.png' = @{ key = 'q1-c'; w = 1200; h = 675 }
-  'q1-d.png' = @{ key = 'q1-d'; w = 1200; h = 675 }
-  'q2-a.png' = @{ key = 'q2-a'; w = 1200; h = 675 }
-  'q2-b.png' = @{ key = 'q2-b'; w = 1200; h = 675 }
-  'q2-c.png' = @{ key = 'q2-c'; w = 1200; h = 675 }
-  'q2-d.png' = @{ key = 'q2-d'; w = 1200; h = 675 }
+  'q1-a.png' = @{ key = 'q1_a'; w = 1200; h = 675 }
+  'q1-b.png' = @{ key = 'q1_b'; w = 1200; h = 675 }
+  'q1-c.png' = @{ key = 'q1_c'; w = 1200; h = 675 }
+  'q1-d.png' = @{ key = 'q1_d'; w = 1200; h = 675 }
+  'q2-a.png' = @{ key = 'q2_a'; w = 1200; h = 675 }
+  'q2-b.png' = @{ key = 'q2_b'; w = 1200; h = 675 }
+  'q2-c.png' = @{ key = 'q2_c'; w = 1200; h = 675 }
+  'q2-d.png' = @{ key = 'q2_d'; w = 1200; h = 675 }
 }
 
 if (-not (Test-Path $out)) { New-Item -ItemType Directory -Path $out | Out-Null }

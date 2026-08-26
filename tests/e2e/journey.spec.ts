@@ -35,6 +35,18 @@ test.describe('full user journey (Telegram mock mode)', () => {
       fullPage: true,
     })
 
+    // Q1 renders real artwork — assert the media <img> actually load (guards
+    // against 404s / lazy-load regressions, not just presence in the DOM).
+    const mediaImgs = page.locator('[data-testid="answer-option"] .answer-card__media img')
+    const imgCount = await mediaImgs.count()
+    expect(imgCount).toBeGreaterThan(0)
+    for (let i = 0; i < imgCount; i++) {
+      await expect(mediaImgs.nth(i)).toBeVisible()
+      await expect
+        .poll(() => mediaImgs.nth(i).evaluate((e) => (e as HTMLImageElement).naturalWidth))
+        .toBeGreaterThan(0)
+    }
+
     // 8 deterministic answers
     await answerAllQuestions(page)
 
