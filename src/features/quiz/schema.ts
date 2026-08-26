@@ -9,6 +9,13 @@
 
 export const answerScoresSchema = z.record(z.string().min(1), z.number().int().positive())
 
+/**
+ * Fixed visual weights of the four palette-strip segments (walls / second
+ * material / furniture & textile / accent). Identical across every answer so
+ * no option gains attention purely through a larger bright area.
+ */
+export const PALETTE_SEGMENT_PROPORTIONS = [40, 25, 20, 15] as const
+
 export const answerSchema = z.object({
   id: z.string().min(1),
   title: z.string(),
@@ -18,6 +25,8 @@ export const answerSchema = z.object({
   assetKey: z.string().optional(),
   /** Palette cards for visual questions (e.g. q3). */
   paletteLabels: z.array(z.string()).optional(),
+  /** Solid hex colors of the strip in left-to-right visual order. */
+  paletteSwatches: z.array(z.string().regex(/^#[0-9a-fA-F]{6}$/)).optional(),
 })
 
 export type Answer = z.infer<typeof answerSchema>

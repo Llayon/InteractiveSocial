@@ -1,7 +1,5 @@
 import type { Answer, Question } from './schema'
-
-/** Tasteful placeholder swatches for palette questions until approved imagery. */
-const PALETTE_SWATCHES = ['#EFE9DF', '#C8CFBE', '#B08968', '#27436B']
+import { PALETTE_SEGMENT_PROPORTIONS } from './schema'
 
 export interface QuizQuestionProps {
   question: Question
@@ -16,7 +14,7 @@ export function QuizQuestion({ question, selectedAnswerId, onAnswer }: QuizQuest
 
       {question.layout === 'palette' ? (
         <div className="answers answers--palette">
-          {question.answers.map((answer, index) => (
+          {question.answers.map((answer) => (
             <button
               key={answer.id}
               type="button"
@@ -27,11 +25,20 @@ export function QuizQuestion({ question, selectedAnswerId, onAnswer }: QuizQuest
               data-answer-id={answer.id}
               onClick={() => onAnswer(answer)}
             >
+              {/*
+                Interior color story: four solid segments at the fixed 40/25/20/15
+                structure (walls / second material / furniture / accent). Swatches
+                are decorative content only — selection is communicated through
+                the card border/state, never by color alone.
+              */}
               <span className="answer-palette__swatches" aria-hidden="true">
-                {(answer.paletteLabels ?? []).map((_, i) => (
+                {(answer.paletteSwatches ?? []).map((hex, i) => (
                   <span
                     key={i}
-                    style={{ background: PALETTE_SWATCHES[(index + i) % PALETTE_SWATCHES.length] }}
+                    style={{
+                      background: hex,
+                      width: `${PALETTE_SEGMENT_PROPORTIONS[i] ?? 25}%`,
+                    }}
                   />
                 ))}
               </span>

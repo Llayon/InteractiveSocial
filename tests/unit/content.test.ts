@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { activeQuiz } from '@/content/quizzes'
 import { interiorCharacterQuiz } from '@/content/quizzes/interior-character/quiz'
+import { PALETTE_SEGMENT_PROPORTIONS } from '@/features/quiz/schema'
 
 /**
  * CONTENT LOCK TESTS — approved product spec (addendum §28).
@@ -43,6 +44,60 @@ describe('approved content shape', () => {
       'collector',
       'cottage',
       'scandi',
+    ])
+  })
+})
+
+/**
+ * Q3 palette color stories — approved visual config.
+ * Segment widths are fixed 40/25/20/15 for EVERY answer so no option gains
+ * attention purely through a larger bright area; hex order is the visual
+ * left-to-right order of the strip and may intentionally differ from the
+ * textual label order (q3_c leads with the cream base).
+ */
+describe('approved q3 palette cards', () => {
+  const q3 = activeQuiz.questions.find((q) => q.id === 'q3')
+  if (!q3) throw new Error('q3 missing')
+
+  it('has exactly four palette answers with four labels each', () => {
+    expect(q3.answers).toHaveLength(4)
+    for (const answer of q3.answers) {
+      expect(answer.paletteLabels).toHaveLength(4)
+      expect(answer.paletteSwatches).toHaveLength(4)
+    }
+  })
+
+  it('uses exactly the approved swatch configuration per answer', () => {
+    expect(Object.fromEntries(q3.answers.map((a) => [a.id, a.paletteSwatches]))).toEqual({
+      q3_a: ['#F3EFE7', '#D8CBB6', '#AAA39A', '#C49B6C'],
+      q3_b: ['#A9B09A', '#EFE5D3', '#91A5B0', '#B58662'],
+      // cream leads the strip as the interior base (visual ≠ label order)
+      q3_c: ['#E8D9C3', '#B66D50', '#6A2934', '#493126'],
+      q3_d: ['#294A6D', '#C09A53', '#67465F', '#527B74'],
+    })
+  })
+
+  it('keeps the identical 40/25/20/15 segment structure for all answers', () => {
+    const total = PALETTE_SEGMENT_PROPORTIONS.reduce((sum, p) => sum + p, 0)
+    expect(total).toBe(100)
+    expect(q3.answers.every(() => PALETTE_SEGMENT_PROPORTIONS.length === 4)).toBe(true)
+  })
+
+  it('keeps approved palette labels untouched (lowercase · separator)', () => {
+    expect(q3.answers.map((a) => a.paletteLabels?.join(' · '))).toEqual([
+      'молочный · овсяный · теплый серый · светлое дерево',
+      'шалфейный · сливочный · пыльно-голубой · теплое дерево',
+      'терракота · бордо · теплый кремовый · темный орех',
+      'глубокий синий · охра · сливовый · неожиданный цветовой акцент',
+    ])
+  })
+
+  it('does not touch approved scoring weights', () => {
+    expect(q3.answers.map((a) => [a.id, a.scores])).toEqual([
+      ['q3_a', { scandi: 2, quiet: 1 }],
+      ['q3_b', { cottage: 2, paris: 1 }],
+      ['q3_c', { italian: 2, paris: 1 }],
+      ['q3_d', { collector: 2, italian: 1 }],
     ])
   })
 })

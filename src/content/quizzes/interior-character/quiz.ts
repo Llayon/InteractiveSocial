@@ -78,6 +78,8 @@ export const questions: Question[] = [
         id: 'q3_a',
         title: '',
         paletteLabels: ['молочный', 'овсяный', 'теплый серый', 'светлое дерево'],
+        // milk → oat → warm grey → pale wood (40/25/20/15)
+        paletteSwatches: ['#F3EFE7', '#D8CBB6', '#AAA39A', '#C49B6C'],
         scores: { scandi: 2, quiet: 1 },
         assetKey: 'q3_a',
       },
@@ -85,6 +87,8 @@ export const questions: Question[] = [
         id: 'q3_b',
         title: '',
         paletteLabels: ['шалфейный', 'сливочный', 'пыльно-голубой', 'теплое дерево'],
+        // sage → cream → dusty blue → warm wood (40/25/20/15)
+        paletteSwatches: ['#A9B09A', '#EFE5D3', '#91A5B0', '#B58662'],
         scores: { cottage: 2, paris: 1 },
         assetKey: 'q3_b',
       },
@@ -92,6 +96,10 @@ export const questions: Question[] = [
         id: 'q3_c',
         title: '',
         paletteLabels: ['терракота', 'бордо', 'теплый кремовый', 'темный орех'],
+        // Visual order is intentional: warm cream leads as the interior base
+        // so the card does not read as four equally heavy dark blocks;
+        // the textual label keeps the approved wording order.
+        paletteSwatches: ['#E8D9C3', '#B66D50', '#6A2934', '#493126'],
         scores: { italian: 2, paris: 1 },
         assetKey: 'q3_c',
       },
@@ -99,6 +107,8 @@ export const questions: Question[] = [
         id: 'q3_d',
         title: '',
         paletteLabels: ['глубокий синий', 'охра', 'сливовый', 'неожиданный цветовой акцент'],
+        // deep blue → ochre → plum → muted teal accent (40/25/20/15)
+        paletteSwatches: ['#294A6D', '#C09A53', '#67465F', '#527B74'],
         scores: { collector: 2, italian: 1 },
         assetKey: 'q3_d',
       },

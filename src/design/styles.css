@@ -210,12 +210,12 @@
 .answer-palette {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   text-align: left;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius-m);
-  padding: 12px 16px;
+  padding: 14px 16px;
   cursor: pointer;
   font-family: var(--font-ui);
   color: var(--ink);
@@ -226,19 +226,25 @@
   background: var(--accent-soft);
 }
 
+/*
+ * Editorial color-story strip: solid segments butt-jointed (no gaps/borders),
+ * fixed 40/25/20/15 widths set inline from PALETTE_SEGMENT_PROPORTIONS.
+ */
 .answer-palette__swatches {
   display: flex;
-  height: 44px;
-  border-radius: var(--radius-s);
+  height: 60px;
+  border-radius: 12px;
   overflow: hidden;
 }
 
 .answer-palette__swatches span {
-  flex: 1;
+  display: block;
+  height: 100%;
 }
 
 .answer-palette__labels {
-  font-size: 0.85rem;
+  font-size: 0.9rem;
+  line-height: 1.4;
   color: var(--muted);
 }
 
@@ -439,6 +445,10 @@
   .answer-card {
     font-size: 1.05rem;
     padding: 18px 20px;
+  }
+
+  .answer-palette__swatches {
+    height: 68px;
   }
 
   .result-card__hero {
