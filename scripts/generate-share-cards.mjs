@@ -5,6 +5,10 @@
  *
  * Final designer assets will replace these files in public/share-cards/
  * without any code changes (stable asset keys: result_<id>.png).
+ *
+ * NOTE: api/share/prepare.ts shares these cards via InlineQueryResultPhoto,
+ * which requires a JPEG URL. Keep the .jpg siblings of these PNGs in sync
+ * (any image tool: `magick result_x.png result_x.jpg` quality ~90).
  */
 import { deflateSync } from 'node:zlib'
 import { mkdirSync, writeFileSync } from 'node:fs'

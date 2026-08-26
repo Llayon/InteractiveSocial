@@ -30,7 +30,7 @@ interface TelegramApiResponse {
  *    ONLY from the validated payload — never from a client body field.
  * 2. resultId checked against the content allowlist.
  * 3. Image URL and deep link are built exclusively from server-side config:
- *    ${APP_BASE_URL}/share-cards/<asset>.png and t.me deep link with
+ *    ${APP_BASE_URL}/share-cards/<asset>.jpg and t.me deep link with
  *    startapp=share_<resultId>.
  * 4. Bot token stays server-only.
  */
@@ -83,7 +83,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   }
 
   const deepLink = `https://t.me/${botUsername}/${appShortName}?startapp=share_${result.id}`
-  const imageUrl = `${appBaseUrl.replace(/\/$/, '')}/share-cards/${result.shareImage}.png`
+  // InlineQueryResultPhoto requires a JPEG URL (PNG is not accepted by
+  // Telegram for photo results), so the shared card uses the .jpg asset.
+  const imageUrl = `${appBaseUrl.replace(/\/$/, '')}/share-cards/${result.shareImage}.jpg`
   const messageText = [
     `${result.title} — ${result.subtitle}`,
     '',
@@ -103,15 +105,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
         user_id: userId,
         allow_user_chats: true,
         result: {
-          type: 'article',
+          // 'photo' (not 'article') so the image is attached to the message
+          // the recipient actually receives; article results send text only
+          // and show the thumbnail solely in the inline picker.
+          type: 'photo',
           id: `share_${result.id}`,
           title: result.title,
           description: result.shareQuote,
-          thumbnail_url: imageUrl,
+          photo_url: imageUrl,
+          // Caption carries the message text (1024-char limit is ample here).
+          caption: messageText,
           reply_markup: {
             inline_keyboard: [[{ text: 'Пройти тест', url: deepLink }]],
           },
-          input_message_content: { message_text: messageText },
         },
       }),
       signal: controller.signal,

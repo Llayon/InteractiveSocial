@@ -408,3 +408,53 @@
   width: 100%;
 }
 
+/* ---------- desktop / Telegram Web adaptation ---------- */
+
+/*
+ * Telegram Web and Telegram Desktop render the Mini App in a wide viewport;
+ * the mobile-first 480px column feels cramped there, so scale up the column,
+ * typography and spacing while capping the hero image height.
+ */
+@media (min-width: 720px) {
+  .screen {
+    max-width: 600px;
+    padding: var(--space-l) var(--space-l) 48px;
+    gap: var(--space-l);
+  }
+
+  .landing__title {
+    font-size: clamp(2.4rem, 5vw, 3.2rem);
+  }
+
+  .question__title {
+    font-size: 1.8rem;
+  }
+
+  .answer-card {
+    font-size: 1.05rem;
+    padding: 18px 20px;
+  }
+
+  .result-card__hero {
+    max-height: 640px;
+    object-position: center;
+  }
+
+  .result-card__title {
+    font-size: clamp(2rem, 4vw, 2.6rem);
+  }
+
+  .result-card__hook {
+    font-size: 1.3rem;
+  }
+
+  .reveal {
+    min-height: 60dvh;
+  }
+
+  .reveal__step {
+    font-size: 1.7rem;
+  }
+}
+
+

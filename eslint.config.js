@@ -10,6 +10,7 @@ export default tseslint.config(
       'playwright-report/**',
       'test-results/**',
       'coverage/**',
+      '.pw-tmp/**',
     ],
   },
   ...tseslint.configs.recommended,
