@@ -44,7 +44,7 @@ function parseUserFromInitData(raw: string): TelegramUser | null {
   }
 }
 
-const SHARE_TIMEOUT_MS = 60_000
+const SHARE_TIMEOUT_MS = 20_000
 
 /**
  * Fallback initData extraction. retrieveLaunchParams() may fail or return an
@@ -146,7 +146,18 @@ export function createRealTelegram(): TelegramAdapter {
         getWebApp()?.HapticFeedback?.impactOccurred?.(style)
       }
     },
-    shareMessage(preparedId: string) {
+    shareMessage(preparedId: string): Promise<'sent' | 'failed' | 'unsupported'> {
+      // web_app_share_message arrived in Bot API 9.2. Older clients silently
+      // ignore the call, which used to hang until timeout — probe the reported
+      // WebApp version first and degrade to fallback immediately instead.
+      const version = (getWebApp() as { version?: string } | undefined)?.version
+      if (version) {
+        const parsed = Number.parseFloat(version)
+        if (!Number.isNaN(parsed) && parsed < 9.2) {
+          return Promise.resolve('unsupported')
+        }
+      }
+
       // Confirmed success only via share_message_sent event; anything else —
       // including the user closing the sheet — resolves 'failed'.
       //

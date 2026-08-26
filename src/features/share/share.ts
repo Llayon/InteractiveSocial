@@ -128,6 +128,16 @@ export async function shareResult(options: {
     return 'native'
   }
 
+  if (outcome === 'unsupported') {
+    // Client cannot open the native sheet at all — degrade to web share.
+    analytics.track('share_failed', {
+      quiz_id: quiz.id,
+      result_id: result.id,
+      reason: 'share_unsupported_client',
+    })
+    return fallbackShare(result)
+  }
+
   analytics.track('share_failed', {
     quiz_id: quiz.id,
     result_id: result.id,

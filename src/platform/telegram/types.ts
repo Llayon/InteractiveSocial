@@ -25,7 +25,8 @@ export interface TelegramAdapter {
   /**
    * Opens the native Telegram share sheet for a prepared inline message.
    * Resolves 'sent' only on confirmed Telegram shareMessageSent event,
-   * 'failed' on shareMessageFailed or unsupported environment.
+   * 'failed' on shareMessageFailed or timeout,
+   * 'unsupported' when the client cannot open the share sheet at all.
    */
-  shareMessage(preparedId: string): Promise<'sent' | 'failed'>
+  shareMessage(preparedId: string): Promise<'sent' | 'failed' | 'unsupported'>
 }
