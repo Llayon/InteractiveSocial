@@ -100,40 +100,57 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     'Какой интерьерный характер у тебя? Пройди тест:',
   ].join('\n')
 
-  const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), 8_000)
+  // Telegram's media proxy downloads photo_url asynchronously; a transient
+  // failure there leaves the prepared message without an image. A single
+  // retry of savePreparedInlineMessage covers the flaky-network case.
+  const payload = JSON.stringify({
+    user_id: userId,
+    allow_user_chats: true,
+    result: {
+      // 'photo' (not 'article') so the image is attached to the message
+      // the recipient actually receives; article results send text only
+      // and show the thumbnail solely in the inline picker.
+      type: 'photo',
+      id: `share_${result.id}`,
+      title: result.title,
+      description: result.shareQuote,
+      photo_url: imageUrl,
+      photo_width: 1080,
+      photo_height: 1350,
+      thumbnail_url: thumbUrl,
+      // Caption carries the message text (1024-char limit is ample here).
+      caption: messageText,
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: 'Пройти тест', url: deepLink }],
+          [{ text: '✨ Бюро историй', url: promoChannelUrl }],
+        ],
+      },
+    },
+  })
+
+  const callApi = async (): Promise<Response> => {
+    const attemptController = new AbortController()
+    const attemptTimeout = setTimeout(() => attemptController.abort(), 8_000)
+    try {
+      return await fetch('https://api.telegram.org/bot' + token + '/savePreparedInlineMessage', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: payload,
+        signal: attemptController.signal,
+      })
+    } finally {
+      clearTimeout(attemptTimeout)
+    }
+  }
 
   try {
-    const apiResponse = await fetch(`https://api.telegram.org/bot${token}/savePreparedInlineMessage`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        user_id: userId,
-        allow_user_chats: true,
-        result: {
-          // 'photo' (not 'article') so the image is attached to the message
-          // the recipient actually receives; article results send text only
-          // and show the thumbnail solely in the inline picker.
-          type: 'photo',
-          id: `share_${result.id}`,
-          title: result.title,
-          description: result.shareQuote,
-          photo_url: imageUrl,
-          photo_width: 1080,
-          photo_height: 1350,
-          thumbnail_url: thumbUrl,
-          // Caption carries the message text (1024-char limit is ample here).
-          caption: messageText,
-          reply_markup: {
-            inline_keyboard: [
-              [{ text: 'Пройти тест', url: deepLink }],
-              [{ text: '✨ Бюро историй', url: promoChannelUrl }],
-            ],
-          },
-        },
-      }),
-      signal: controller.signal,
-    })
+    let apiResponse: Response
+    try {
+      apiResponse = await callApi()
+    } catch {
+      apiResponse = await callApi()
+    }
 
     const json = (await apiResponse.json().catch(() => null)) as TelegramApiResponse | null
 
@@ -159,13 +176,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     }
 
     fail(res, 502, 'telegram_failure')
-  } catch (error) {
-    if (error instanceof Error && error.name === 'AbortError') {
-      fail(res, 504, 'timeout')
-      return
-    }
+  } catch {
     fail(res, 502, 'telegram_failure')
-  } finally {
-    clearTimeout(timeout)
   }
 }
