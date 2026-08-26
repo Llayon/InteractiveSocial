@@ -11,6 +11,7 @@ import {
 } from '@/features/quiz/quizReducer'
 import type { SelectedAnswer } from '@/features/quiz/schema'
 import { ResultScreen } from '@/features/result/Result'
+import { deliverCompletedResult } from '@/features/share/deliver'
 import type { TelegramAdapter } from '@/platform/telegram'
 import { initialScreen, screenAfterQuizStart, screenForCompletedQuiz, type Screen } from './routes'
 
@@ -99,7 +100,14 @@ export function App({ telegram }: AppProps) {
       result_id: resolution.resultId,
       total_scores: breakdown.totals,
     })
-  }, [state.phase, state.answers, analytics, attempt, quiz])
+
+    // Fire-and-forget: inside Telegram, ask the backend to send the user
+    // their own result card and (if launched via a friend's share link)
+    // notify the sharer. Must never block or break the reveal UX.
+    if (telegram?.mode === 'telegram' && telegram.getInitDataRaw()) {
+      void deliverCompletedResult(resolution.resultId, telegram.getInitDataRaw())
+    }
+  }, [state.phase, state.answers, analytics, attempt, quiz, telegram])
 
   const handleRestart = useCallback(() => {
     dispatch({ type: 'restart' })

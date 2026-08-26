@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { quizzes } from '../../src/content/quizzes/index.js'
+import { buildShareStartParam } from '../_lib/attribution.js'
 import { validateInitData } from '../_lib/initData.js'
 
 const activeQuiz = quizzes[0]
@@ -82,7 +83,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
       ? process.env.PROMO_CHANNEL_URL.trim()
       : 'https://t.me/takeiteasybefore'
 
-  const deepLink = `https://t.me/${botUsername}/${appShortName}?startapp=share_${result.id}`
+  // Attribution: the sharer's validated id rides in the startapp parameter,
+  // so /api/results/deliver can notify them when a friend completes the quiz.
+  const deepLink = `https://t.me/${botUsername}/${appShortName}?startapp=${buildShareStartParam(result.id, userId)}`
   // InlineQueryResultPhoto requires JPEG URLs (PNG is not accepted by
   // Telegram for photo results), so the shared card uses .jpg assets.
   // thumbnail_url is a REQUIRED field of InlineQueryResultPhoto — omitting

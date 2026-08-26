@@ -3,6 +3,8 @@ import { parse, validate } from '@tma.js/init-data-node'
 export interface ValidatedInitData {
   userId: number
   startParam?: string
+  /** Display name of the validated user (from signed initData). */
+  firstName?: string
 }
 
 export class InitDataValidationError extends Error {
@@ -37,7 +39,7 @@ export function validateInitData(
     if (!user || typeof user.id !== 'number') {
       throw new InitDataValidationError('init data contains no user')
     }
-    return { userId: user.id, startParam: parsed.start_param }
+    return { userId: user.id, startParam: parsed.start_param, firstName: user.first_name }
   } catch (error) {
     if (error instanceof InitDataValidationError) throw error
     throw new InitDataValidationError(
