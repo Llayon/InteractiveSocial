@@ -182,7 +182,17 @@
 .answer-card__media {
   display: block;
   height: 120px;
+  overflow: hidden;
   background: linear-gradient(160deg, #e7ddd0 0%, #cbb9a6 55%, #a98f79 100%);
+}
+
+.answer-card__media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  user-select: none;
+  -webkit-user-drag: none;
 }
 
 .answer-card:nth-child(2) .answer-card__media {

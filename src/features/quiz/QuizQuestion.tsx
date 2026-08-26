@@ -67,7 +67,16 @@ export function QuizQuestion({ question, selectedAnswerId, onAnswer }: QuizQuest
               onClick={() => onAnswer(answer)}
             >
               {question.layout === 'image-cards' && (
-                <span className="answer-card__media" aria-hidden="true" data-asset={answer.assetKey} />
+                <span className="answer-card__media" aria-hidden="true" data-asset={answer.assetKey}>
+                  {answer.assetKey && (
+                    <img
+                      src={`/answers/${answer.assetKey}.jpg`}
+                      alt=""
+                      loading="lazy"
+                      draggable={false}
+                    />
+                  )}
+                </span>
               )}
               {answer.title && <span className="answer-card__title">{answer.title}</span>}
             </button>

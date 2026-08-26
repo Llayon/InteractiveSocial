@@ -46,6 +46,16 @@ describe('approved content shape', () => {
       'scandi',
     ])
   })
+
+  it('gives every image-cards question answers a media assetKey', () => {
+    for (const question of activeQuiz.questions) {
+      if (question.layout === 'image-cards') {
+        for (const answer of question.answers) {
+          expect(answer.assetKey, `image-cards answer ${question.id}/${answer.id} needs assetKey`).toBeTruthy()
+        }
+      }
+    }
+  })
 })
 
 /**
