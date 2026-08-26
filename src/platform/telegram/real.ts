@@ -5,6 +5,7 @@ import {
   postEvent,
   retrieveLaunchParams,
 } from '@tma.js/sdk'
+import { readStartParamFromUrl } from './mock'
 import type { TelegramAdapter, TelegramUser } from './types'
 
 interface WebAppLike {
@@ -46,6 +47,29 @@ function parseUserFromInitData(raw: string): TelegramUser | null {
 const SHARE_TIMEOUT_MS = 60_000
 
 /**
+ * Fallback initData extraction. retrieveLaunchParams() may fail or return an
+ * empty payload on some Telegram clients (iOS WebView quirks, cached shells),
+ * so we probe every official source directly:
+ * 1. window.Telegram.WebApp.initData — the bridge object clients inject,
+ * 2. ?tgWebAppData=... query parameter,
+ * 3. #tgWebAppData=... hash parameter (Telegram iOS style deep links).
+ */
+function extractInitDataRawFallback(): string {
+  const bridge = (
+    globalThis as { Telegram?: { WebApp?: { initData?: unknown } } }
+  ).Telegram?.WebApp
+  if (bridge && typeof bridge.initData === 'string' && bridge.initData.length > 0) {
+    return bridge.initData
+  }
+  const fromQuery = new URLSearchParams(window.location.search).get('tgWebAppData')
+  if (fromQuery) return fromQuery
+  const hash = window.location.hash.replace(/^#/, '')
+  const fromHash = new URLSearchParams(hash).get('tgWebAppData')
+  if (fromHash) return fromHash
+  return ''
+}
+
+/**
  * Real Telegram Mini App implementation built on @tma.js/sdk.
  * All Telegram-specific calls live here and nowhere else.
  */
@@ -63,8 +87,28 @@ export function createRealTelegram(): TelegramAdapter {
     const launchParams = retrieveLaunchParams()
     startParam = launchParams.startParam ? String(launchParams.startParam) : null
     initDataRaw = launchParams.initDataRaw ? String(launchParams.initDataRaw) : ''
-  } catch {
-    /* launch params unavailable — treated as empty */
+  } catch (error) {
+    console.warn(
+      '[tma] retrieveLaunchParams failed:',
+      error instanceof Error ? `${error.name}: ${error.message}` : String(error),
+    )
+  }
+
+  if (!initDataRaw) {
+    const before = initDataRaw
+    initDataRaw = extractInitDataRawFallback()
+    console.warn(
+      `[tma] sdk initData empty (${before.length === 0 ? 'absent' : 'present'}), ` +
+        `fallback extraction ${initDataRaw ? `succeeded (len=${initDataRaw.length})` : 'failed too'}`,
+    )
+  }
+
+  if (!startParam) {
+    try {
+      startParam = readStartParamFromUrl()
+    } catch {
+      /* non-critical */
+    }
   }
 
   return {
