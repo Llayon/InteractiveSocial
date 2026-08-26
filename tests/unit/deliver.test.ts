@@ -5,12 +5,16 @@ import { deliverCompletedResult } from '@/features/share/deliver'
 describe('share attribution encoding', () => {
   it('round-trips result id and sharer user id', () => {
     const param = buildShareStartParam('quiet', 900000001)
-    expect(param).toBe('share_quiet.900000001')
+    expect(param).toBe('share_quiet-900000001')
     expect(parseShareStartParam(param)).toEqual({ resultId: 'quiet', sharerUserId: 900000001 })
   })
 
-  it('parses legacy links without attribution', () => {
+  it('parses legacy links without attribution and dot-separated ones', () => {
     expect(parseShareStartParam('share_paris')).toEqual({ resultId: 'paris', sharerUserId: null })
+    expect(parseShareStartParam('share_paris.900000001')).toEqual({
+      resultId: 'paris',
+      sharerUserId: 900000001,
+    })
   })
 
   it('rejects malformed parameters', () => {

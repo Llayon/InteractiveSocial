@@ -13,17 +13,17 @@ Add-Type -AssemblyName System.Drawing
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
-$refs = Join-Path $root 'references'
+$refs = Join-Path $root 'assets-source'
 $out  = Join-Path $root 'public\share-cards'
 
-# reference file -> result id (must match src/content/quizzes results[].id)
+# source file -> result id (must match src/content/quizzes results[].id)
 $mapping = [ordered]@{
-  'QuietLuxyru.png'    = 'quiet'
-  'Parisian.png'       = 'paris'
-  'ItalianDiva.png'    = 'italian'
-  'THE COLLECTOR.png'  = 'collector'
-  'COTTAGE SOUL.png'   = 'cottage'
-  'SCANDI CALM.png'    = 'scandi'
+  'quiet-luxury.png'  = 'quiet'
+  'parisian.png'      = 'paris'
+  'italian-diva.png'  = 'italian'
+  'the-collector.png' = 'collector'
+  'cottage-soul.png'  = 'cottage'
+  'scandi-calm.png'   = 'scandi'
 }
 
 $jpegCodec = [System.Drawing.Imaging.ImageCodecInfo]::GetImageEncoders() |
