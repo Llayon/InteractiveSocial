@@ -137,11 +137,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
 
     const json = (await apiResponse.json().catch(() => null)) as TelegramApiResponse | null
 
-    // Warn only on real failures; successful responses are not logged
-    // (payloads contain no secrets/personal data either way).
-    if (!json || !json.ok) {
-      console.warn(`[share] telegram status=${apiResponse.status} desc=${json?.description ?? 'unparseable'}`)
-    }
+    // Log every Telegram response (one line, no secrets) so a missing-image
+    // regression can be diagnosed from `vercel logs` without reproducing it
+    // in person. Captures the actual error_description returned by Bot API.
+    console.info(
+      `[share] telegram status=${apiResponse.status} ok=${json?.ok ?? 'parse_err'} ` +
+        `desc=${json?.description ?? 'n/a'} resultId=${result.id}`,
+    )
 
     if (json && json.ok && json.result && typeof json.result.id === 'string') {
       res.status(200).json({ ok: true, id: json.result.id })

@@ -1,5 +1,6 @@
 import type { Answer, Question } from './schema'
 import { PALETTE_SEGMENT_PROPORTIONS } from './schema'
+import { OptimizedImage } from '@/images/OptimizedImage'
 
 export interface QuizQuestionProps {
   question: Question
@@ -56,26 +57,28 @@ export function QuizQuestion({ question, selectedAnswerId, onAnswer }: QuizQuest
             (question.layout === 'image-cards' ? ' answers--cards' : '')
           }
         >
-          {question.answers.map((answer) => (
+          {question.answers.map((answer, index) => (
             <button
               key={answer.id}
               type="button"
               className={'answer-card' + (selectedAnswerId === answer.id ? ' is-selected' : '')}
               data-testid="answer-option"
               data-answer-id={answer.id}
-              title={answer.assetKey ? `placeholder:${answer.assetKey}` : undefined}
               onClick={() => onAnswer(answer)}
             >
-              {question.layout === 'image-cards' && (
+              {question.layout === 'image-cards' && answer.assetKey && (
                 <span className="answer-card__media" aria-hidden="true" data-asset={answer.assetKey}>
-                  {answer.assetKey && (
-                    <img
-                      src={`/answers/${answer.assetKey}.jpg`}
-                      alt=""
-                      loading="lazy"
-                      draggable={false}
-                    />
-                  )}
+                  <OptimizedImage
+                    bucket="quiz"
+                    asset={answer.assetKey}
+                    aspectRatio="16/9"
+                    layout="asset"
+                    loading={index === 0 ? 'eager' : 'lazy'}
+                    fetchPriority={index === 0 ? 'high' : 'auto'}
+                    decoding="async"
+                    data-testid="answer-media"
+                    style={{ background: 'transparent' }}
+                  />
                 </span>
               )}
               {answer.title && <span className="answer-card__title">{answer.title}</span>}

@@ -37,8 +37,16 @@ async function callTelegram(
       body: JSON.stringify(payload),
       signal: controller.signal,
     })
-    return (await response.json().catch(() => null)) as TelegramApiResponse | null ?? {}
+    const json = (await response.json().catch(() => null)) as TelegramApiResponse | null
+    // Log every Bot API call (one line, no secrets) so a missing-image
+    // regression on /api/results/deliver is diagnosable from `vercel logs`.
+    console.info(
+      `[deliver] ${method} status=${response.status} ok=${json?.ok ?? 'parse_err'} ` +
+        `desc=${json?.description ?? 'n/a'}`,
+    )
+    return json ?? {}
   } catch {
+    console.warn(`[deliver] ${method} network_error`)
     return {}
   } finally {
     clearTimeout(timeout)

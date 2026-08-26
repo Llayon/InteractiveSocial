@@ -1,3 +1,4 @@
+import { OptimizedImage } from '@/images/OptimizedImage'
 import type { Quiz, Result } from '@/features/quiz/schema'
 
 export interface ResultCardProps {
@@ -5,8 +6,6 @@ export interface ResultCardProps {
   result: Result
   children?: React.ReactNode
 }
-
-const SHARE_IMAGE_PATH = '/share-cards'
 
 /**
  * Editorial personality reveal. Renders the approved content fields
@@ -17,11 +16,20 @@ export function ResultCard({ quiz, result, children }: ResultCardProps) {
 
   return (
     <article className="result-card" data-testid="result-card" data-result-id={result.id}>
-      <img
-        className="result-card__hero"
-        src={`${SHARE_IMAGE_PATH}/${result.shareImage}.jpg`}
+      <OptimizedImage
+        bucket="results"
+        asset={result.id}
+        aspectRatio="4/5"
+        layout="asset"
+        loading="eager"
+        fetchPriority="high"
+        decoding="async"
         alt={`Обложка результата: ${result.title}`}
         data-testid="result-hero"
+        className="result-card__hero-img"
+        // borderRadius mirrors the editorial card language; maxWidth keeps the
+        // approved 480px hero width when the column widens on desktop.
+        style={{ borderRadius: '12px', maxWidth: '480px', marginInline: 'auto' }}
       />
 
       <header className="result-card__header">
