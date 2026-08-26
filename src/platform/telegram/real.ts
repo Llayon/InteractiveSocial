@@ -9,8 +9,12 @@ import { readStartParamFromUrl } from './mock'
 import type { TelegramAdapter, TelegramUser } from './types'
 
 interface WebAppLike {
+  version?: string
   ready?: () => void
   expand?: () => void
+  shareMessage?: (id: string) => void
+  onEvent?: (type: string, cb: () => void) => void
+  offEvent?: (type: string, cb: () => void) => void
   HapticFeedback?: {
     impactOccurred?: (style: string) => void
     notificationOccurred?: (type: string) => void
@@ -146,48 +150,79 @@ export function createRealTelegram(): TelegramAdapter {
         getWebApp()?.HapticFeedback?.impactOccurred?.(style)
       }
     },
+    /**
+     * Bot API 8.0: Telegram.WebApp.shareMessage(id) opens the native share
+     * sheet for a message prepared via savePreparedInlineMessage; the outcome
+     * arrives as shareMessageSent / shareMessageFailed events. We subscribe
+     * via both the official bridge and @tma.js (event delivery differs between
+     * platforms), and fall back to the raw web_app_share_message call when the
+     * official script is unavailable.
+     */
     shareMessage(preparedId: string): Promise<'sent' | 'failed' | 'unsupported'> {
-      // web_app_share_message arrived in Bot API 9.2. Older clients silently
-      // ignore the call, which used to hang until timeout — probe the reported
-      // WebApp version first and degrade to fallback immediately instead.
-      const version = (getWebApp() as { version?: string } | undefined)?.version
+      const webApp = getWebApp()
+
+      const version = webApp?.version
       if (version) {
         const parsed = Number.parseFloat(version)
-        if (!Number.isNaN(parsed) && parsed < 9.2) {
+        if (!Number.isNaN(parsed) && parsed < 8) {
           return Promise.resolve('unsupported')
         }
       }
 
-      // Confirmed success only via share_message_sent event; anything else —
-      // including the user closing the sheet — resolves 'failed'.
-      //
-      // NOTE: web_app_share_message / share_message_sent / share_message_failed
-      // are Bot API 9.x methods that are not yet present in @tma.js/bridge
-      // typings. The untyped shims below are confined to this adapter.
-      type UntypedOn = (type: string, handler: () => void) => void
-      const onEvent = on as unknown as UntypedOn
-      const offEvent = off as unknown as UntypedOn
-      const post = postEvent as unknown as (method: string, params?: unknown) => void
-
       return new Promise<'sent' | 'failed'>((resolve) => {
         let settled = false
+        const listeners: Array<{ off: () => void }> = []
         const finish = (outcome: 'sent' | 'failed') => {
           if (settled) return
           settled = true
           clearTimeout(timer)
-          offEvent('share_message_sent', onSent)
-          offEvent('share_message_failed', onFailed)
+          for (const { off } of listeners) {
+            try {
+              off()
+            } catch {
+              /* non-critical */
+            }
+          }
           resolve(outcome)
         }
         const onSent = () => finish('sent')
         const onFailed = () => finish('failed')
         const timer = setTimeout(() => finish('failed'), SHARE_TIMEOUT_MS)
 
-        onEvent('share_message_sent', onSent)
-        onEvent('share_message_failed', onFailed)
+        // Official bridge events (camelCase, Bot API 8.0+).
+        if (typeof webApp?.onEvent === 'function') {
+          webApp.onEvent('shareMessageSent', onSent)
+          webApp.onEvent('shareMessageFailed', onFailed)
+          listeners.push({
+            off: () => {
+              webApp.offEvent?.('shareMessageSent', onSent)
+              webApp.offEvent?.('shareMessageFailed', onFailed)
+            },
+          })
+        }
+
+        // @tma.js bridge events — both naming conventions for safety.
+        type UntypedOn = (type: string, handler: () => void) => void
+        const onEvent = on as unknown as UntypedOn
+        const offEvent = off as unknown as UntypedOn
+        for (const name of ['shareMessageSent', 'shareMessageFailed', 'share_message_sent', 'share_message_failed']) {
+          const handler = name === 'shareMessageSent' || name === 'share_message_sent' ? onSent : onFailed
+          try {
+            onEvent(name, handler)
+            listeners.push({ off: () => offEvent(name, handler) })
+          } catch {
+            /* event type unknown to this bridge version — skip */
+          }
+        }
 
         try {
-          post('web_app_share_message', { msg_id: preparedId })
+          if (typeof webApp?.shareMessage === 'function') {
+            webApp.shareMessage(preparedId)
+          } else {
+            // Official script unavailable — raw bridge call (legacy path).
+            const post = postEvent as unknown as (method: string, params?: unknown) => void
+            post('web_app_share_message', { msg_id: preparedId })
+          }
         } catch {
           finish('failed')
         }
