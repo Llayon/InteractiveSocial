@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { quizzes } from '../../src/content/quizzes/index.js'
-import { parseShareStartParam } from '../_lib/attribution.js'
+import { resolveAttribution } from '../_lib/attribution.js'
+import { resolveQuizRequest } from '../_lib/quizRequest.js'
 import { validateInitData } from '../_lib/initData.js'
 
 interface TelegramApiResponse {
@@ -10,8 +10,6 @@ interface TelegramApiResponse {
 }
 
 const SEND_TIMEOUT_MS = 8_000
-
-const activeQuiz = quizzes[0]
 
 // Best-effort dedup: serverless instances are ephemeral, so this only guards
 // against double-sends within one warm instance. The client fires the call
@@ -85,7 +83,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
       : 'https://t.me/takeiteasybefore'
   const baseUrl = appBaseUrl.replace(/\/$/, '')
 
-  const body = req.body as { resultId?: unknown; initDataRaw?: unknown } | undefined
+  const body = req.body as
+    | { quizId?: unknown; resultId?: unknown; initDataRaw?: unknown }
+    | undefined
+  const quizId = typeof body?.quizId === 'string' && body.quizId ? body.quizId : undefined
   const resultId = typeof body?.resultId === 'string' ? body.resultId : ''
   const initDataRaw = typeof body?.initDataRaw === 'string' ? body.initDataRaw : ''
 
@@ -93,9 +94,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     res.status(400).json({ ok: false, error: 'invalid_request' })
     return
   }
-  const result = activeQuiz.results.find((r) => r.id === resultId)
-  if (!result || !initDataRaw) {
-    res.status(400).json({ ok: false, error: !result ? 'missing_result' : 'invalid_request' })
+  const selection = resolveQuizRequest(quizId, resultId)
+  if (!selection.ok) {
+    res.status(400).json({ ok: false, error: selection.error })
+    return
+  }
+  const { quiz, result } = selection.selection
+  if (!initDataRaw) {
+    res.status(400).json({ ok: false, error: 'invalid_request' })
     return
   }
 
@@ -110,7 +116,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   }
 
   const imageUrl = `${baseUrl}/share-cards/${result.shareImage}.jpg`
-  const deepLink = `https://t.me/${botUsername}/${appShortName}?startapp=share_${result.id}`
+  // Play-again deep links carry the quiz identity, not attribution — the
+  // quiz resolver routes `quiz_<id>` launches without any user binding.
+  const deepLink = `https://t.me/${botUsername}/${appShortName}?startapp=quiz_${quiz.id}`
   const promoRow = [{ text: '✨ Бюро историй', url: promoChannelUrl }]
   const playAgainRow = [{ text: 'Пройти тест', url: deepLink }]
 
@@ -139,8 +147,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
 
   // 2. Notify the sharer — attribution comes from the signed start_param.
   let deliveredSharer = false
-  const parsed = parseShareStartParam(startParam)
-  const sharerUserId = parsed?.sharerUserId ?? null
+  const attribution = resolveAttribution(startParam)
+  const sharerUserId = attribution?.sharerUserId ?? null
   if (sharerUserId !== null && sharerUserId !== userId && !delivered.has(`sharer:${selfKey}`)) {
     const who = firstName || 'Твой друг'
     const sharerCaption = [

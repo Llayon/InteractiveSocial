@@ -114,7 +114,7 @@ export function App({ telegram }: AppProps) {
     // their own result card and (if launched via a friend's share link)
     // notify the sharer. Must never block or break the reveal UX.
     if (telegram?.mode === 'telegram' && telegram.getInitDataRaw()) {
-      void deliverCompletedResult(resolution.resultId, telegram.getInitDataRaw())
+      void deliverCompletedResult(quiz.id, resolution.resultId, telegram.getInitDataRaw())
     }
   }, [state.phase, state.answers, analytics, attempt, quiz, telegram])
 

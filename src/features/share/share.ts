@@ -21,6 +21,7 @@ const PREPARE_TIMEOUT_MS = 10_000
  * The bot token never touches the client; failures are structured, not thrown.
  */
 export async function prepareShareMessage(
+  quizId: string,
   resultId: string,
   initDataRaw: string,
 ): Promise<PrepareShareResult> {
@@ -30,7 +31,7 @@ export async function prepareShareMessage(
     const response = await fetch('/api/share/prepare', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ resultId, initDataRaw }),
+      body: JSON.stringify({ quizId, resultId, initDataRaw }),
       signal: controller.signal,
     })
     const json: unknown = await response.json().catch(() => null)
@@ -112,7 +113,7 @@ export async function shareResult(options: {
     return outcome
   }
 
-  const prepared = await prepareShareMessage(result.id, telegram.getInitDataRaw())
+  const prepared = await prepareShareMessage(quiz.id, result.id, telegram.getInitDataRaw())
   if (!prepared.ok) {
     analytics.track('share_failed', {
       quiz_id: quiz.id,

@@ -11,6 +11,7 @@ const DELIVER_TIMEOUT_MS = 10_000
  * Failures are swallowed by the caller — this must never break the UX.
  */
 export async function deliverCompletedResult(
+  quizId: string,
   resultId: string,
   initDataRaw: string,
 ): Promise<DeliverResult> {
@@ -20,7 +21,7 @@ export async function deliverCompletedResult(
     const response = await fetch('/api/results/deliver', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ resultId, initDataRaw }),
+      body: JSON.stringify({ quizId, resultId, initDataRaw }),
       signal: controller.signal,
     })
     if (!response.ok) return { ok: false, code: `http_${response.status}` }

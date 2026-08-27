@@ -1,9 +1,11 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { quizzes } from '../../src/content/quizzes/index.js'
-import { buildShareStartParam } from '../_lib/attribution.js'
+import {
+  buildShareStartParam,
+  buildLegacyShareStartParam,
+} from '../_lib/attribution.js'
+import { resolveQuizRequest } from '../_lib/quizRequest.js'
+import { quizCodeFor, resultCodeFor } from '../../src/content/quizzes/codes.js'
 import { validateInitData } from '../_lib/initData.js'
-
-const activeQuiz = quizzes[0]
 
 function fail(res: VercelResponse, status: number, error: string): void {
   res.status(status).json({ ok: false, error })
@@ -50,7 +52,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   }
   const appShortName = requireEnv('TELEGRAM_APP_SHORT_NAME') ?? 'app'
 
-  const body = req.body as { resultId?: unknown; initDataRaw?: unknown } | undefined
+  const body = req.body as
+    | { quizId?: unknown; resultId?: unknown; initDataRaw?: unknown }
+    | undefined
+  const quizId = typeof body?.quizId === 'string' && body.quizId ? body.quizId : undefined
   const resultId = typeof body?.resultId === 'string' ? body.resultId : ''
   const initDataRaw = typeof body?.initDataRaw === 'string' ? body.initDataRaw : ''
 
@@ -58,11 +63,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     fail(res, 400, 'invalid_request')
     return
   }
-  const result = activeQuiz.results.find((r) => r.id === resultId)
-  if (!result) {
-    fail(res, 400, 'missing_result')
+  const selection = resolveQuizRequest(quizId, resultId)
+  if (!selection.ok) {
+    fail(res, 400, selection.error)
     return
   }
+  const { quiz, result } = selection.selection
   if (!initDataRaw) {
     fail(res, 401, 'invalid_init_data')
     return
@@ -83,9 +89,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
       ? process.env.PROMO_CHANNEL_URL.trim()
       : 'https://t.me/takeiteasybefore'
 
-  // Attribution: the sharer's validated id rides in the startapp parameter,
-  // so /api/results/deliver can notify them when a friend completes the quiz.
-  const deepLink = `https://t.me/${botUsername}/${appShortName}?startapp=${buildShareStartParam(result.id, userId)}`
+  // Attribution: the sharer's validated id rides in the startapp parameter
+  // (v2 wire codes), so /api/results/deliver can notify them when a friend
+  // completes the quiz. Codes failing to resolve degrade to the legacy
+  // format rather than producing an unopenable link.
+  let startParam: string
+  try {
+    startParam = buildShareStartParam(
+      quizCodeFor(quiz.id),
+      resultCodeFor(quiz.id, result.id),
+      userId,
+    )
+  } catch {
+    startParam = buildLegacyShareStartParam(result.id, userId)
+  }
+  const deepLink = `https://t.me/${botUsername}/${appShortName}?startapp=${startParam}`
   // InlineQueryResultPhoto requires JPEG URLs (PNG is not accepted by
   // Telegram for photo results), so the shared card uses .jpg assets.
   // thumbnail_url is a REQUIRED field of InlineQueryResultPhoto — omitting
