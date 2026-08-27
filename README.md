@@ -41,7 +41,7 @@ pnpm typecheck     # tsc --noEmit
 pnpm test          # Vitest: unit + integration + exhaustive scoring validation
 pnpm build         # typecheck + production build
 pnpm test:e2e      # Playwright (4 viewport'а: 360/390/430/1280)
-pnpm share-cards   # регенерация placeholder PNG карточек результатов
+pnpm images:runtime # WebP/JPEG 480/720/960 для рантайма + manifest + budget guard
 ```
 
 ## Environment variables
@@ -82,17 +82,21 @@ VITE_ANALYTICS_PROVIDER=console   пока провайдер аналитики
 1. Import repo в Vercel (framework: Vite, авто-детект).
 2. Function `api/share/prepare` подхватится автоматически (`/api/*`).
 3. Задать env из раздела выше (Production + Preview).
-4. CI (`.github/workflows/ci.yml`) гейтит деплой: deploy-job выполняется
-   только после lint/typecheck/tests/build/E2E. Секреты:
-   `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`.
+4. CI (`.github/workflows/ci.yml`) — quality-gate на пуши в `master` и на PR
+   (lint / typecheck / tests / build / E2E). Production деплой — **локальный
+   CLI после зелёного CI**: `vercel deploy --prod --yes` (единственный
+   source of truth, чтобы CLI и Actions не катили друг друга). Миграция
+   деплоя в CI — отложенное решение.
 
 ## Настройка Telegram Bot / Mini App
 
 1. `@BotFather` → `/newbot` → получить `TELEGRAM_BOT_TOKEN`.
 2. `/newapp` (или Bot Settings → Menu Button) → указать URL деплоя и
    short name → получится deep link `https://t.me/<bot>/<short_name>`.
-3. Заполнить env на Vercel. Готово: Mini App открывается по deep link,
-   share-сообщения возвращают `startapp=share_<resultId>`.
+3. Заполнить env на Vercel. Готово: Mini App открывается по deep link.
+   Share-сообщения возвращают v2-параметр атрибуции
+   `startapp=s2_<quizCode>_<resultCode>_<uid>`; legacy-формат
+   `share_<resultId>-<uid>` (и исторический точечный) разбирается бессрочно.
 
 ## Архитектура
 
@@ -110,18 +114,41 @@ src/
 ├── design/            tokens + editorial стили
 └── lib/
 api/share/prepare.ts   Vercel Function: initData validation → prepared message
+api/results/deliver.ts Vercel Function: карточка автору + уведомление шарившему
+api/_lib/              initData / attribution (v2+v1) / quizRequest хелперы
 tests/                 unit / integration / e2e
 gauntlet/              SPEC, QUALITY_BAR, отчёты по задачам G00–G07
 ```
 
-Новый тест добавляется файлом в `content/quizzes/<id>/` + регистрацией в
-`content/quizzes/index.ts` — движок и UI не меняются.
+## Добавление нового теста
+
+1. `src/content/quizzes/<id>/` — `quiz.ts` + `results.ts` (schema-valid).
+2. Регистрация в `content/quizzes/index.ts`.
+3. Wire-коды v2 в `content/quizzes/codes.ts` (quizCode + resultCode на
+   каждый результат; модуль fail-fast на дублях и дырах покрытия).
+4. Всё остальное уже quiz-aware: App резолвит через
+   `resolveQuizFromLaunch` (`?quiz=<id>` в браузере, `quiz_<id>` в
+   startapp), API принимают `quizId` в теле и проверяют принадлежность
+   результата квизу, share/deliver строят v2-ссылки автоматически,
+   аналитика уже несёт `quiz_id`.
+5. Ассеты: исходники в `assets-source/` → `pnpm images:runtime`
+   (рантайм WebP/JPEG + manifest), share-открытки —
+   `scripts/optimize-share-cards.ps1` → `public/share-cards` (JPEG
+   1080×1350, REQUIRED thumbnail).
+
+Движок, UI и share-пайплайн не меняются.
 
 ## Известные ограничения
 
-- Share card'ы — placeholder-градиенты (стабильные ключи `result_<id>.png`,
-  заменяются файлами без изменения кода).
-- `web_app_share_message` — метод Bot API 9.x; @tma.js/bridge ещё не
-  типизировал его (escape-hatch изолирован в `platform/telegram/real.ts`).
-  Проверка реальной отправки возможна только после деплоя с реальным токеном.
+- Share-открытки — реальные арты 1080×1350 JPEG в `public/share-cards`
+  (перегенерация из `assets-source` через `optimize-share-cards.ps1`);
+  рантайм-изображения — WebP/JPEG 480/720/960 в `public/optimized`
+  (`pnpm images:runtime`, typed manifest, встроенный guard бюджета,
+  network-contract E2E в `tests/e2e/network-scope.spec.ts`).
+- Share-протокол v2 несёт числовой Telegram id шарившего в открытом виде
+  (виден получателю ссылки, не секрет). Opaque attribution-токен требует
+  серверного storage — deferred.
+- `web_app_share_message` / callback `shareMessage(id, cb)` — Bot API 8+;
+  типизация частично через escape-hatch (изолирован в
+  `platform/telegram/real.ts`, callback-first + события как fallback).
 - Аналитика — console-провайдер до подключения реального сервиса.

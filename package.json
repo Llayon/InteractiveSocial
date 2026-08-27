@@ -17,8 +17,7 @@
     "images:runtime": "node scripts/optimize-runtime-images.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test",
-    "share-cards": "node scripts/generate-share-cards.mjs"
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@tma.js/sdk": "^3.3.0",
