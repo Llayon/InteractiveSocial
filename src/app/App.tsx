@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 
 import { getAnalytics } from '@/analytics/analytics'
-import { activeQuiz as defaultQuiz } from '@/content/quizzes'
+import { resolveQuizFromLaunch } from '@/content/quizzes/resolveQuiz'
 import { Landing } from '@/features/landing/Landing'
 import { Quiz } from '@/features/quiz/Quiz'
 import { computeBreakdown, resolveResultId } from '@/features/quiz/scoring'
@@ -21,7 +21,16 @@ export interface AppProps {
 }
 
 export function App({ telegram }: AppProps) {
-  const quiz = defaultQuiz
+  // Canonical quiz resolution — never `quizzes[0]` directly. Unknown or
+  // malformed launch ids deterministically fall back to the default quiz.
+  const quiz = useMemo(
+    () =>
+      resolveQuizFromLaunch({
+        startParam: telegram?.getStartParam() ?? null,
+        search: typeof window === 'undefined' ? '' : window.location.search,
+      }),
+    [telegram],
+  )
   const analytics = useMemo(() => getAnalytics(), [])
   const [screen, setScreen] = useState<Screen>(initialScreen)
   const [state, dispatch] = useReducer(
