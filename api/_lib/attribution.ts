@@ -78,6 +78,8 @@ export function parseShareStartParam(param: string | null | undefined): ParsedSh
 }
 
 export interface ResolvedAttribution {
+  /** Protocol version of the link (1 legacy, 2 v2 codes). */
+  version: 1 | 2
   /** Quiz the link points at (from wire codes, or owner scan for v1). */
   quizId: string
   resultId: string
@@ -97,6 +99,7 @@ export function resolveAttribution(param: string | null | undefined): ResolvedAt
     const resolved = resolveResultByCode(parsed.quizCode, parsed.resultCode)
     if (!resolved) return null
     return {
+      version: 2,
       quizId: resolved.quiz.id,
       resultId: resolved.resultId,
       sharerUserId: parsed.sharerUserId,
@@ -106,6 +109,7 @@ export function resolveAttribution(param: string | null | undefined): ResolvedAt
   const owner = quizzes.find((quiz) => quiz.results.some((r) => r.id === parsed.resultId))
   if (!owner) return null
   return {
+    version: 1,
     quizId: owner.id,
     resultId: parsed.resultId,
     sharerUserId: parsed.sharerUserId,

@@ -148,7 +148,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   // 2. Notify the sharer — attribution comes from the signed start_param.
   let deliveredSharer = false
   const attribution = resolveAttribution(startParam)
-  const sharerUserId = attribution?.sharerUserId ?? null
+  let sharerUserId = attribution?.sharerUserId ?? null
+
+  // Hardening: a v2 attribution must reference the SAME quiz being completed.
+  // The completed quiz comes from the request body (client), the link's quiz
+  // from the signed start_param — on disagreement we still deliver the user's
+  // own card but suppress the sharer notification. This guards against a
+  // stale client, a mis-deep-linked message, or any cross-quiz state: the
+  // sharer must never get notified about another quiz's result.
+  if (attribution?.version === 2 && attribution.quizId !== quiz.id) {
+    console.warn(
+      `[deliver] attribution quiz mismatch: link=${attribution.quizId} ` +
+        `completed=${quiz.id}; sharer notification suppressed`,
+    )
+    sharerUserId = null
+  }
   if (sharerUserId !== null && sharerUserId !== userId && !delivered.has(`sharer:${selfKey}`)) {
     const who = firstName || 'Твой друг'
     const sharerCaption = [

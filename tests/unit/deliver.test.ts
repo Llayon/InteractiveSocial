@@ -53,6 +53,7 @@ describe('share attribution encoding (v2 + v1 legacy)', () => {
 describe('resolveAttribution (protocol → registry)', () => {
   it('resolves v2 codes back to the owning quiz and result', () => {
     expect(resolveAttribution('s2_ic_it_847291')).toEqual({
+      version: 2,
       quizId: 'interior-character',
       resultId: 'italian',
       sharerUserId: 847291,
@@ -61,11 +62,13 @@ describe('resolveAttribution (protocol → registry)', () => {
 
   it('resolves legacy links via the result-id owner scan', () => {
     expect(resolveAttribution('share_italian-847291')).toEqual({
+      version: 1,
       quizId: 'interior-character',
       resultId: 'italian',
       sharerUserId: 847291,
     })
     expect(resolveAttribution('share_scandi')).toEqual({
+      version: 1,
       quizId: 'interior-character',
       resultId: 'scandi',
       sharerUserId: null,
