@@ -177,13 +177,29 @@ async function main() {
   const saving = summary.sourceBytes
     ? ((1 - totalOut / summary.sourceBytes) * 100).toFixed(1)
     : '0'
+  const quizMobileTotal = (prefix) =>
+    allVariants
+      .filter((v) => v.bucket === 'quiz' && v.asset.startsWith(prefix) && v.width === 480)
+      .reduce((sum, v) => sum + v.webp, 0)
+  const largestVariant = allVariants.reduce(
+    (max, v) =>
+      v.webp > max.bytes
+        ? { label: `${v.bucket}/${v.asset}-${v.width}w`, bytes: v.webp }
+        : max,
+    { label: 'n/a', bytes: 0 },
+  )
   console.log('')
-  console.log(`[runtime-images] processed ${summary.processed} assets`)
-  console.log(`  source:   ${formatBytes(summary.sourceBytes)}`)
-  console.log(`  webp:     ${formatBytes(summary.webpBytes)}`)
-  console.log(`  jpeg:     ${formatBytes(summary.jpegBytes)}`)
-  console.log(`  saving:   ${saving}% (vs source PNG)`)
-  console.log(`  manifest: public/optimized/manifest.json`)
+  console.log('Runtime image report')
+  console.log('--------------------')
+  console.log(`sources processed:    ${summary.processed}`)
+  console.log(`variants written:     ${allVariants.length} (webp+jpeg × ${WIDTHS.join('/')})`)
+  console.log(`total source bytes:   ${formatBytes(summary.sourceBytes)}`)
+  console.log(`total production:     ${formatBytes(totalOut)} (saving ${saving}%)`)
+  console.log(`Q1 mobile (480w webp): ${formatBytes(quizMobileTotal('q1_'))}`)
+  console.log(`Q2 mobile (480w webp): ${formatBytes(quizMobileTotal('q2_'))}`)
+  console.log(`largest variant:      ${largestVariant.label} = ${formatBytes(largestVariant.bytes)}`)
+  console.log(`Budget: ${budgetViolations.length === 0 ? 'PASS' : 'FAIL'}`)
+  console.log(`manifest: public/optimized/manifest.json`)
 }
 
 main().catch((err) => {
