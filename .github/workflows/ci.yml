@@ -1,8 +1,12 @@
 name: CI
 
+# Quality gate only. Production deploy authority is the local Vercel CLI
+# (`vercel deploy --prod --yes`) run AFTER this pipeline is green — a single
+# deploy source avoids CLI/CI drift. Migrating deploy into CI is deferred
+# (see README: Vercel deployment).
 on:
   push:
-    branches: [main]
+    branches: [master]
   pull_request:
 
 jobs:
@@ -56,24 +60,3 @@ jobs:
           name: e2e-evidence
           path: gauntlet/reports/evidence/
           retention-days: 7
-
-  # Deployment eligibility gate: production deploy runs ONLY after every
-  # check above is green. Requires Vercel secrets to be configured.
-  deploy:
-    needs: quality-gate
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Deploy to Vercel (production)
-        if: ${{ env.VERCEL_TOKEN != '' }}
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-        run: |
-          if [ -z "$VERCEL_TOKEN" ]; then
-            echo "Vercel secrets not configured — deployment skipped (tests still gate the pipeline)."
-            exit 0
-          fi
-          npx vercel@latest deploy --prod --yes --token "$VERCEL_TOKEN"
