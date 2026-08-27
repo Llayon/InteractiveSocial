@@ -12,7 +12,7 @@ interface WebAppLike {
   version?: string
   ready?: () => void
   expand?: () => void
-  shareMessage?: (id: string) => void
+  shareMessage?: (id: string, cb?: (payload?: unknown) => void) => void
   onEvent?: (type: string, cb: () => void) => void
   offEvent?: (type: string, cb: () => void) => void
   HapticFeedback?: {
@@ -217,7 +217,19 @@ export function createRealTelegram(): TelegramAdapter {
 
         try {
           if (typeof webApp?.shareMessage === 'function') {
-            webApp.shareMessage(preparedId)
+            const fn = webApp.shareMessage
+            if (fn.length >= 2) {
+              // Callback-first (Bot API 8+ two-arg signature): the callback
+              // resolves before the event round-trip on clients that support
+              // it. The event listeners above remain armed as a safety net —
+              // finish() is idempotent, so the first signal wins.
+              fn.call(webApp, preparedId, (payload) => {
+                const ok = (payload as { ok?: boolean } | undefined)?.ok
+                finish(ok === false ? 'failed' : 'sent')
+              })
+            } else {
+              fn.call(webApp, preparedId)
+            }
           } else {
             // Official script unavailable — raw bridge call (legacy path).
             const post = postEvent as unknown as (method: string, params?: unknown) => void
