@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 
+import { RUNTIME_IMAGE_MANIFEST } from '@/images/manifest'
 import { QuizProgress } from './QuizProgress'
 import { QuizQuestion } from './QuizQuestion'
 import type { Answer, Quiz, SelectedAnswer } from './schema'
@@ -72,6 +73,43 @@ export function Quiz({
   const total = quiz.questions.length
   const question = quiz.questions[Math.min(currentIndex, total - 1)]
   const selectedAnswerId = answers.find((a) => a.questionId === question?.id)?.answerId
+
+  // Controlled prefetch: once the current question paints and the browser is
+  // idle, warm the NEXT question's runtime images (low priority; results and
+  // share assets are never prefetched). The preload itself is delayed inside
+  // the idle callback so the critical load of the visible question is never
+  // contended and E2E network phases stay deterministic.
+  useEffect(() => {
+    const next = quiz.questions[currentIndex + 1]
+    if (!next || next.layout !== 'image-cards') return
+    const w = window as Window & {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number
+      cancelIdleCallback?: (id: number) => void
+    }
+    let timer: ReturnType<typeof setTimeout> | undefined
+    let cancelIdle: (() => void) | undefined
+    const preload = () => {
+      for (const answer of next.answers) {
+        if (!answer.assetKey || !RUNTIME_IMAGE_MANIFEST.quiz[answer.assetKey]) continue
+        const img = new Image()
+        img.src = `/optimized/quiz/${answer.assetKey}-480.webp`
+      }
+    }
+    const schedule = () => {
+      timer = setTimeout(preload, 250)
+    }
+    if (typeof w.requestIdleCallback === 'function') {
+      const id = w.requestIdleCallback(schedule, { timeout: 2_000 })
+      cancelIdle = () => w.cancelIdleCallback?.(id)
+    } else {
+      const id = window.setTimeout(schedule, 300)
+      cancelIdle = () => window.clearTimeout(id)
+    }
+    return () => {
+      cancelIdle?.()
+      if (timer !== undefined) clearTimeout(timer)
+    }
+  }, [currentIndex, quiz])
 
   if (phase === 'revealing') {
     return (
