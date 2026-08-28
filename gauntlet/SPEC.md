@@ -1,76 +1,92 @@
-# Gauntlet SPEC — Telegram Interactive MVP
+# Gauntlet SPEC — Telegram Interactive Mini App
 
 ## Product
 
-Telegram Mini App с одним personality-тестом **«Какой у тебя интерьерный характер?»**
-и проверкой viral loop: `OPEN → START → COMPLETE → SHARE → NEW OPEN`.
+Telegram Mini App with a small **generic quiz platform**. Mechanics are
+chosen by explicit discriminator config, not by `quiz.id`:
 
-## Approved content (LOCKED)
+- scoring.kind        = `archetype` | `correct-count`
+- presentation.kind   = `personality` | `score`
+- answerBehavior.mode = `instant` | `feedback`
 
-Источник истины по контенту — утверждённый product spec (аддендум):
+A future archetype quiz (e.g. «Какой город тебе подходит?») needs ZERO
+runtime changes — registration + wire codes + assets only. A future
+correct-count quiz (e.g. «Угадаешь фильмы 2000-х?») needs the same.
 
-- Result IDs: `quiet`, `paris`, `italian`, `collector`, `cottage`, `scandi`
-- Q1–Q7: ровно 4 ответа; Q8: ровно 6 ответов → **4^7 × 6 = 98 304 комбинации**
-- Веса: primary +2 / secondary +1 — зафиксированы тестом `tests/unit/content.test.ts`
-- Tie-break: 5 стадий — max total → q8 control primary → primary-hit count →
-  q1→q7→q5 primary order → fixed order (`quiet…scandi`)
-- Content Integrity Rules: тексты/веса/ID не переписываются; расхождение = P1.
-  Технические проблемы из-за copy фиксируются в отчёте, а не молча правятся.
+Two production quizzes are live:
 
-## Scoring correctness
+1. **Interior Character** — personality / archetype / instant.
+2. **Music90s** — score / correct-count / feedback (~2 min, 10 questions,
+   «Ты точно помнишь музыку 90-х?»).
 
-Источник истины — только automated verification:
+## Platform invariants (regression baseline)
 
-- `pnpm test` → exhaustive validator: 98 304/98 304 resolve, 6/6 reachable,
-  0 nondeterministic (см. `gauntlet/reports/content-validation.md`).
-- Critic G02 НЕ оценивает «правильность» скоринга субъективно — только
-  соответствие реализации spec + observable evidence из validation report.
+- Result id grammar: `^[a-z][a-z0-9_]{0,63}$` (globally unique across quizzes).
+- Wire codes live in `src/content/quizzes/codes.ts` only — never in
+  `QuizDefinition`. v2 protocol: `s2_<quizCode>_<resultCode>_<uid>`.
+- v1 legacy links (`share_<resultId>[-<uid>]`) are parsed forever.
+- Quiz resolution order: `quiz_<id>` → v2 codes → legacy → `?quiz=` → default.
+- Answer identity is `(questionId, answerId)` — never a global id.
+- Dedup key on deliver: `userId + quizId + resultId` (not just
+  `userId + resultId`).
+- Server-computed image URL on share/deliver (no client URL input).
 
-## Telegram platform states
+## Interior Character — locked regression baseline
 
-```text
-telegram — реальный Mini App контейнер (initData валиден, identity настоящая)
-mock     — явный детерминированный мок: dev environment, ?mock=1, Playwright
-browser  — обычный web-fallback вне Telegram (без фейковой личности,
-           initData пустой, share через graceful fallback)
-```
+- Result IDs (LOCKED): `quiet`, `paris`, `italian`, `collector`,
+  `cottage`, `scandi`.
+- Q1–Q7: 4 answers; Q8: 6 answers → 4^7 × 6 = **98,304 combinations**.
+- Weights: primary +2 / secondary +1 (locked).
+- Tie-break: 5 stages — max total → q8 control → primary hit count →
+  q1→q7→q5 primary order → fixed fallback (`quiet…scandi`).
+- Personality presentation: editorial reveal with traits + facts.
+- The 98,304 exhaustive validation remains a named hard gate.
 
-Mock ≠ browser fallback. Production build никогда не превращает отсутствие
-Telegram-контекста в фейкового Telegram-пользователя.
+## Music90s — correct-count requirements
 
-## Share security boundary
-
-1. Клиент шлёт `resultId` + raw `initData`.
-2. Сервер валидирует подпись и свежесть (@tma.js/init-data-node).
-3. `user_id` берётся ТОЛЬКО из validated payload.
-4. `resultId` проверяется по allowlist контента.
-5. Image URL и deep link строятся сервером из env (`APP_BASE_URL`,
-   `TELEGRAM_BOT_USERNAME`) — произвольные URL с клиента не принимаются.
-6. `TELEGRAM_BOT_TOKEN` существует только server-side.
-7. `share_success` эмитится только после подтверждённого Telegram event
-   (`share_message_sent`); закрытие шторки без отправки = не успех.
-
-## Visual direction
-
-Premium editorial lifestyle: тёплый ivory фон, graphite текст, burgundy акцент,
-display serif + sans-grotesk, радиусы 8–14px, photography-first, mobile-first,
-min-width 360px. Запрещены: Telegram-blue generic, purple AI gradients,
-glassmorphism, gaming UI, neon, dense dashboards.
-
-До появления утверждённых `/references`: максимум 1 субъективный visual round;
-hard UX проблемы исправляются всегда.
+- 10 fixed questions: 2 emoji / 2 artist / 2 timeline / 2 title /
+  2 absurd-description.
+- Difficulty: 3 easy / 4 medium / 3 hard.
+- 4 options per question, exactly one correct per question.
+- Feedback barrier: ~900ms lock with ✓/✕ (and correct answer when wrong).
+- Five semantic result bands:
+  - 0–2 → m90_rookie  (Ты случайно зашла в 90-е)
+  - 3–4 → m90_familiar (Ты где-то это слышала)
+  - 5–6 → m90_cassette (Кассетный человек)
+  - 7–8 → m90_disco    (Дискотека 1999)
+  - 9–10 → m90_legend  (Легенда кассетного века)
+- Exact score (e.g. 7/10) is shown alongside the band, NOT a separate
+  result per score.
+- 11 exact-score share cards (score_00..score_10) generated from one
+  template, produced by `scripts/generate-score-cards.ps1`.
+- Server-side score validation: integer in [0..total] AND
+  `resolveBandResultId(quiz, score) === resultId` (impossible pair
+  rejected).
+- SECURITY NOTE: the score is client-authoritative in the playful
+  result/share MVP. It MUST NOT later be trusted for leaderboards,
+  ranking, rewards or prizes.
 
 ## Gauntlet tasks
 
 G00 Foundation · G01 Telegram Shell · G02 Quiz Engine · G03 Quiz UX ·
 G04 Result · G05 Share · G06 Analytics · G07 Integration.
 
-Правила: MAX_ROUNDS=3 на задачу (до references); hard gates перед критиком
-(lint/typecheck/tests/build/Playwright/console); plateau stop после 2 неудачных
-фиксов одного P0/P1; spec-blocked stop при неоднозначных критериях.
+Music90s expansion:
+
+- K0 — Core generalisation (generic scoring outcomes, registry invariants).
+- K1 — Platform cleanup (quiz-aware copy, namespaced ids, wire codes).
+- K2 — Correct-count scoring + answer behavior discriminator.
+- K3 — Music90s product content (10 questions, 5 bands, copy).
+- K4 — Exact-score result + share-card generation (11 score_XX cards).
+- K5 — Analytics + cross-mechanic test matrix.
+
+Rules: MAX_ROUNDS=3 on a fix in one milestone; hard gates
+(lint/typecheck/tests/build/Playwright/console) before any critic
+round; spec-blocked stop on ambiguous criteria; external LLM critic
+at most 3 calls total (one per milestone), LOCAL CRITIC is authoritative
+when quota is exhausted.
 
 ## Definition of Done
 
-См. `gauntlet/QUALITY_BAR.md`. Кратко: все гейты зелёные, 0 P0/P1,
-6/6 результатов достижимы, mock mode работает, share endpoint защищён,
-токен только на сервере, G07 integration critic PASS.
+All hard gates green + Interior 98,304 PASS + Music90s scoring tests
+PASS + 0 P0/P1 in local critic + delivery clean.
