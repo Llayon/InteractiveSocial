@@ -4,7 +4,7 @@ import {
   type Quiz,
   type Result,
   type SelectedAnswer,
-} from './schema'
+} from './schema.js'
 
 export type TieBreakStage =
   | 'max-score'

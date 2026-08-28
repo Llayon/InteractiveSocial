@@ -1,5 +1,5 @@
-import { readStartParamFromUrl } from './mock'
-import type { TelegramAdapter } from './types'
+import { readStartParamFromUrl } from './mock.js'
+import type { TelegramAdapter } from './types.js'
 
 /**
  * Plain-web fallback for opening the site outside Telegram.

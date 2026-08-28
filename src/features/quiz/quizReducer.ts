@@ -1,4 +1,4 @@
-import type { Quiz, SelectedAnswer } from './schema'
+import type { Quiz, SelectedAnswer } from './schema.js'
 
 export type QuizPhase = 'idle' | 'active' | 'revealing' | 'completed'
 

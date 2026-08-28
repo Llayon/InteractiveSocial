@@ -1,10 +1,10 @@
 import { isTMA } from '@tma.js/sdk'
-import { createBrowserFallback } from './browser'
-import { createMockTelegram } from './mock'
-import { createRealTelegram } from './real'
-import type { TelegramAdapter, TelegramMode } from './types'
+import { createBrowserFallback } from './browser.js'
+import { createMockTelegram } from './mock.js'
+import { createRealTelegram } from './real.js'
+import type { TelegramAdapter, TelegramMode } from './types.js'
 
-export type { TelegramAdapter, TelegramMode, TelegramUser, HapticStyle } from './types'
+export type { TelegramAdapter, TelegramMode, TelegramUser, HapticStyle } from './types.js'
 
 function isRealTelegramEnvironment(): boolean {
   try {
@@ -47,6 +47,6 @@ export function createTelegramAdapter(mode: TelegramMode = detectTelegramMode())
   }
 }
 
-export { createMockTelegram } from './mock'
-export { createBrowserFallback } from './browser'
-export { createRealTelegram } from './real'
+export { createMockTelegram } from './mock.js'
+export { createBrowserFallback } from './browser.js'
+export { createRealTelegram } from './real.js'

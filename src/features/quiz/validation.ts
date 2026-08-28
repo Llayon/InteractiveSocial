@@ -1,5 +1,5 @@
-import type { Quiz, SelectedAnswer } from './schema'
-import { resolveResultId, type TieBreakStage } from './scoring'
+import type { Quiz, SelectedAnswer } from './schema.js'
+import { resolveResultId, type TieBreakStage } from './scoring.js'
 
 export interface ExhaustiveValidation {
   combinationCount: number

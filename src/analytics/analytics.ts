@@ -1,4 +1,4 @@
-import type { AnalyticsContext, AnalyticsEvent } from './events'
+import type { AnalyticsContext, AnalyticsEvent } from './events.js'
 
 export interface AnalyticsProvider {
   track(event: AnalyticsEvent | string, payload: Record<string, unknown>): void

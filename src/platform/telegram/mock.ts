@@ -1,4 +1,4 @@
-import type { HapticStyle, TelegramAdapter, TelegramUser } from './types'
+import type { HapticStyle, TelegramAdapter, TelegramUser } from './types.js'
 
 /** Reads a Telegram start parameter from plain URL query params. */
 export function readStartParamFromUrl(search?: string): string | null {

@@ -5,8 +5,8 @@ import {
   postEvent,
   retrieveLaunchParams,
 } from '@tma.js/sdk'
-import { readStartParamFromUrl } from './mock'
-import type { TelegramAdapter, TelegramUser } from './types'
+import { readStartParamFromUrl } from './mock.js'
+import type { TelegramAdapter, TelegramUser } from './types.js'
 
 interface WebAppLike {
   version?: string
