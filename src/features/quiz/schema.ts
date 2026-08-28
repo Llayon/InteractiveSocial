@@ -273,7 +273,16 @@ export function validateQuizIntegrity(quiz: Quiz): void {
     const referenced = new Set<string>()
     for (const question of quiz.questions) {
       for (const answer of question.answers) {
-        if (!answer.scores) continue
+        // Hardening: archetype answers MUST carry non-empty scores. An
+        // answer without `scores` in an archetype quiz is almost always
+        // a copy-paste bug (e.g. a future city quiz author reusing
+        // correct-count answer shape by mistake), so we fail-fast at
+        // load time instead of silently dropping the answer.
+        if (!answer.scores) {
+          throw new QuizIntegrityError(
+            `Archetype answer ${question.id}/${answer.id} is missing scores`,
+          )
+        }
         for (const resultId of Object.keys(answer.scores)) {
           if (!resultSet.has(resultId)) {
             throw new QuizIntegrityError(

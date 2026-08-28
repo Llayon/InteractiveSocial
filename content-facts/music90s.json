@@ -1,0 +1,142 @@
+{
+  "quiz_id": "music90s",
+  "date_convention": "First commercial release of the recording (single or first album track); year of original studio recording.",
+  "verified_on": "2026-08-28",
+  "questions": {
+    "m1": {
+      "category": "emoji",
+      "difficulty": "easy",
+      "claim": "«Тучи» is a 1996 hit by Иванушки International",
+      "correct": {
+        "id": "c",
+        "label": "«Тучи»",
+        "sources": [
+          "https://ru.wikipedia.org/wiki/Тучи_(песня)"
+        ],
+        "verified_fact": "«Тучи» is the debut single of Иванушки International from the 1996 album «Конечно он»."
+      }
+    },
+    "m2": {
+      "category": "emoji",
+      "difficulty": "medium",
+      "claim": "The dominant consumer media formats of the 1990s in Russia were cassette and CD",
+      "correct": {
+        "id": "a",
+        "label": "Кассета и CD",
+        "sources": [
+          "https://en.wikipedia.org/wiki/Compact_disc",
+          "https://en.wikipedia.org/wiki/Compact_Cassette"
+        ],
+        "verified_fact": "Audio cassettes and CDs were the two dominant consumer media of the 1990s (Wikipedia: Compact Disc and Compact Cassette were the dominant consumer audio formats through the 1990s before the rise of digital distribution)."
+      },
+      "note": "Reworded to a factually checkable claim (no hyperbole)."
+    },
+    "m3": {
+      "category": "artist",
+      "difficulty": "easy",
+      "claim": "«Крошка моя» is a Руки Вверх! hit",
+      "correct": {
+        "id": "b",
+        "label": "Руки Вверх!",
+        "sources": [
+          "https://en.wikipedia.org/wiki/Ruki_Vverh"
+        ],
+        "verified_fact": "«Крошка моя» is one of the signature 1990s hits of Руки Вверх! (duo active 1996–2006, 2008–present per Wikipedia)."
+      }
+    },
+    "m4": {
+      "category": "artist",
+      "difficulty": "medium",
+      "claim": "«Тучи» is an Иванушки International hit",
+      "correct": {
+        "id": "c",
+        "label": "Иванушки International",
+        "sources": [
+          "https://ru.wikipedia.org/wiki/Тучи_(песня)"
+        ],
+        "verified_fact": "«Тучи» is an Иванушки International song."
+      }
+    },
+    "m5": {
+      "category": "timeline",
+      "difficulty": "medium",
+      "claim": "Дискотека Авария is the oldest of the four acts (founded 1990)",
+      "correct": {
+        "id": "a",
+        "label": "Дискотека Авария — 1990",
+        "sources": [
+          "https://en.wikipedia.org/wiki/Diskoteka_Avariya"
+        ],
+        "verified_fact": "Дискотека Авария has been active since 1990 per the Wikipedia article (Category: Musical groups established in 1990). This makes them older than Иванушки International (1995), Руки Вверх! (1996) and Отпетые мошенники (1996)."
+      }
+    },
+    "m6": {
+      "category": "timeline",
+      "difficulty": "hard",
+      "claim": "«Тучи» is the earliest of the four tracks (released 1996 on the debut album «Конечно он»)",
+      "correct": {
+        "id": "b",
+        "label": "«Тучи» — 1996",
+        "sources": [
+          "https://ru.wikipedia.org/wiki/Тучи_(песня)",
+          "https://en.wikipedia.org/wiki/Ivanushki_International"
+        ],
+        "verified_fact": "«Тучи» released 1996 (debut album «Конечно он»). «Владимирский централ» is from Михаил Круг's 1998 album cycle. «Тополиный пух» appears on Иванушки's 1999 album «Об этом я буду кричать всю ночь». «Ариведерчи» is the Земфира single from her 1999 debut album (released 8 March 1999)."
+      }
+    },
+    "m7": {
+      "category": "title",
+      "difficulty": "medium",
+      "claim": "«Ариведерчи» is on Земфира's 1999 debut album; the other three tracks are not on it",
+      "correct": {
+        "id": "a",
+        "label": "Ариведерчи",
+        "sources": [
+          "https://en.wikipedia.org/wiki/Zemfira_(album)"
+        ],
+        "verified_fact": "«Ариведерчи» is track 12 on the 1999 debut album «Земфира». The other three titles («Хочешь», «Искала», «Не отпускай») are not on the debut tracklist and are commonly associated with later works."
+      }
+    },
+    "m8": {
+      "category": "title",
+      "difficulty": "easy",
+      "claim": "«Тополиный пух» is on the 1999 Иванушки album «Об этом я буду кричать всю ночь»",
+      "correct": {
+        "id": "a",
+        "label": "«Тополиный пух»",
+        "sources": [
+          "https://en.wikipedia.org/wiki/Ivanushki_International"
+        ],
+        "verified_fact": "«Тополиный пух» appears on the 1999 Иванушки International album «Об этом я буду кричать всю ночь» (per Wikipedia discography). Distractors «Колечко» (1996) and «Тучи» (1996) are from the 1996 debut; «Кукла» is from the 1997 remixed album."
+      },
+      "note": "Replaced a lyric-clue prompt with a factual album prompt."
+    },
+    "m9": {
+      "category": "absurd-description",
+      "difficulty": "hard",
+      "claim": "«Конечно он» is the debut album of Иванушки International (1996)",
+      "correct": {
+        "id": "b",
+        "label": "Конечно он",
+        "sources": [
+          "https://en.wikipedia.org/wiki/Ivanushki_International"
+        ],
+        "verified_fact": "«Конечно он» is the 1996 debut studio album of Иванушки International. «Твои письма» (1997) and «Подожди меня…» (2000) are second and fourth studio albums. «10 лет во вселенной» (2005) is a compilation."
+      },
+      "note": "Replaced the pun-based prompt with a verifiable album-name prompt."
+    },
+    "m10": {
+      "category": "absurd-description",
+      "difficulty": "hard",
+      "claim": "«Владимирский централ» is a 1998 Михаил Круг chanson hit",
+      "correct": {
+        "id": "b",
+        "label": "Михаил Круг",
+        "sources": [
+          "https://en.wikipedia.org/wiki/Mikhail_Krug"
+        ],
+        "verified_fact": "«Владимирский централ» is a signature song of Russian chanson singer Михаил Круг (Wikipedia: «Жиган-Лимон» 1994, «Владимирский централ» 1998). Distractors are unrelated artists."
+      }
+    }
+  }
+}

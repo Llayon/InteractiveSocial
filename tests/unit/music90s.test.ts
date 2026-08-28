@@ -65,22 +65,39 @@ describe('Music90s: correct answers match the approved content', () => {
   it('m4 (artist) — «Тучи» = Иванушки International = answer c', () => {
     expect(q.questions[3].correctAnswerId).toBe('c')
   })
-  it('m5 (timeline) — Иванушки 1995 = earliest = answer a', () => {
+  it('m5 (timeline) — Дискотека Авария 1990 = answer a', () => {
+    // Per Wikipedia (Musical groups established in 1990), Дискотека Авария
+    // (1990) is older than Иванушки International (1995), Руки Вверх!
+    // (1996), and Отпетые мошенники (1996).
     expect(q.questions[4].correctAnswerId).toBe('a')
   })
-  it('m6 (timeline) — «Тучи» 1997 = earliest = answer b', () => {
+  it('m6 (timeline) — «Тучи» 1996 = answer b', () => {
+    // Per Wikipedia (article «Тучи (песня)»), the song was released 1996
+    // on the debut album «Конечно он». «Владимирский централ» is 1998,
+    // «Ариведерчи» and «Тополиный пух» are 1999.
     expect(q.questions[5].correctAnswerId).toBe('b')
   })
-  it('m7 (title) — Земфира «Я сошла с ума» = answer d', () => {
-    expect(q.questions[6].correctAnswerId).toBe('d')
+  it('m7 (title) — «Ариведерчи» = answer a', () => {
+    // Per Wikipedia (Zemfira album tracklist), «Ариведерчи» is track 12
+    // on the 1999 debut album. The other three titles are not on it.
+    expect(q.questions[6].correctAnswerId).toBe('a')
   })
   it('m8 (title) — «Тополиный пух» = answer a', () => {
+    // Per Wikipedia (Ivanushki International discography), the song appears
+    // on the 1999 album «Об этом я буду кричать всю ночь». Distractors
+    // «Колечко» and «Тучи» are 1996 («Конечно он»), «Кукла» is 1997
+    // («Конечно он Remix»).
     expect(q.questions[7].correctAnswerId).toBe('a')
   })
-  it('m9 (absurd) — «Руки Вверх!» = answer c', () => {
-    expect(q.questions[8].correctAnswerId).toBe('c')
+  it('m9 (absurd) — дебютный альбом «Конечно он» 1996 = answer b', () => {
+    // Per Wikipedia (Ivanushki International), the debut studio album is
+    // «Конечно он» (1996). «Твои письма» is 1997, «Подожди меня…» is
+    // 2000, «10 лет во вселенной» is a 2005 compilation.
+    expect(q.questions[8].correctAnswerId).toBe('b')
   })
-  it('m10 (absurd) — «Владимирский централ» = answer b', () => {
+  it('m10 (absurd) — Михаил Круг = answer b', () => {
+    // Per Wikipedia (Mikhail Krug), «Владимирский централ» is a signature
+    // song of the Russian chanson singer Михаил Круг (Tver, 1990s).
     expect(q.questions[9].correctAnswerId).toBe('b')
   })
 })
