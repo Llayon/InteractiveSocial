@@ -45,6 +45,35 @@ describe('Music90s: correct-count scoring config', () => {
     }
   })
 
+  it('category distribution is honest: 2 emoji, 3 artist, 2 timeline, 2 title, 1 album', () => {
+    // After the content pass (commit 3162c2a + this cleanup) the two
+    // absurd-description prompts were replaced with factual album and
+    // artist prompts. The distribution is no longer the symmetric 2×5
+    // originally specified; runtime is now honest about what the user
+    // actually sees. If we ever want two more absurd questions we
+    // should add new ones rather than mislabel existing ones.
+    const counts: Record<string, number> = {}
+    for (const question of q.questions) {
+      const cat = question.category ?? '(none)'
+      counts[cat] = (counts[cat] ?? 0) + 1
+    }
+    expect(counts).toEqual({
+      emoji: 2,
+      artist: 3,
+      timeline: 2,
+      title: 2,
+      album: 1,
+    })
+  })
+
+  it('m9 (album) and m10 (artist) reflect the content fix, not the old label', () => {
+    // The two questions that used to be tagged 'absurd-description' were
+    // rewritten as factual prompts; their categories follow what the
+    // user actually sees.
+    expect(q.questions.find((x) => x.id === 'm9')?.category).toBe('album')
+    expect(q.questions.find((x) => x.id === 'm10')?.category).toBe('artist')
+  })
+
   it('has globally namespaced result ids (m90_*)', () => {
     for (const result of q.results) {
       expect(result.id).toMatch(/^m90_/)

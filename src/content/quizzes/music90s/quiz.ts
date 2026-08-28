@@ -8,8 +8,15 @@ import type { Question, Quiz } from '../../../features/quiz/schema.js'
  *
  * Content safety: song titles, artist names and release years only.
  * No lyrics, no album art, no audio, no third-party media.
- * Timeline facts are verified band/song chronology (1995 < 1996,
- * «Тучи» 1997 < «Владимирский централ» 1998 < 1999-е хиты).
+ * Timeline facts are verified band/song chronology (1990 < 1995 < 1996,
+ * «Тучи» 1996 < «Владимирский централ» 1998 < 1999-е хиты).
+ *
+ * Category distribution (fixed at content-fix time):
+ *   2 emoji · 3 artist · 2 timeline · 2 title · 1 album
+ * (Originally specified 2×5 but the post-review content pass replaced
+ *  the two absurd-description prompts with factual album / artist
+ *  prompts, and the runtime category is now honest about what the user
+ *  actually sees.)
  *
  * Answer ids (a/b/c/d) are intentionally reused across questions: answer
  * identity in the platform is the compound (questionId, answerId).
@@ -129,7 +136,7 @@ export const questions: Question[] = [
   },
   {
     id: 'm9',
-    category: 'absurd-description',
+    category: 'album',
     difficulty: 'hard',
     layout: 'choice',
     title: 'Иванушки International, 1996. Их дебютный альбом — это …',
@@ -143,7 +150,7 @@ export const questions: Question[] = [
   },
   {
     id: 'm10',
-    category: 'absurd-description',
+    category: 'artist',
     difficulty: 'hard',
     layout: 'choice',
     title: 'Кто исполнил «Владимирский централ» — гимн тверского шансона 1990-х?',

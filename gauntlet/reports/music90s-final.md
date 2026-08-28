@@ -2,8 +2,11 @@
 
 ## BASELINE → FINAL
 - BASELINE SHA: `163e9591991ece1c1b9d6a503043d078c8b0d9b8`
-- FINAL HEAD:  `3162c2a` (this commit), preceded by `201c641`,
-  `0e260f5`, `c279b95`, `4d0ce2c`.
+- FINAL HEAD:  this commit will be the final cleanup
+  (`chore(qa): align Music categories and harden provenance gate`),
+  followed by a docs HEAD with the corrected report. The
+  content-fix + factual gate landed in `3162c2a` and the docs
+  refresh in `83f27db`.
 - Branch: `master`, in sync with `origin/master`.
 
 ## Production

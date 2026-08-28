@@ -48,6 +48,11 @@ Two production quizzes are live:
   2 absurd-description.
 - Difficulty: 3 easy / 4 medium / 3 hard.
 - 4 options per question, exactly one correct per question.
+- Category distribution (post content-correction pass):
+  2 emoji / 3 artist / 2 timeline / 2 title / 1 album. (Originally
+  specified 2×5 but the post-review content pass replaced the two
+  absurd-description prompts with factual album / artist prompts; the
+  runtime category is now honest about what the user actually sees.)
 - Feedback barrier: ~900ms lock with ✓/✕ (and correct answer when wrong).
 - Five semantic result bands:
   - 0–2 → m90_rookie  (Ты случайно зашла в 90-е)
