@@ -42,7 +42,7 @@ export function ShareButton({
       score,
     })
     setStatus(outcome)
-  }, [telegram, quizId, resultId, shareCta, score, result])
+  }, [telegram, quizId, resultId, score, result])
 
   const label =
     status === 'sharing'

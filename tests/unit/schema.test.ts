@@ -153,3 +153,179 @@ describe('validateQuizIntegrity / loadQuiz', () => {
     expect(() => loadQuiz(broken)).toThrow(/must cover all results/)
   })
 })
+
+/* ------------------------------------------------------------------ *
+ * Correct-count scoring schema tests
+ * ------------------------------------------------------------------ */
+
+interface CCOverrides {
+  bands?: { min: number; max: number; resultId: string }[]
+  correctAnswerId?: string
+  missingCorrectAnswer?: boolean
+}
+
+function correctCountFixture(overrides: CCOverrides = {}): unknown {
+  return {
+    id: 'cc',
+    title: 'T',
+    subtitle: 'S',
+    landing: { paragraphs: ['p'], meta: [] },
+    startCta: 'Start',
+    shareCtaIntro: 'Intro',
+    shareCta: 'Share',
+    restartCta: 'Restart',
+    copy: { eyebrow: 'e', shareHeadline: 'h', deliverOwnLine: 'o' },
+    questions: [
+      {
+        id: 'm1',
+        title: 'Q1',
+        layout: 'choice',
+        correctAnswerId: overrides.missingCorrectAnswer ? undefined : (overrides.correctAnswerId ?? 'a'),
+        answers: [
+          { id: 'a', title: 'A' },
+          { id: 'b', title: 'B' },
+        ],
+      },
+      {
+        id: 'm2',
+        title: 'Q2',
+        layout: 'choice',
+        correctAnswerId: overrides.missingCorrectAnswer ? undefined : 'a',
+        answers: [
+          { id: 'a', title: 'A' },
+          { id: 'b', title: 'B' },
+        ],
+      },
+    ],
+    results: [
+      {
+        id: 'r_low',
+        title: 'low',
+        presentation: {
+          kind: 'score',
+          subtitle: '0–1',
+          description: ['d'],
+          shareQuote: 'q',
+        },
+        shareImage: 'result_low',
+      },
+      {
+        id: 'r_hi',
+        title: 'hi',
+        presentation: {
+          kind: 'score',
+          subtitle: '2',
+          description: ['d'],
+          shareQuote: 'q',
+        },
+        shareImage: 'result_hi',
+      },
+    ],
+    scoring: { kind: 'correct-count', bands: overrides.bands ?? [
+      { min: 0, max: 1, resultId: 'r_low' },
+      { min: 2, max: 2, resultId: 'r_hi' },
+    ] },
+    presentation: { kind: 'score' },
+    answerBehavior: { mode: 'feedback', durationMs: 500 },
+    reveal: { steps: ['X'], stepDurationMs: 100 },
+  }
+}
+
+describe('correct-count scoring: schema and integrity', () => {
+  it('accepts a well-formed correct-count quiz', () => {
+    expect(() => loadQuiz(correctCountFixture())).not.toThrow()
+  })
+
+  it('rejects a correct-count question without correctAnswerId', () => {
+    expect(() => loadQuiz(correctCountFixture({ missingCorrectAnswer: true }))).toThrow(/no correctAnswerId/)
+  })
+
+  it('rejects a correctAnswerId that does not reference any answer', () => {
+    expect(() => loadQuiz(correctCountFixture({ correctAnswerId: 'z' }))).toThrow(/does not match any answer/)
+  })
+
+  it('rejects overlapping bands', () => {
+    expect(() =>
+      loadQuiz(
+        correctCountFixture({
+          bands: [
+            { min: 0, max: 2, resultId: 'r_low' },
+            { min: 1, max: 2, resultId: 'r_hi' },
+          ],
+        }),
+      ),
+    ).toThrow(/must not overlap/)
+  })
+
+  it('rejects bands that leave a gap', () => {
+    expect(() =>
+      loadQuiz(
+        correctCountFixture({
+          bands: [
+            { min: 0, max: 0, resultId: 'r_low' },
+            { min: 2, max: 2, resultId: 'r_hi' },
+          ],
+        }),
+      ),
+    ).toThrow(/must leave no gaps/)
+  })
+
+  it('rejects bands that do not cover the full score range', () => {
+    expect(() =>
+      loadQuiz(
+        correctCountFixture({
+          bands: [{ min: 0, max: 1, resultId: 'r_low' }],
+        }),
+      ),
+    ).toThrow(/must cover up to/)
+  })
+
+  it('rejects bands that start above 0', () => {
+    expect(() =>
+      loadQuiz(
+        correctCountFixture({
+          bands: [
+            { min: 1, max: 1, resultId: 'r_low' },
+            { min: 2, max: 2, resultId: 'r_hi' },
+          ],
+        }),
+      ),
+    ).toThrow(/must start at 0/)
+  })
+
+  it('rejects a band referencing an unknown result id', () => {
+    expect(() =>
+      loadQuiz(
+        correctCountFixture({
+          bands: [
+            { min: 0, max: 1, resultId: 'ghost' },
+            { min: 2, max: 2, resultId: 'r_hi' },
+          ],
+        }),
+      ),
+    ).toThrow(/unknown result/)
+  })
+})
+
+describe('canonical id grammar: global uniqueness', () => {
+  it('rejects duplicate ids across the same question', () => {
+    const broken = correctCountFixture()
+    ;(broken as { questions: { answers: { id: string }[] }[] }).questions[0].answers[1].id = 'a'
+    expect(() => loadQuiz(broken)).toThrow(/Duplicate answer ids/)
+  })
+
+  it('allows the same answer id to appear in DIFFERENT questions', () => {
+    const valid = correctCountFixture()
+    expect(() => loadQuiz(valid)).not.toThrow() // 'a' is the first answer in both m1 and m2
+  })
+})
+
+describe('answerId identity: per-question (compound key)', () => {
+  it('verifies getAnswer is scoped to the owning question', () => {
+    // Music90s uses a/b/c/d inside each question. Two different questions
+    // both can have answer 'a' without conflict — the identity used in the
+    // platform is (questionId, answerId), not the bare answerId.
+    expect(loadQuiz(correctCountFixture()).questions[0].answers[0].id).toBe('a')
+    expect(loadQuiz(correctCountFixture()).questions[1].answers[0].id).toBe('a')
+  })
+})
