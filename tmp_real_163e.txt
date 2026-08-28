@@ -1,4 +1,4 @@
-import {
+﻿import {
   init,
   off,
   on,
@@ -158,25 +158,6 @@ export function createRealTelegram(): TelegramAdapter {
      * platforms), and fall back to the raw web_app_share_message call when the
      * official script is unavailable.
      */
-    /**
-     * Telegram WebApp.shareMessage(preparedId) contract (Bot API 8.0+):
-     *  - The bridge has two flavours, sometimes both:
-     *    (a) CALLBACK with a single boolean argument (modern, callback-first):
-     *        shareMessage(id, (ok: boolean) => void). true means the
-     *        native share sheet was opened successfully; false means the
-     *        user dismissed or the sheet was rejected.
-     *    (b) EVENT-based: shareMessageSent / shareMessageFailed (older docs);
-     *        share_message_sent / share_message_failed also seen on some clients;
-     *        prepared_message_sent / prepared_message_failed is the newest alias.
-     *    The callback argument is NOT a { ok: boolean } object — it is a raw
-     *    boolean. We must not assume an object shape. Older clients that do not
-     *    support callback-first fall back to events only.
-     *  - Either signal (true callback OR shareMessageSent event) settles the
-     *    promise as sent. A false callback OR shareMessageFailed event settles
-     *    as failed. A timeout also settles as failed.
-     *  - unsupported is reserved for clients that explicitly do not implement
-     *    shareMessage at all (no function, or version < 8).
-     */
     shareMessage(preparedId: string): Promise<'sent' | 'failed' | 'unsupported'> {
       const webApp = getWebApp()
 
@@ -188,93 +169,76 @@ export function createRealTelegram(): TelegramAdapter {
         }
       }
 
-      type UntypedOn = (type: string, handler: () => void) => void
-      const onEvent = on as unknown as UntypedOn
-      const offEvent = off as unknown as UntypedOn
-
-      // Hoist finish/listeners so the raw-bridge fallback (no shareMessage fn)
-      // and the main path share the same settle logic.
-      let settleResolve: (v: 'sent' | 'failed') => void = () => undefined
-      let settled = false
-      let timer: ReturnType<typeof setTimeout> | null = null
-      let listeners: Array<{ off: () => void }> = []
-      const finish = (outcome: 'sent' | 'failed') => {
-        if (settled) return
-        settled = true
-        if (timer !== null) clearTimeout(timer)
-        for (const { off } of listeners) {
-          try { off() } catch { /* non-critical */ }
+      return new Promise<'sent' | 'failed'>((resolve) => {
+        let settled = false
+        const listeners: Array<{ off: () => void }> = []
+        const finish = (outcome: 'sent' | 'failed') => {
+          if (settled) return
+          settled = true
+          clearTimeout(timer)
+          for (const { off } of listeners) {
+            try {
+              off()
+            } catch {
+              /* non-critical */
+            }
+          }
+          resolve(outcome)
         }
-        settleResolve(outcome)
-      }
-
-      const registerListeners = (): Array<{ off: () => void }> => {
-        const ls: Array<{ off: () => void }> = []
         const onSent = () => finish('sent')
         const onFailed = () => finish('failed')
-        for (const name of [
-          'shareMessageSent',
-          'shareMessageFailed',
-          'share_message_sent',
-          'share_message_failed',
-          'prepared_message_sent',
-          'prepared_message_failed',
-        ]) {
-          const handler =
-            name === 'shareMessageSent' ||
-            name === 'share_message_sent' ||
-            name === 'prepared_message_sent'
-              ? onSent
-              : onFailed
+        const timer = setTimeout(() => finish('failed'), SHARE_TIMEOUT_MS)
+
+        // Official bridge events (camelCase, Bot API 8.0+).
+        if (typeof webApp?.onEvent === 'function') {
+          webApp.onEvent('shareMessageSent', onSent)
+          webApp.onEvent('shareMessageFailed', onFailed)
+          listeners.push({
+            off: () => {
+              webApp.offEvent?.('shareMessageSent', onSent)
+              webApp.offEvent?.('shareMessageFailed', onFailed)
+            },
+          })
+        }
+
+        // @tma.js bridge events — both naming conventions for safety.
+        type UntypedOn = (type: string, handler: () => void) => void
+        const onEvent = on as unknown as UntypedOn
+        const offEvent = off as unknown as UntypedOn
+        for (const name of ['shareMessageSent', 'shareMessageFailed', 'share_message_sent', 'share_message_failed']) {
+          const handler = name === 'shareMessageSent' || name === 'share_message_sent' ? onSent : onFailed
           try {
             onEvent(name, handler)
-            ls.push({ off: () => offEvent(name, handler) })
+            listeners.push({ off: () => offEvent(name, handler) })
           } catch {
             /* event type unknown to this bridge version — skip */
           }
         }
-        return ls
-      }
 
-      const promise = new Promise<'sent' | 'failed'>((resolve) => {
-        settleResolve = resolve
-        timer = setTimeout(() => finish('failed'), SHARE_TIMEOUT_MS)
-      })
-
-      if (typeof webApp?.shareMessage !== 'function') {
-        // Official script unavailable — raw bridge call as a last resort.
         try {
-          const post = postEvent as unknown as (method: string, params?: unknown) => void
-          post('web_app_share_message', { msg_id: preparedId })
+          if (typeof webApp?.shareMessage === 'function') {
+            const fn = webApp.shareMessage
+            if (fn.length >= 2) {
+              // Callback-first (Bot API 8+ two-arg signature): the callback
+              // resolves before the event round-trip on clients that support
+              // it. The event listeners above remain armed as a safety net —
+              // finish() is idempotent, so the first signal wins.
+              fn.call(webApp, preparedId, (payload) => {
+                const ok = (payload as { ok?: boolean } | undefined)?.ok
+                finish(ok === false ? 'failed' : 'sent')
+              })
+            } else {
+              fn.call(webApp, preparedId)
+            }
+          } else {
+            // Official script unavailable — raw bridge call (legacy path).
+            const post = postEvent as unknown as (method: string, params?: unknown) => void
+            post('web_app_share_message', { msg_id: preparedId })
+          }
         } catch {
           finish('failed')
         }
-        listeners = registerListeners()
-        return promise
-      }
-
-      listeners = registerListeners()
-      try {
-        const fn = webApp.shareMessage
-        if (fn.length >= 2) {
-          // Callback-first (Bot API 8+): the callback argument is a raw
-          // boolean — NOT a { ok: boolean } object. A callback fired with
-          // no arguments (some iOS Telegram versions) is treated as
-          // ambiguous and resolved via the event listener or timeout,
-          // not optimistically marked sent.
-          fn.call(webApp, preparedId, (ok: unknown) => {
-            if (ok === true) finish('sent')
-            else if (ok === false) finish('failed')
-            // ok === undefined: let the event listener or timeout decide.
-          })
-        } else {
-          // Single-arg legacy signature: no callback, rely on events.
-          fn.call(webApp, preparedId)
-        }
-      } catch {
-        finish('failed')
-      }
-      return promise
+      })
     },
   }
 }

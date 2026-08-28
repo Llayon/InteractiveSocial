@@ -161,9 +161,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   // Telegram's media proxy downloads photo_url asynchronously; a transient
   // failure there leaves the prepared message without an image. A single
   // retry of savePreparedInlineMessage covers the flaky-network case.
+  // Telegram prepared-message contract (Bot API 8.0+):
+  //   • type=photo (required — 'article' sends text only)
+  //   • id is a per-quiz unique slug (Telegram rejects id collisions
+  //     within the bot's inline cache)
+  //   • photo_url + thumbnail_url both HTTPS, both reachable;
+  //     Telegram proxies them asynchronously
+  //   • caption within 1024 chars
+  //   • inline_keyboard markup supported
+  //   • user_id is the validated initData user (never a client field)
+  //   • allow_user_chats / allow_group_chats / allow_channel_chats
+  //     control where the user can route the message
   const payload = JSON.stringify({
     user_id: userId,
     allow_user_chats: true,
+    allow_group_chats: true,
+    allow_channel_chats: true,
     result: {
       // 'photo' (not 'article') so the image is attached to the message
       // the recipient actually receives; article results send text only
@@ -214,10 +227,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
 
     // Log every Telegram response (one line, no secrets) so a missing-image
     // regression can be diagnosed from `vercel logs` without reproducing it
-    // in person. Captures the actual error_description returned by Bot API.
+    // in person. Captures the actual error_description returned by Bot API,
+    // the prepared-id on success, the asset name, the image host (so we
+    // can spot Vercel origin / wrong host), and the quizId.
+    const imageHost = (() => {
+      try {
+        return new URL(imageUrl).host
+      } catch {
+        return 'invalid_url'
+      }
+    })()
     console.info(
       `[share] telegram status=${apiResponse.status} ok=${json?.ok ?? 'parse_err'} ` +
-        `desc=${json?.description ?? 'n/a'} resultId=${result.id}`,
+        `desc=${json?.description ?? 'n/a'} resultId=${result.id} ` +
+        `asset=${cardAsset} host=${imageHost} quizId=${quiz.id} ` +
+        `preparedId=${json && json.result && typeof json.result.id === 'string' ? json.result.id : 'none'}`,
     )
 
     if (json && json.ok && json.result && typeof json.result.id === 'string') {

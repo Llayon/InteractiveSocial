@@ -44,14 +44,22 @@ export function ShareButton({
     setStatus(outcome)
   }, [telegram, quizId, resultId, score, result])
 
+  // User-visible labels must distinguish native (real prepared photo
+  // card on the recipient's side) from fallback (Telegram deeplink /
+  // raw URL on browsers) from failed (Bot API rejected the prepare or
+  // the native share sheet never opened). Without this distinction a
+  // silently-failing native share would be reported as "Готово" and the
+  // regression would be invisible.
   const label =
     status === 'sharing'
       ? 'Отправляем…'
       : status === 'native'
         ? 'Отправлено ✓'
-        : status === 'failed'
-          ? 'Не получилось — попробовать ещё раз'
-          : shareCta
+        : status === 'fallback'
+          ? 'Скопировано — отправьте получателю'
+          : status === 'failed'
+            ? 'Не получилось — попробовать ещё раз'
+            : shareCta
 
   return (
     <div className="share">

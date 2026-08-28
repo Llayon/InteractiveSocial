@@ -11,6 +11,10 @@ export type AnalyticsEvent =
   | 'share_click'
   | 'share_success'
   | 'share_failed'
+  | 'share_prepare_failed'
+  | 'share_native_failed'
+  | 'share_fallback_native'
+  | 'share_fallback_clipboard'
   | 'restart'
 
 export interface AnalyticsContext {
