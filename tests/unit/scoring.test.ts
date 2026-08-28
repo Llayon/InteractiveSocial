@@ -10,13 +10,16 @@ function resultFixture(id: string) {
   return {
     id,
     title: id.toUpperCase(),
-    subtitle: 's',
-    description: ['d'],
-    traits: ['t'],
-    superpower: 'sp',
-    redFlag: 'rf',
-    recommendation: 'rec',
-    shareQuote: 'q',
+    presentation: {
+      kind: 'personality' as const,
+      subtitle: 's',
+      description: ['d'],
+      traits: ['t'],
+      superpower: 'sp',
+      redFlag: 'rf',
+      recommendation: 'rec',
+      shareQuote: 'q',
+    },
     shareImage: `img_${id}`,
   }
 }
@@ -37,6 +40,7 @@ function syntheticQuiz(options: SyntheticOptions = {}): Quiz {
     shareCtaIntro: 'Intro',
     shareCta: 'Share',
     restartCta: 'Restart',
+    copy: { eyebrow: 'e', shareHeadline: 'h', deliverOwnLine: 'o' },
     questions: [
       {
         id: 'qc',
@@ -94,11 +98,16 @@ function syntheticQuiz(options: SyntheticOptions = {}): Quiz {
       },
     ],
     results: [resultFixture('a'), resultFixture('b')],
-    tieBreak: {
-      controlQuestionId: 'qc',
-      primaryOrderQuestionIds: options.orderIds ?? ['qp'],
-      fixedResultOrder: options.fixedOrder ?? ['a', 'b'],
+    scoring: {
+      kind: 'archetype' as const,
+      tieBreak: {
+        controlQuestionId: 'qc',
+        primaryOrderQuestionIds: options.orderIds ?? ['qp'],
+        fixedResultOrder: options.fixedOrder ?? ['a', 'b'],
+      },
     },
+    presentation: { kind: 'personality' as const },
+    answerBehavior: { mode: 'instant' as const },
     reveal: { steps: ['X'], stepDurationMs: 10 },
   })
 }
@@ -201,7 +210,13 @@ describe('stage 5 — fixed deterministic order', () => {
 
     const mirrored = loadQuiz({
       ...quiz,
-      tieBreak: { ...quiz.tieBreak, fixedResultOrder: ['b', 'a'] },
+      scoring: {
+        kind: 'archetype',
+        tieBreak: {
+          ...(quiz.scoring.kind === 'archetype' ? quiz.scoring.tieBreak : undefined),
+          fixedResultOrder: ['b', 'a'],
+        },
+      },
     })
     expect(resolveResultId(mirrored, [pick('qp', 'w')]).resultId).toBe('b')
   })

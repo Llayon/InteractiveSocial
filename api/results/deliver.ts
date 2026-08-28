@@ -2,6 +2,8 @@ import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { resolveAttribution } from '../_lib/attribution.js'
 import { resolveQuizRequest } from '../_lib/quizRequest.js'
 import { validateInitData } from '../_lib/initData.js'
+import { RESULT_ID_REGEX } from '../../src/features/quiz/schema.js'
+import { resolveBandResultId, resolveShareCardAsset } from '../../src/features/quiz/scoring.js'
 
 interface TelegramApiResponse {
   ok?: boolean
@@ -84,13 +86,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   const baseUrl = appBaseUrl.replace(/\/$/, '')
 
   const body = req.body as
-    | { quizId?: unknown; resultId?: unknown; initDataRaw?: unknown }
+    | { quizId?: unknown; resultId?: unknown; score?: unknown; initDataRaw?: unknown }
     | undefined
   const quizId = typeof body?.quizId === 'string' && body.quizId ? body.quizId : undefined
   const resultId = typeof body?.resultId === 'string' ? body.resultId : ''
   const initDataRaw = typeof body?.initDataRaw === 'string' ? body.initDataRaw : ''
+  const rawScore = typeof body?.score === 'number' ? body.score : undefined
 
-  if (!/^[a-z]+$/.test(resultId)) {
+  // Canonical result-id grammar (namespaced ids are legal; legacy [a-z]+ too).
+  if (!RESULT_ID_REGEX.test(resultId)) {
     res.status(400).json({ ok: false, error: 'invalid_request' })
     return
   }
@@ -105,6 +109,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     return
   }
 
+  // Same validation contract as /api/share/prepare: the exact score must be
+  // an integer inside 0..total and map onto the supplied band resultId.
+  // The score stays client-authoritative (playful MVP) — never a trust root
+  // for leaderboards/competition/rewards.
+  let score: number | undefined
+  if (quiz.scoring.kind === 'correct-count') {
+    const total = quiz.questions.length
+    if (
+      typeof rawScore !== 'number' ||
+      !Number.isInteger(rawScore) ||
+      rawScore < 0 ||
+      rawScore > total
+    ) {
+      res.status(400).json({ ok: false, error: 'invalid_score' })
+      return
+    }
+    if (resolveBandResultId(quiz, rawScore) !== result.id) {
+      res.status(400).json({ ok: false, error: 'invalid_score' })
+      return
+    }
+    score = rawScore
+  }
+
   let userId: number
   let firstName: string | undefined
   let startParam: string | undefined
@@ -115,7 +142,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     return
   }
 
-  const imageUrl = `${baseUrl}/share-cards/${result.shareImage}.jpg`
+  // Card identity is quiz-scoped: correct-count resolves the exact-score card.
+  const cardAsset = resolveShareCardAsset(quiz, result, score)
+  const imageUrl = `${baseUrl}/share-cards/${cardAsset}.jpg`
   // Play-again deep links carry the quiz identity, not attribution — the
   // quiz resolver routes `quiz_<id>` launches without any user binding.
   const deepLink = `https://t.me/${botUsername}/${appShortName}?startapp=quiz_${quiz.id}`
@@ -123,15 +152,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   const playAgainRow = [{ text: 'Пройти тест', url: deepLink }]
 
   // 1. The completer's own card into their chat with the bot.
-  const selfKey = `${userId}:${result.id}`
+  // Dedup key includes quiz identity: userId + quizId + resultId (never just
+  // userId + resultId — two quizzes may legitimately share a result id shape).
+  const selfKey = `${userId}:${quiz.id}:${result.id}`
   let deliveredSelf = false
   if (!delivered.has(selfKey)) {
+    const headline =
+      score === undefined
+        ? `${result.title} — ${result.presentation.subtitle}`
+        : `Твой счёт: ${score} из ${quiz.questions.length}`
     const caption = [
-      `${result.title} — ${result.subtitle}`,
+      headline,
       '',
-      `«${result.shareQuote}»`,
+      `«${result.presentation.shareQuote}»`,
       '',
-      'Это твой интерьерный характер ✨',
+      quiz.copy.deliverOwnLine,
     ].join('\n')
     const response = await callTelegram(token, 'sendPhoto', {
       chat_id: userId,

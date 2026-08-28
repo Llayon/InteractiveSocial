@@ -6,12 +6,13 @@
  * wire format uses short opaque codes instead of internal ids:
  *
  *   s2_<quizCode>_<resultCode>_<sharerUserId>
- *   e.g. s2_ic_it_847291
+ *   e.g. s2_ic_it_847291 or s2_m90_dc_847291
  *
  * Codes are decoupled from internal ids: renaming "interior-character" or a
  * result later must not break already-shared links. The maps below are the
  * ONLY place where internal ids and wire codes meet, and the module fails
- * fast at load on duplicates or coverage gaps.
+ * fast at load on duplicates or coverage gaps. QuizDefinition carries no
+ * wire codes — this registry is the transport boundary.
  */
 import type { Quiz } from '../../features/quiz/schema.js'
 import { quizzes } from './index.js'
@@ -31,6 +32,16 @@ const RAW_CODES: Record<string, RawQuizCodes> = {
       collector: 'co',
       cottage: 'ct',
       scandi: 'sc',
+    },
+  },
+  music90s: {
+    quizCode: 'm90',
+    results: {
+      m90_rookie: 'rk',
+      m90_familiar: 'fm',
+      m90_cassette: 'cs',
+      m90_disco: 'dc',
+      m90_legend: 'lg',
     },
   },
 }

@@ -6,6 +6,8 @@ import {
 import { resolveQuizRequest } from '../_lib/quizRequest.js'
 import { quizCodeFor, resultCodeFor } from '../../src/content/quizzes/codes.js'
 import { validateInitData } from '../_lib/initData.js'
+import { RESULT_ID_REGEX } from '../../src/features/quiz/schema.js'
+import { resolveBandResultId, resolveShareCardAsset } from '../../src/features/quiz/scoring.js'
 
 function fail(res: VercelResponse, status: number, error: string): void {
   res.status(status).json({ ok: false, error })
@@ -53,13 +55,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   const appShortName = requireEnv('TELEGRAM_APP_SHORT_NAME') ?? 'app'
 
   const body = req.body as
-    | { quizId?: unknown; resultId?: unknown; initDataRaw?: unknown }
+    | { quizId?: unknown; resultId?: unknown; score?: unknown; initDataRaw?: unknown }
     | undefined
   const quizId = typeof body?.quizId === 'string' && body.quizId ? body.quizId : undefined
   const resultId = typeof body?.resultId === 'string' ? body.resultId : ''
   const initDataRaw = typeof body?.initDataRaw === 'string' ? body.initDataRaw : ''
+  const rawScore = typeof body?.score === 'number' ? body.score : undefined
 
-  if (!/^[a-z]+$/.test(resultId)) {
+  // Canonical result-id grammar (namespaced ids are legal; legacy [a-z]+ too).
+  if (!RESULT_ID_REGEX.test(resultId)) {
     fail(res, 400, 'invalid_request')
     return
   }
@@ -72,6 +76,36 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   if (!initDataRaw) {
     fail(res, 401, 'invalid_init_data')
     return
+  }
+
+  /**
+   * Correct-count quizzes must carry the exact score so the share card can
+   * show it. Server-side validation: integer, inside 0..total, and the
+   * computed band for that score MUST equal the supplied resultId (an
+   * impossible score/result pair is rejected, never guessed around).
+   *
+   * SECURITY NOTE: the score is client-authoritative in this playful
+   * result/share MVP and can technically be forged. It must NEVER be trusted
+   * for leaderboards, competition, rewards, ranking or prizes — a future
+   * competitive mode requires server-trusted session/state.
+   */
+  let score: number | undefined
+  if (quiz.scoring.kind === 'correct-count') {
+    const total = quiz.questions.length
+    if (
+      typeof rawScore !== 'number' ||
+      !Number.isInteger(rawScore) ||
+      rawScore < 0 ||
+      rawScore > total
+    ) {
+      fail(res, 400, 'invalid_score')
+      return
+    }
+    if (resolveBandResultId(quiz, rawScore) !== result.id) {
+      fail(res, 400, 'invalid_score')
+      return
+    }
+    score = rawScore
   }
 
   let userId: number
@@ -108,14 +142,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   // Telegram for photo results), so the shared card uses .jpg assets.
   // thumbnail_url is a REQUIRED field of InlineQueryResultPhoto — omitting
   // it fails with 400 PHOTO_THUMB_URL_EMPTY (verified in production logs).
-  const imageUrl = `${appBaseUrl.replace(/\/$/, '')}/share-cards/${result.shareImage}.jpg`
-  const thumbUrl = `${appBaseUrl.replace(/\/$/, '')}/share-cards/${result.shareImage}_thumb.jpg`
+  // Correct-count quizzes resolve the EXACT-SCORE card (score_08 …); the
+  // asset name is always server-computed, never a client-supplied URL.
+  const cardAsset = resolveShareCardAsset(quiz, result, score)
+  const imageUrl = `${appBaseUrl.replace(/\/$/, '')}/share-cards/${cardAsset}.jpg`
+  const thumbUrl = `${appBaseUrl.replace(/\/$/, '')}/share-cards/${cardAsset}_thumb.jpg`
+  const headline = score === undefined ? `${result.title} — ${result.presentation.subtitle}` : score
   const messageText = [
-    `${result.title} — ${result.subtitle}`,
+    typeof headline === 'string'
+      ? headline
+      : `Я набрала ${score}/${quiz.questions.length} в тесте «${quiz.title}»`,
     '',
-    `«${result.shareQuote}»`,
+    `«${result.presentation.shareQuote}»`,
     '',
-    'Какой интерьерный характер у тебя? Пройди тест:',
+    quiz.copy.shareHeadline,
   ].join('\n')
 
   // Telegram's media proxy downloads photo_url asynchronously; a transient
@@ -131,7 +171,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
       type: 'photo',
       id: `share_${result.id}`,
       title: result.title,
-      description: result.shareQuote,
+      description: result.presentation.shareQuote,
       photo_url: imageUrl,
       photo_width: 1080,
       photo_height: 1350,

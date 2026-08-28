@@ -1,12 +1,17 @@
 import { useCallback, useState } from 'react'
 
 import { getAnalytics } from '@/analytics/analytics'
-import type { Quiz, Result } from '@/features/quiz/schema'
+import type { Result } from '@/features/quiz/schema'
 import type { TelegramAdapter } from '@/platform/telegram'
 import { shareResult, type ShareOutcome } from './share'
 
 export interface ShareButtonProps {
-  quiz: Quiz
+  quizId: string
+  resultId: string
+  shareCta: string
+  shareCtaIntro: string
+  /** Exact score for correct-count quizzes (drives the score-card asset). */
+  score?: number
   result: Result
   telegram?: TelegramAdapter
 }
@@ -14,7 +19,15 @@ export interface ShareButtonProps {
 const LABEL_IDLE = 'idle'
 
 /** Primary result CTA — native Telegram share with graceful degradation. */
-export function ShareButton({ quiz, result, telegram }: ShareButtonProps) {
+export function ShareButton({
+  quizId,
+  resultId,
+  shareCta,
+  shareCtaIntro,
+  score,
+  result,
+  telegram,
+}: ShareButtonProps) {
   const [status, setStatus] = useState<'idle' | 'sharing' | ShareOutcome>(LABEL_IDLE)
 
   const handleClick = useCallback(async () => {
@@ -23,11 +36,13 @@ export function ShareButton({ quiz, result, telegram }: ShareButtonProps) {
     const outcome = await shareResult({
       telegram,
       analytics: getAnalytics(),
-      quiz,
+      quizId,
+      resultId,
       result,
+      score,
     })
     setStatus(outcome)
-  }, [telegram, quiz, result])
+  }, [telegram, quizId, resultId, shareCta, score, result])
 
   const label =
     status === 'sharing'
@@ -36,11 +51,11 @@ export function ShareButton({ quiz, result, telegram }: ShareButtonProps) {
         ? 'Отправлено ✓'
         : status === 'failed'
           ? 'Не получилось — попробовать ещё раз'
-          : quiz.shareCta
+          : shareCta
 
   return (
     <div className="share">
-      <p className="share__intro">{quiz.shareCtaIntro}</p>
+      <p className="share__intro">{shareCtaIntro}</p>
       <button
         type="button"
         className="button button--primary share__cta"

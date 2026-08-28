@@ -1,5 +1,5 @@
 import type { Analytics } from '@/analytics/analytics'
-import type { Quiz, Result } from '@/features/quiz/schema'
+import type { Result } from '@/features/quiz/schema'
 import type { TelegramAdapter } from '@/platform/telegram'
 
 export interface PrepareShareOk {
@@ -24,6 +24,7 @@ export async function prepareShareMessage(
   quizId: string,
   resultId: string,
   initDataRaw: string,
+  score?: number,
 ): Promise<PrepareShareResult> {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), PREPARE_TIMEOUT_MS)
@@ -31,7 +32,9 @@ export async function prepareShareMessage(
     const response = await fetch('/api/share/prepare', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ quizId, resultId, initDataRaw }),
+      body: JSON.stringify(
+        score === undefined ? { quizId, resultId, initDataRaw } : { quizId, resultId, score, initDataRaw },
+      ),
       signal: controller.signal,
     })
     const json: unknown = await response.json().catch(() => null)
@@ -65,9 +68,19 @@ export function buildFallbackShareUrl(resultId: string): string {
   return `${origin}${pathname}?startapp=share_${encodeURIComponent(resultId)}`
 }
 
-async function fallbackShare(result: Result): Promise<'fallback'> {
+async function fallbackShare(
+  quizTitle: string | undefined,
+  total: number | undefined,
+  result: Result,
+  score?: number,
+): Promise<'fallback'> {
   const url = buildFallbackShareUrl(result.id)
-  const text = `«${result.title}» — ${result.shareQuote}`
+  // Quiz-aware copy: correct-count quizzes share the exact score with a
+  // challenge CTA; personality quizzes keep the approved result quote.
+  const text =
+    score === undefined || total === undefined || !quizTitle
+      ? `«${result.title}» — ${result.presentation.shareQuote}`
+      : `Я набрала ${score}/${total} в тесте «${quizTitle}».\n${result.presentation.shareQuote}`
   if (typeof navigator.share === 'function') {
     try {
       await navigator.share({ title: result.title, text, url })
@@ -95,53 +108,68 @@ export type ShareOutcome = 'native' | 'fallback' | 'failed'
 export async function shareResult(options: {
   telegram: TelegramAdapter
   analytics: Analytics
-  quiz: Quiz
+  quizId: string
+  resultId: string
   result: Result
+  /** Exact score for correct-count quizzes (drives the score-card asset). */
+  score?: number
+  /** Total questions, used only for the fallback share text. */
+  total?: number
+  /** Quiz title, used only for the fallback share text. */
+  quizTitle?: string
 }): Promise<ShareOutcome> {
-  const { telegram, analytics, quiz, result } = options
+  const { telegram, analytics, quizId, resultId, result, score, total, quizTitle } = options
 
-  analytics.track('share_click', { quiz_id: quiz.id, result_id: result.id })
+  analytics.track('share_click', {
+    quiz_id: quizId,
+    result_id: resultId,
+    ...(score === undefined ? {} : { score }),
+  })
 
   // Plain-web fallback has no native share support at all.
   if (telegram.mode === 'browser') {
-    const outcome = await fallbackShare(result)
+    const outcome = await fallbackShare(quizTitle, total, result, score)
     analytics.track('share_failed', {
-      quiz_id: quiz.id,
-      result_id: result.id,
+      quiz_id: quizId,
+      result_id: resultId,
       reason: 'native_unsupported',
     })
     return outcome
   }
 
-  const prepared = await prepareShareMessage(quiz.id, result.id, telegram.getInitDataRaw())
+  const prepared = await prepareShareMessage(quizId, resultId, telegram.getInitDataRaw(), score)
   if (!prepared.ok) {
     analytics.track('share_failed', {
-      quiz_id: quiz.id,
-      result_id: result.id,
+      quiz_id: quizId,
+      result_id: resultId,
       reason: `prepare_${prepared.code}`,
     })
-    return fallbackShare(result)
+    return fallbackShare(quizTitle, total, result, score)
   }
 
   const outcome = await telegram.shareMessage(prepared.preparedId)
   if (outcome === 'sent') {
-    analytics.track('share_success', { quiz_id: quiz.id, result_id: result.id })
+    analytics.track('share_success', {
+      quiz_id: quizId,
+      result_id: resultId,
+      ...(score === undefined ? {} : { score }),
+    })
     return 'native'
   }
 
   if (outcome === 'unsupported') {
     // Client cannot open the native sheet at all — degrade to web share.
     analytics.track('share_failed', {
-      quiz_id: quiz.id,
-      result_id: result.id,
+      quiz_id: quizId,
+      result_id: resultId,
       reason: 'share_unsupported_client',
     })
-    return fallbackShare(result)
+    return fallbackShare(quizTitle, total, result, score)
   }
 
   analytics.track('share_failed', {
-    quiz_id: quiz.id,
-    result_id: result.id,
+    quiz_id: quizId,
+    result_id: resultId,
     reason: 'share_message_failed',
   })
   return 'failed'

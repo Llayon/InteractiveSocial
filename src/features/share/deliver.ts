@@ -14,6 +14,7 @@ export async function deliverCompletedResult(
   quizId: string,
   resultId: string,
   initDataRaw: string,
+  score?: number,
 ): Promise<DeliverResult> {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), DELIVER_TIMEOUT_MS)
@@ -21,7 +22,11 @@ export async function deliverCompletedResult(
     const response = await fetch('/api/results/deliver', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ quizId, resultId, initDataRaw }),
+      body: JSON.stringify(
+        score === undefined
+          ? { quizId, resultId, initDataRaw }
+          : { quizId, resultId, score, initDataRaw },
+      ),
       signal: controller.signal,
     })
     if (!response.ok) return { ok: false, code: `http_${response.status}` }

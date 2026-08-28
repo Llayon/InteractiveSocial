@@ -9,7 +9,7 @@ export interface LandingProps {
 export function Landing({ quiz, onStart }: LandingProps) {
   return (
     <section className="screen landing" aria-labelledby="landing-title">
-      <p className="landing__eyebrow">интерьерный тест</p>
+      <p className="landing__eyebrow">{quiz.copy.eyebrow}</p>
       <h1 id="landing-title" className="landing__title">
         {quiz.title}
       </h1>
@@ -40,3 +40,4 @@ export function Landing({ quiz, onStart }: LandingProps) {
     </section>
   )
 }
+

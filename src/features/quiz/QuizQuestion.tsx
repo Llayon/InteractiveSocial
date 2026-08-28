@@ -5,10 +5,50 @@ import { OptimizedImage } from '@/images/OptimizedImage'
 export interface QuizQuestionProps {
   question: Question
   selectedAnswerId?: string
+  /** Feedback-mode lock: no further taps are accepted while set. */
+  locked?: boolean
+  /** When wrong feedback is shown, reveal the actual correct answer. */
+  revealCorrectAnswerId?: string
+  /** Quiz-owned feedback copy. */
+  feedbackCorrectMessage?: string
+  feedbackWrongMessage?: string
   onAnswer: (answer: Answer) => void
 }
 
-export function QuizQuestion({ question, selectedAnswerId, onAnswer }: QuizQuestionProps) {
+/**
+ * Generic question renderer. Layout drives structure (cards / palette /
+ * compact / comparison); `category` is content metadata only and never
+ * selects a component. Feedback state is generic (✓/✕ marks), quiz-agnostic.
+ */
+export function QuizQuestion({
+  question,
+  selectedAnswerId,
+  locked = false,
+  revealCorrectAnswerId,
+  feedbackCorrectMessage,
+  feedbackWrongMessage,
+  onAnswer,
+}: QuizQuestionProps) {
+  const layoutClass =
+    question.layout === 'compact'
+      ? ' answers--compact'
+      : question.layout === 'image-cards'
+        ? ' answers--cards'
+        : question.layout === 'comparison'
+          ? ' answers--comparison'
+          : ''
+
+  const feedbackActive = locked && (selectedAnswerId !== undefined || revealCorrectAnswerId !== undefined)
+
+  const stateFor = (answerId: string): 'correct' | 'wrong' | undefined => {
+    if (!feedbackActive) return undefined
+    if (revealCorrectAnswerId && answerId === revealCorrectAnswerId) return 'correct'
+    if (selectedAnswerId === answerId) {
+      return revealCorrectAnswerId && revealCorrectAnswerId !== answerId ? 'wrong' : 'correct'
+    }
+    return undefined
+  }
+
   return (
     <div className="question" data-testid="quiz-question" data-layout={question.layout}>
       <h2 className="question__title">{question.title}</h2>
@@ -24,7 +64,11 @@ export function QuizQuestion({ question, selectedAnswerId, onAnswer }: QuizQuest
               }
               data-testid="answer-option"
               data-answer-id={answer.id}
-              onClick={() => onAnswer(answer)}
+              disabled={locked}
+              aria-disabled={locked}
+              onClick={() => {
+                if (!locked) onAnswer(answer)
+              }}
             >
               {/*
                 Interior color story: four solid segments at the fixed 40/25/20/15
@@ -50,41 +94,68 @@ export function QuizQuestion({ question, selectedAnswerId, onAnswer }: QuizQuest
           ))}
         </div>
       ) : (
-        <div
-          className={
-            'answers' +
-            (question.layout === 'compact' ? ' answers--compact' : '') +
-            (question.layout === 'image-cards' ? ' answers--cards' : '')
-          }
-        >
-          {question.answers.map((answer, index) => (
-            <button
-              key={answer.id}
-              type="button"
-              className={'answer-card' + (selectedAnswerId === answer.id ? ' is-selected' : '')}
-              data-testid="answer-option"
-              data-answer-id={answer.id}
-              onClick={() => onAnswer(answer)}
-            >
-              {question.layout === 'image-cards' && answer.assetKey && (
-                <span className="answer-card__media" aria-hidden="true" data-asset={answer.assetKey}>
-                  <OptimizedImage
-                    bucket="quiz"
-                    asset={answer.assetKey}
-                    aspectRatio="16/9"
-                    layout="asset"
-                    loading={index === 0 ? 'eager' : 'lazy'}
-                    fetchPriority={index === 0 ? 'high' : 'auto'}
-                    decoding="async"
-                    data-testid="answer-media"
-                    style={{ background: 'transparent' }}
-                  />
-                </span>
-              )}
-              {answer.title && <span className="answer-card__title">{answer.title}</span>}
-            </button>
-          ))}
+        <div className={'answers' + layoutClass}>
+          {question.answers.map((answer, index) => {
+            const state = stateFor(answer.id)
+            return (
+              <button
+                key={answer.id}
+                type="button"
+                className={
+                  'answer-card' +
+                  (selectedAnswerId === answer.id ? ' is-selected' : '') +
+                  (state ? ` is-${state}` : '')
+                }
+                data-testid="answer-option"
+                data-answer-id={answer.id}
+                disabled={locked}
+                aria-disabled={locked}
+                onClick={() => {
+                  if (!locked) onAnswer(answer)
+                }}
+              >
+                {question.layout === 'image-cards' && answer.assetKey && (
+                  <span className="answer-card__media" aria-hidden="true" data-asset={answer.assetKey}>
+                    <OptimizedImage
+                      bucket="quiz"
+                      asset={answer.assetKey}
+                      aspectRatio="16/9"
+                      layout="asset"
+                      loading={index === 0 ? 'eager' : 'lazy'}
+                      fetchPriority={index === 0 ? 'high' : 'auto'}
+                      decoding="async"
+                      data-testid="answer-media"
+                      style={{ background: 'transparent' }}
+                    />
+                  </span>
+                )}
+                {answer.title && <span className="answer-card__title">{answer.title}</span>}
+                {state && (
+                  <span
+                    className="answer-card__mark"
+                    aria-hidden="true"
+                    data-testid={state === 'correct' ? 'answer-mark-correct' : 'answer-mark-wrong'}
+                  >
+                    {state === 'correct' ? '✓' : '✕'}
+                  </span>
+                )}
+              </button>
+            )
+          })}
         </div>
+      )}
+
+      {locked && (
+        <p
+          className="question__feedback"
+          role="status"
+          aria-live="polite"
+          data-testid="answer-feedback"
+        >
+          {revealCorrectAnswerId && selectedAnswerId !== revealCorrectAnswerId
+            ? (feedbackWrongMessage ?? 'Не в этот раз.')
+            : (feedbackCorrectMessage ?? 'Верно!')}
+        </p>
       )}
     </div>
   )

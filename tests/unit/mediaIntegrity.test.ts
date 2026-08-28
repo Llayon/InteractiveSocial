@@ -33,6 +33,20 @@ describe('media integrity: content ↔ runtime manifest', () => {
     }
   })
 
+  it('exact-score cards (score_00..score_NN) exist for correct-count quizzes', () => {
+    for (const quiz of quizzes) {
+      if (quiz.scoring.kind !== 'correct-count') continue
+      const total = quiz.questions.length
+      for (let s = 0; s <= total; s++) {
+        const key = `score_${String(s).padStart(2, '0')}`
+        expect(
+          RUNTIME_IMAGE_MANIFEST.results[key],
+          `${quiz.id} exact-score card "${key}" missing from manifest`,
+        ).toBeTruthy()
+      }
+    }
+  })
+
   it('warns (but does not fail) about stale manifest entries', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const usedQuizKeys = new Set<string>()

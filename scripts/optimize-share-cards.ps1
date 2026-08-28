@@ -26,6 +26,11 @@ $mapping = [ordered]@{
   'scandi-calm.png'   = 'scandi'
 }
 
+# Score-card masters (Music90s) share the SAME 1080x1350 pipeline. They are
+# NOT in the quiz result-id registry; they are addressed by deterministic
+# score_XX keys produced by scripts/generate-score-cards.ps1.
+$scoreSourceDir = Join-Path $refs 'score-cards'
+
 $jpegCodec = [System.Drawing.Imaging.ImageCodecInfo]::GetImageEncoders() |
   Where-Object { $_.MimeType -eq 'image/jpeg' }
 
@@ -75,6 +80,18 @@ foreach ($entry in $mapping.GetEnumerator()) {
     -TargetW 1080 -TargetH 1350 -Quality 74
   Convert-Card -SourcePath $src -DestPath (Join-Path $out "result_$($entry.Value)_thumb.jpg") `
     -TargetW 256 -TargetH 320 -Quality 80
+}
+
+if (Test-Path $scoreSourceDir) {
+  for ($s = 0; $s -le 10; $s++) {
+    $name = 'score_{0:d2}' -f $s
+    $src = Join-Path $scoreSourceDir ($name + '.png')
+    if (-not (Test-Path $src)) { Write-Warning "missing score master: $name.png"; continue }
+    Convert-Card -SourcePath $src -DestPath (Join-Path $out ("$name.jpg")) `
+      -TargetW 1080 -TargetH 1350 -Quality 74
+    Convert-Card -SourcePath $src -DestPath (Join-Path $out ("${name}_thumb.jpg")) `
+      -TargetW 256 -TargetH 320 -Quality 80
+  }
 }
 
 Write-Host 'done.'

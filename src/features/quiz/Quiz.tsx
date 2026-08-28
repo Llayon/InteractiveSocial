@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 
 import { RUNTIME_IMAGE_MANIFEST } from '@/images/manifest'
 import { QuizProgress } from './QuizProgress'
@@ -59,6 +59,13 @@ function RevealOverlay({
 /**
  * Quiz screen. Renders every question purely from quiz config data —
  * no question-specific branching lives here.
+ *
+ * Answer behavior comes from quiz config (`answerBehavior.mode`):
+ *  - instant  → selection advances immediately (interior, unchanged);
+ *  - feedback → a generic UI barrier locks the options, shows ✓/✕ (and the
+ *    correct answer when wrong) for `durationMs`, THEN advances. The reducer
+ *    is untouched: the advance is the same single `answer` action, so the
+ *    tested double-tap guard still applies.
  */
 export function Quiz({
   quiz,
@@ -74,6 +81,67 @@ export function Quiz({
   const question = quiz.questions[Math.min(currentIndex, total - 1)]
   const selectedAnswerId = answers.find((a) => a.questionId === question?.id)?.answerId
 
+  // --- generic feedback barrier (answerBehavior.mode === 'feedback') ---
+  const behavior = quiz.answerBehavior
+  type FeedbackState = { answerId: string; correct: boolean } | null
+  const [feedback, dispatchFeedback] = useReducer(
+    (_state: FeedbackState, action: FeedbackState | { type: 'reset' }) =>
+      action && 'type' in action ? null : action,
+    null,
+  )
+  const feedbackRef = useRef<FeedbackState>(null)
+  feedbackRef.current = feedback
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const onAnswerRef = useRef(onAnswer)
+  useEffect(() => {
+    onAnswerRef.current = onAnswer
+  }, [onAnswer])
+
+  const clearTimer = useCallback(() => {
+    if (timerRef.current !== null) {
+      clearTimeout(timerRef.current)
+      timerRef.current = null
+    }
+  }, [])
+
+  // Timer cleanup on unmount (and never leaks across question/phase changes).
+  useEffect(() => clearTimer, [clearTimer])
+  // Reset feedback state when leaving a question or the active phase. The
+  // derived-value pattern (no setState inside an effect) keeps the state
+  // reset in lock-step with the props that own it.
+  const lastIndexRef = useRef<number>(-1)
+  const lastPhaseRef = useRef<QuizPhase | null>(null)
+  if (lastIndexRef.current !== currentIndex || lastPhaseRef.current !== phase) {
+    lastIndexRef.current = currentIndex
+    lastPhaseRef.current = phase
+    if (feedbackRef.current !== null) {
+      clearTimer()
+      dispatchFeedback(null)
+    }
+  }
+
+  const locked = behavior.mode === 'feedback' && feedback !== null
+
+  const handleAnswer = useCallback(
+    (answer: Answer) => {
+      if (!question) return
+      if (behavior.mode === 'instant') {
+        onAnswer({ questionId: question.id, answerId: answer.id })
+        return
+      }
+      // Locked while feedback is on screen: second taps are ignored.
+      if (timerRef.current !== null) return
+      const correct = question.correctAnswerId === answer.id
+      dispatchFeedback({ answerId: answer.id, correct })
+      const durationMs = behavior.mode === 'feedback' ? behavior.durationMs : 0
+      timerRef.current = setTimeout(() => {
+        timerRef.current = null
+        // Always read the latest callback — no stale closure.
+        onAnswerRef.current({ questionId: question.id, answerId: answer.id })
+      }, durationMs)
+    },
+    [behavior, question, onAnswer],
+  )
   // Controlled prefetch: once the current question paints and the browser is
   // idle, warm the NEXT question's runtime images (low priority; results and
   // share assets are never prefetched). The preload itself is delayed inside
@@ -123,16 +191,22 @@ export function Quiz({
 
   if (!question) return null
 
+  const displayedAnswerId = feedback?.answerId ?? selectedAnswerId
+  const revealCorrectAnswerId =
+    feedback && !feedback.correct ? (question.correctAnswerId ?? undefined) : undefined
+
   return (
     <section className="screen quiz" data-testid="quiz-screen">
       <QuizProgress currentIndex={currentIndex} total={total} />
 
       <QuizQuestion
         question={question}
-        selectedAnswerId={selectedAnswerId}
-        onAnswer={(answer: Answer) =>
-          onAnswer({ questionId: question.id, answerId: answer.id })
-        }
+        selectedAnswerId={displayedAnswerId}
+        locked={locked}
+        revealCorrectAnswerId={revealCorrectAnswerId}
+        feedbackCorrectMessage={behavior.mode === 'feedback' ? behavior.correctMessage : undefined}
+        feedbackWrongMessage={behavior.mode === 'feedback' ? behavior.wrongMessage : undefined}
+        onAnswer={handleAnswer}
       />
 
       <div className="quiz__nav">
@@ -141,7 +215,7 @@ export function Quiz({
           className="button button--ghost"
           data-testid="back-button"
           onClick={onBack}
-          disabled={currentIndex === 0}
+          disabled={currentIndex === 0 || locked}
         >
           Назад
         </button>
@@ -150,7 +224,7 @@ export function Quiz({
           className="button button--secondary"
           data-testid="next-button"
           onClick={onNext}
-          disabled={!selectedAnswerId || currentIndex === total - 1}
+          disabled={!displayedAnswerId || locked || currentIndex === total - 1}
         >
           Далее
         </button>
@@ -158,3 +232,4 @@ export function Quiz({
     </section>
   )
 }
+

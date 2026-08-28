@@ -35,7 +35,9 @@ export interface ShareParamV1 {
 export type ParsedShareParam = ShareParamV2 | ShareParamV1
 
 const V2_RE = /^s2_([a-z0-9]{1,12})_([a-z0-9]{1,12})_(\d{1,15})$/
-const V1_RE = /^share_([a-z]+)(?:[.-](\d{1,15}))?$/
+// Canonical result-id grammar (namespaced ids like m90_rookie are legal);
+// the stricter historical [a-z]+ shape still matches, so legacy links never break.
+const V1_RE = /^share_([a-z][a-z0-9_]{0,63})(?:[.-](\d{1,15}))?$/
 
 /** Builds the current (v2) share startapp parameter carrying attribution. */
 export function buildShareStartParam(

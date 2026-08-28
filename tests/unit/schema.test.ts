@@ -11,6 +11,7 @@ const validQuiz: Quiz = {
   shareCtaIntro: 'Intro',
   shareCta: 'Share',
   restartCta: 'Restart',
+  copy: { eyebrow: 'e', shareHeadline: 'h', deliverOwnLine: 'o' },
   questions: [
     {
       id: 'q1',
@@ -35,33 +36,44 @@ const validQuiz: Quiz = {
     {
       id: 'r1',
       title: 'R1',
-      subtitle: 's',
-      description: ['d'],
-      traits: ['t'],
-      superpower: 'sp',
-      redFlag: 'rf',
-      recommendation: 'rec',
-      shareQuote: 'q',
+      presentation: {
+        kind: 'personality',
+        subtitle: 's',
+        description: ['d'],
+        traits: ['t'],
+        superpower: 'sp',
+        redFlag: 'rf',
+        recommendation: 'rec',
+        shareQuote: 'q',
+      },
       shareImage: 'img_r1',
     },
     {
       id: 'r2',
       title: 'R2',
-      subtitle: 's',
-      description: ['d'],
-      traits: ['t'],
-      superpower: 'sp',
-      redFlag: 'rf',
-      recommendation: 'rec',
-      shareQuote: 'q',
+      presentation: {
+        kind: 'personality',
+        subtitle: 's',
+        description: ['d'],
+        traits: ['t'],
+        superpower: 'sp',
+        redFlag: 'rf',
+        recommendation: 'rec',
+        shareQuote: 'q',
+      },
       shareImage: 'img_r2',
     },
   ],
-  tieBreak: {
-    controlQuestionId: 'q2',
-    primaryOrderQuestionIds: ['q1'],
-    fixedResultOrder: ['r1', 'r2'],
+  scoring: {
+    kind: 'archetype',
+    tieBreak: {
+      controlQuestionId: 'q2',
+      primaryOrderQuestionIds: ['q1'],
+      fixedResultOrder: ['r1', 'r2'],
+    },
   },
+  presentation: { kind: 'personality' },
+  answerBehavior: { mode: 'instant' },
   reveal: { steps: ['X'], stepDurationMs: 100 },
 }
 
@@ -79,8 +91,20 @@ describe('quizSchema', () => {
     const broken = structuredClone(validQuiz)
     broken.questions[0].answers[0].scores = { r1: -1 }
     expect(quizSchema.safeParse(broken).success).toBe(false)
-    delete (broken.questions[0].answers[0] as { scores?: unknown }).scores
+  })
+
+  it('allows an answer without scores (correct-count quizzes)', () => {
+    const quiz = structuredClone(validQuiz)
+    delete (quiz.questions[0].answers[0] as { scores?: unknown }).scores
+    expect(quizSchema.safeParse(quiz).success).toBe(true)
+  })
+
+  it('rejects result ids violating the canonical grammar', () => {
+    const broken = structuredClone(validQuiz)
+    ;(broken.results[0] as { id: string }).id = 'Bad-Id'
     expect(quizSchema.safeParse(broken).success).toBe(false)
+    ;(broken.results[0] as { id: string }).id = 'm90_rookie'
+    expect(quizSchema.safeParse(broken).success).toBe(true)
   })
 })
 
@@ -117,13 +141,15 @@ describe('validateQuizIntegrity / loadQuiz', () => {
 
   it('fails when tie-break references an unknown question', () => {
     const broken = structuredClone(validQuiz)
-    broken.tieBreak.controlQuestionId = 'q99'
+    if (broken.scoring.kind !== 'archetype') throw new Error('fixture must be archetype')
+    broken.scoring.tieBreak.controlQuestionId = 'q99'
     expect(() => loadQuiz(broken)).toThrow(/unknown question "q99"/)
   })
 
   it('fails when fixedResultOrder does not cover all results', () => {
     const broken = structuredClone(validQuiz)
-    broken.tieBreak.fixedResultOrder = ['r1']
+    if (broken.scoring.kind !== 'archetype') throw new Error('fixture must be archetype')
+    broken.scoring.tieBreak.fixedResultOrder = ['r1']
     expect(() => loadQuiz(broken)).toThrow(/must cover all results/)
   })
 })

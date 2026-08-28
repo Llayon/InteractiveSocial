@@ -53,6 +53,32 @@ const SOURCES = [
     bucket: 'results',
     aspect: '4/5',
   })),
+  // Music90s band hero: the shareImage of each music90s result IS one of the
+  // score_XX cards (the lowest score in the band), so the same asset is
+  // already produced. To keep manifest.results lookup working for the
+  // approved result id (m90_rookie, m90_familiar …), we duplicate the
+  // mapping to the canonical band-start score card.
+  ...[
+    ['score_00', 'm90_rookie'],
+    ['score_04', 'm90_familiar'],
+    ['score_06', 'm90_cassette'],
+    ['score_08', 'm90_disco'],
+    ['score_10', 'm90_legend'],
+  ].map(([src, key]) => ({
+    name: key,
+    sourceFile: `score-cards/${src}.png`,
+    bucket: 'results',
+    aspect: '4/5',
+  })),
+  // Music90s exact-score cards: same pipeline, names = score_00..score_10.
+  // Source masters come from assets-source/score-cards/score_XX.png (produced
+  // by scripts/generate-score-cards.ps1).
+  ...Array.from({ length: 11 }, (_, i) => ({
+    name: `score_${String(i).padStart(2, '0')}`,
+    sourceFile: `score-cards/score_${String(i).padStart(2, '0')}.png`,
+    bucket: 'results',
+    aspect: '4/5',
+  })),
 ]
 
 /** Convert an entry + width to a pair of buffers (WebP, JPEG). */

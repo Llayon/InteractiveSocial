@@ -85,19 +85,24 @@ export function resolveQuizFromLaunch(
   return registry.defaultQuiz()
 }
 
-/** Splits `s2_;<quizCode>;<resultCode>_<uid>`; null for non-v2 or malformed. */
+/** Splits `s2_<quizCode>_<resultCode>_<uid>`; null for non-v2 or malformed. */
 function parseV2ShareParam(startParam: string): { quizCode: string; resultCode: string } | null {
   const match = /^s2_([a-z0-9]{1,12})_([a-z0-9]{1,12})_\d{1,15}$/.exec(startParam)
   return match ? { quizCode: match[1], resultCode: match[2] } : null
 }
 
-/** Extracts the result id of a legacy `share_<resultId>-<uid>` payload. */
+/**
+ * Extracts the result id of a legacy `share_<resultId>-<uid>` payload.
+ * Accepts the canonical result-id grammar (namespaced ids like
+ * `m90_rookie` are legal); the stricter historical `[a-z]+` shape still
+ * matches, so no existing link can break.
+ */
 function parseResultIdFromShareParam(startParam: string): string | null {
-  const match = /^share_([a-z]+)(?:-[0-9]+)?$/.exec(startParam)
+  const match = /^share_([a-z][a-z0-9_]{0,63})(?:-[0-9]+)?$/.exec(startParam)
   return match?.[1] ?? null
 }
 
-/** The quiz every fallback resolves to (single active quiz today). */
+/** The quiz every fallback resolves to (default quiz of the registry). */
 export function getDefaultQuiz(): Quiz {
   return activeQuiz
 }

@@ -300,13 +300,23 @@ export const interiorCharacterQuiz: Quiz = {
   shareCtaIntro: 'Узнать, кто твои подруги ↓',
   shareCta: 'Отправить результат подруге',
   restartCta: 'Пройти ещё раз',
+  copy: {
+    eyebrow: 'интерьерный тест',
+    shareHeadline: 'Какой интерьерный характер у тебя? Пройди тест:',
+    deliverOwnLine: 'Это твой интерьерный характер ✨',
+  },
   questions,
   results,
-  tieBreak: {
-    controlQuestionId: 'q8',
-    primaryOrderQuestionIds: ['q1', 'q7', 'q5'],
-    fixedResultOrder: ['quiet', 'paris', 'italian', 'collector', 'cottage', 'scandi'],
+  scoring: {
+    kind: 'archetype',
+    tieBreak: {
+      controlQuestionId: 'q8',
+      primaryOrderQuestionIds: ['q1', 'q7', 'q5'],
+      fixedResultOrder: ['quiet', 'paris', 'italian', 'collector', 'cottage', 'scandi'],
+    },
   },
+  presentation: { kind: 'personality' },
+  answerBehavior: { mode: 'instant' },
   reveal: {
     steps: ['Цвет', 'Материалы', 'Атмосфера', 'Характер'],
     stepDurationMs: 250,

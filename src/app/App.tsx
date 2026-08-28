@@ -4,7 +4,11 @@ import { getAnalytics } from '@/analytics/analytics'
 import { resolveQuizFromLaunch } from '@/content/quizzes/resolveQuiz'
 import { Landing } from '@/features/landing/Landing'
 import { Quiz } from '@/features/quiz/Quiz'
-import { computeBreakdown, resolveResultId } from '@/features/quiz/scoring'
+import {
+  questionAnsweredTelemetry,
+  quizCompleteTelemetry,
+  resolveOutcome,
+} from '@/features/quiz/scoring'
 import {
   idleQuizState,
   quizReducer,
@@ -60,18 +64,18 @@ export function App({ telegram }: AppProps) {
       dispatch({ type: 'answer', questionId: selected.questionId, answerId: selected.answerId })
       telegram?.haptic('light')
 
-      const question = quiz.questions.find((q) => q.id === selected.questionId)
-      const answer = question?.answers.find((a) => a.id === selected.answerId)
+      const position = quiz.questions.findIndex((q) => q.id === selected.questionId)
       const dedupeKey = `${attempt}:${selected.questionId}:${selected.answerId}`
-      if (question && answer && lastTrackedAnswer.current !== dedupeKey) {
+      if (position >= 0 && lastTrackedAnswer.current !== dedupeKey) {
         lastTrackedAnswer.current = dedupeKey
-        const entries = Object.entries(answer.scores).sort((a, b) => b[1] - a[1])
+        // Scoring-aware telemetry: the App NEVER inspects answer weights or
+        // correctness itself — the scoring module owns that knowledge.
+        const payload = questionAnsweredTelemetry(quiz, selected.questionId, selected.answerId, position + 1)
         analytics.track('question_answered', {
           quiz_id: quiz.id,
           question_id: selected.questionId,
           answer_id: selected.answerId,
-          primary_result: entries[0]?.[0] ?? '',
-          secondary_result: entries[1]?.[0] ?? '',
+          ...payload,
         })
       }
     },
@@ -95,26 +99,27 @@ export function App({ telegram }: AppProps) {
     if (revealFinishedRef.current === key) return
     revealFinishedRef.current = key
 
-    const resolution = resolveResultId(quiz, state.answers)
-    const breakdown = computeBreakdown(quiz, state.answers)
+    // Canonical outcome boundary — App completion, result screen, share and
+    // analytics all derive from this single value.
+    const outcome = resolveOutcome(quiz, state.answers)
+    const score = outcome.kind === 'correct-count' ? outcome.correct : undefined
     setScreen(screenForCompletedQuiz())
     window.scrollTo(0, 0)
 
     analytics.trackOnce(`result_view:${attempt}`, 'result_view', {
       quiz_id: quiz.id,
-      result_id: resolution.resultId,
+      result_id: outcome.resultId,
     })
     analytics.trackOnce(`quiz_complete:${attempt}`, 'quiz_complete', {
       quiz_id: quiz.id,
-      result_id: resolution.resultId,
-      total_scores: breakdown.totals,
+      ...quizCompleteTelemetry(quiz, state.answers),
     })
 
     // Fire-and-forget: inside Telegram, ask the backend to send the user
     // their own result card and (if launched via a friend's share link)
     // notify the sharer. Must never block or break the reveal UX.
     if (telegram?.mode === 'telegram' && telegram.getInitDataRaw()) {
-      void deliverCompletedResult(quiz.id, resolution.resultId, telegram.getInitDataRaw())
+      void deliverCompletedResult(quiz.id, outcome.resultId, telegram.getInitDataRaw(), score)
     }
   }, [state.phase, state.answers, analytics, attempt, quiz, telegram])
 
@@ -141,11 +146,11 @@ export function App({ telegram }: AppProps) {
         />
       )
     case 'result': {
-      const resolution = resolveResultId(quiz, state.answers)
+      const outcome = resolveOutcome(quiz, state.answers)
       return (
         <ResultScreen
           quiz={quiz}
-          resultId={resolution.resultId}
+          outcome={outcome}
           telegram={telegram}
           onRestart={handleRestart}
         />

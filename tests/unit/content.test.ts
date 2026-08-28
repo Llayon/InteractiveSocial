@@ -37,7 +37,10 @@ describe('approved content shape', () => {
       'cottage',
       'scandi',
     ])
-    expect(activeQuiz.tieBreak.fixedResultOrder).toEqual([
+    expect(activeQuiz.scoring.kind).toBe('archetype')
+    const tie =
+      activeQuiz.scoring.kind === 'archetype' ? activeQuiz.scoring.tieBreak : null
+    expect(tie?.fixedResultOrder).toEqual([
       'quiet',
       'paris',
       'italian',
@@ -187,13 +190,17 @@ describe('approved copy essentials', () => {
 
   it('renders every result with a full editorial field set', () => {
     for (const result of activeQuiz.results) {
-      expect(result.description.length).toBeGreaterThanOrEqual(3)
-      expect(result.traits).toHaveLength(5)
-      expect(result.superpower.length).toBeGreaterThan(0)
-      expect(result.redFlag.length).toBeGreaterThan(0)
-      expect(result.recommendation.length).toBeGreaterThan(0)
-      expect(result.shareQuote.length).toBeGreaterThan(0)
+      expect(result.presentation.kind).toBe('personality')
+      if (result.presentation.kind !== 'personality') continue
+      expect(result.presentation.description.length).toBeGreaterThanOrEqual(3)
+      expect(result.presentation.traits).toHaveLength(5)
+      expect(result.presentation.superpower.length).toBeGreaterThan(0)
+      expect(result.presentation.redFlag.length).toBeGreaterThan(0)
+      expect(result.presentation.recommendation.length).toBeGreaterThan(0)
+      expect(result.presentation.shareQuote.length).toBeGreaterThan(0)
       expect(result.shareImage).toBe(`result_${result.id}`)
     }
+    expect(activeQuiz.presentation.kind).toBe('personality')
+    expect(activeQuiz.answerBehavior.mode).toBe('instant')
   })
 })
