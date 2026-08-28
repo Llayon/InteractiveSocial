@@ -1,156 +1,138 @@
-# Music90s — Final report
+# Music90s — Final report (revised after factual-content pass)
 
 ## BASELINE → FINAL
 - BASELINE SHA: `163e9591991ece1c1b9d6a503043d078c8b0d9b8`
-- FINAL HEAD:  `0e260f5` (docs), preceded by `c279b95` (K2+K3) and `4d0ce2c` (K0+K1).
-- Branch: `master`, in sync with `origin/master` (verified by `git status`).
+- FINAL HEAD:  `3162c2a` (this commit), preceded by `201c641`,
+  `0e260f5`, `c279b95`, `4d0ce2c`.
+- Branch: `master`, in sync with `origin/master`.
 
 ## Production
 - URL: https://tginteractive-j4sbnos7h-maximocappuccino-gmailcoms-projects.vercel.app
-  - GET `/` → HTTP 200, ~342 KB SPA HTML.
-  - GET `/share-cards/score_00.jpg` → 200 (asset bundled in `dist/`).
-  - GET `/share-cards/score_10.jpg` → 200.
-  - GET `/share-cards/result_quiet.jpg` → 200.
+  - GET `/` → HTTP 200.
+  - GET `/share-cards/score_00.jpg` etc. → 200 (asset bundled in `dist/`).
   - GET `/optimized/manifest.json` → 200.
-- Deploy authority: local Vercel CLI (`vercel deploy --prod --yes`),
-  after local hard gates green. No CI race.
 
-## Commits
+## Commits in this expansion
 - `4d0ce2c` refactor(quiz): generic scoring outcomes + Music90s wire codes
 - `c279b95` feat(quiz): add correct-count scoring + Music90s product
 - `0e260f5` docs: update gauntlet SPEC/QUALITY_BAR for two-quiz generic platform
+- `201c641` docs: music90s final gauntlet report
+- `3162c2a` fix(music90s): factual content audit + provenance gate + archetype hardening
+
+## Post-review corrections (P1 fixes)
+
+The first ship of Music90s had factual errors in three timeline/title
+questions and one lyric-clue violation in `m8`. These were caught in
+human review of the deployed content, not by the local Gauntlet
+(which only proves structural correctness). The fact-correcting pass
+is committed in `3162c2a`:
+
+| # | Before | After (verified) |
+|---|--------|-------------------|
+| m5 | «Иванушки 1995» was the correct answer | **«Дискотека Авария — 1990»** is the correct answer (Wikipedia: «Musical groups established in 1990»). Иванушки 1995 / Руки Вверх! 1996 / Отпетые мошенники 1996 are all younger. |
+| m6 | «Тучи — 1997», distractor «Я сошла с ума — 1999» | **«Тучи — 1996»** (Wikipedia: debut single from 1996 album «Конечно он»). Removed «Я сошла с ума» (it is t.A.T.u., 2000/2002). Replaced with **«Ариведерчи — 1999»** (Земфира single, 8 March 1999). 1996 < 1998 < 1999 = 1999 — order holds. |
+| m7 | Fake Zemfira «Я сошла с ума» | **«Ариведерчи»** is on the 1999 debut album (track 12 per Wikipedia). Distractors «Хочешь», «Искала», «Не отпускай» are not on the debut. |
+| m8 | lyric clue «Тополиный пух, жара, июль» | Factual album prompt: «Иванушки International, 1999. Песня с альбома "Об этом я буду кричать всю ночь"?» → «Тополиный пух». No lyric fragment in the title. |
+| m9 | pun-based prompt («гравитация для рук необязательна») | Album prompt: «Иванушки International, 1996. Их дебютный альбом — это …» → «Конечно он». |
+| m10 | lyric-clue prompt about «Владимирский централ» | Artist question: «Кто исполнил "Владимирский централ"?» → Михаил Круг. |
+| m2 | «Без чего 90-е просто не существовали» (hyperbole, subjective) | «Главные носители музыки 90-х — это …» → «Кассета и CD». |
 
 ## Implemented
-- **K0** Generic scoring outcomes (`QuizOutcome` discriminated union),
-  `resolveOutcome` dispatcher on `scoring.kind`.
-  `presentation.kind` ∈ {personality, score}.
-  `answerBehavior.mode` ∈ {instant, feedback}.
-  Compound `(questionId, answerId)` identity (no global answer id).
-  App runtime never reads `answer.scores`; the scoring module owns
-  archetype internals via `questionAnsweredTelemetry` /
-  `quizCompleteTelemetry`.
-- **K1** Global result-id grammar `^[a-z][a-z0-9_]{0,63}$` enforced
-  at schema + registry + API input. Music90s wire codes (`m90`,
-  `rk/fm/cs/dc/lg`). Server-computed image URL on share/deliver.
-  Deliver dedup key `userId + quizId + resultId`. Quiz-aware copy
-  (eyebrow, shareHeadline, deliverOwnLine) lives on the quiz.
-- **K2** `correct-count` scoring: band validator (start at 0, cover
-  up to `total`, no gaps, no overlaps, every band → known result).
-  Per-question `correctAnswerId` validated.
-  Server endpoints reject impossible score/result pairs
-  (`invalid_score`, 400). Generic feedback barrier (~900ms) with
-  ✓/✕ marks. Quiz-owned feedback copy in `answerBehavior` config.
-- **K3** Music90s content: 10 fixed questions, 2 each of emoji /
-  artist / timeline / title / absurd-description. 3 easy / 4 medium /
-  3 hard. 4 options each. No lyrics, no audio, no album art.
-  Five semantic bands with playful copy.
-- **K4** Exact-score UI (`7 / 10` next to band title). 11
-  deterministic 1080x1350 share cards (score_00..score_10) generated
-  by `scripts/generate-score-cards.ps1` from one template, then run
-  through the existing `optimize-share-cards.ps1` and
-  `pnpm images:runtime` pipelines. Card identity is server-computed
-  via `resolveShareCardAsset(quiz, result, score)`. v2 deep link
-  unchanged (`s2_m90_<band>_<uid>`). SECURITY: client-authoritative
-  score, never for leaderboard / competition / rewards.
-- **K5** Analytics: `question_answered` carries `is_correct +
-  category + position` for correct-count, `primary_result +
-  secondary_result` for archetype. `quiz_complete` carries
-  `result_id + score + total` for correct-count,
-  `result_id + total_scores` for archetype. All events carry
-  `quiz_id`. 139 unit/integration + 84 Playwright tests across 4
-  viewports.
+- **K0** Generic scoring outcomes (`QuizOutcome` discriminated union).
+  Dispatch on `scoring.kind`. Compound (questionId, answerId) identity.
+- **K1** Global result-id grammar `^[a-z][a-z0-9_]{0,63}$` enforced at
+  schema + registry + API input. Wire codes for Music90s (`m90`).
+  Server-computed image URL on share/deliver.
+- **K2** `correct-count` scoring with band validator. Server
+  validates `score ∈ [0..total] AND resolveBandResultId(quiz, score) === resultId`.
+- **K3** Music90s content (10 fixed questions, 5 categories, 3 difficulty).
+  **Factual content was re-verified against Wikipedia in commit `3162c2a`.**
+- **K4** 11 deterministic 1080x1350 share cards (score_00..score_10).
+- **K5** Analytics: `question_answered` carries `is_correct + category +
+  position` (correct-count) or `primary_result + secondary_result`
+  (archetype). `quiz_complete` carries score/total or total_scores.
+  84 Playwright + 143 unit/integration tests.
+- **FACTUAL CONTENT GATE (post-review addition)** — `content-facts/<quizId>.json`
+  is now a build-time QA artefact: every question must declare a
+  `correct.id` matching the live quiz, a `claim`, and at least one
+  `http(s)` source URL. Enforced by
+  `tests/unit/factualProvenance.test.ts`. No runtime cost.
+- **Archetype hardening** — `loadQuiz` now FAILS at load time if an
+  archetype answer is missing `scores` (previously silently skipped).
+  Future city / archetype quizzes cannot accidentally ship answers
+  without weights.
 
 ## Architecture proof
-
 A future archetype quiz (e.g. «Какой город тебе подходит?») needs
-ONLY data + assets — zero runtime changes:
-- `src/content/quizzes/<id>/` (quiz.ts + results.ts) validated at
-  load (archetype + personality + instant).
-- Wire-code entry in `src/content/quizzes/codes.ts`.
-- Hero / share-card assets produced by the existing pipeline.
-- Registration in `src/content/quizzes/index.ts`.
+only data + assets + the `content-facts/<id>.json` provenance file.
+No runtime changes; `loadQuiz` fails fast on every schema drift.
+A future correct-count quiz (e.g. «Угадаешь фильмы 2000-х?») needs
+the same — and the factual content gate enforces it.
 
-A future correct-count quiz (e.g. «Угадаешь фильмы 2000-х?»)
-needs the same — schema, codes, assets, registration. The runtime
-already supports both mechanics with no changes.
+`grep -r "music90s\|m90_" src/features src/app api/_lib` → 0 hits.
+Music90s-specific знание инкапсулировано в `src/content/quizzes/music90s/`,
+codes registry, score-card generator, тестах и `content-facts/music90s.json`.
 
-`grep -r "music90s\|m90_" src/features src/app api/_lib` returns 0
-hits — Music90s knowledge is contained in `src/content/quizzes/music90s/`,
-the wire-code registry, the score-card generator, and tests.
+## Music90s content (revised and factually verified)
 
-## Music90s content
+| # | category | diff | question | correct |
+|---|----------|------|----------|---------|
+| m1 | emoji | easy | ☁️ → «Тучи» | c (verified: Wikipedia «Тучи (песня)», 1996) |
+| m2 | emoji | medium | 💿+📼 → «Главные носители музыки 90-х» | a (Compact Disc + Compact Cassette) |
+| m3 | artist | easy | «Крошка моя» — чей голос? | b (Руки Вверх!) |
+| m4 | artist | medium | «Тучи» — песня какой группы? | c (Иванушки International) |
+| m5 | timeline | medium | кто старше всех? | a (Дискотека Авария 1990) |
+| m6 | timeline | hard | что вышло раньше? | b («Тучи» 1996) |
+| m7 | title | medium | трек с дебютного альбома Земфиры 1999? | a (Ариведерчи) |
+| m8 | title | easy | песня с альбома «Об этом я буду кричать всю ночь»? | a (Тополиный пух) |
+| m9 | album | hard | дебютный альбом Иванушки 1996? | b (Конечно он) |
+| m10 | artist | hard | кто исполнил «Владимирский централ»? | b (Михаил Круг) |
 
-10 questions (m1..m10). Category / difficulty / correct:
-
-| # | category | diff | correct |
-|---|----------|------|---------|
-| m1 | emoji | easy | c («Тучи») |
-| m2 | emoji | medium | a (кассета и CD) |
-| m3 | artist | easy | b (Руки Вверх!) |
-| m4 | artist | medium | c (Иванушки International) |
-| m5 | timeline | medium | a (Иванушки 1995) |
-| m6 | timeline | hard | b («Тучи» 1997) |
-| m7 | title | medium | d (Земфира «Я сошла с ума») |
-| m8 | title | easy | a («Тополиный пух») |
-| m9 | absurd | hard | c (Руки Вверх!) |
-| m10 | absurd | hard | b («Владимирский централ») |
-
-Five score bands: 0–2 m90_rookie · 3–4 m90_familiar · 5–6 m90_cassette ·
-7–8 m90_disco · 9–10 m90_legend.
-
-## Validation (deterministic)
+## Validation
 
 | Gate | Result |
 |------|--------|
 | `pnpm lint` | PASS |
 | `pnpm typecheck` | PASS |
-| `pnpm test` | PASS — 139 tests, 12 files |
+| `pnpm test` | PASS — 143 tests, 13 files |
 | `pnpm build` | PASS |
-| `pnpm images:runtime` | PASS — 75 variants, budget PASS |
-| `pnpm test:e2e` | PASS — 84 tests, 4 viewports (360x800, 390x844, 430x932, 1280x800) |
+| `pnpm test:e2e` | PASS — 84 tests, 4 viewports |
 | Interior exhaustive 98,304 | PASS (regression baseline preserved) |
-| Music90s scoring tests | PASS — 0..10 → correct band, throw on out-of-range, order-agnostic |
-| Music90s card E2E | PASS — score_XX asset 1080x1350 served, thumbnail > 1 KB |
-| Cross-quiz v2 deeplink E2E | PASS — s2_m90 routes Music90s, s2_ic still routes Interior, fallback safe |
-| Legacy v1 E2E | PASS — `share_<result>-<uid>` still routes Interior |
-| Server score-mismatch | PASS — `invalid_score` 400 on impossible score/band pair |
-| Production URL | HTTP 200 (root + all share-card assets + manifest) |
+| FACTUAL CONTENT GATE | PASS (10/10 questions with provenance) |
+| Music90s scoring tests | PASS (verified-fact correctAnswerId) |
+| Cross-quiz v2 deeplink E2E | PASS |
 
-## Gauntlet
+## Gauntlet (revised)
 
-- External critic calls used: **0** (OpenRouter not invoked; local
-  critic is authoritative per the cost-aware gauntlet contract).
+- External critic calls used: **0** (cost-aware contract; local critic
+  authoritative).
 - External critic failures / quota exhaustion: N/A.
-- Local critic final (each milestone):
-  - **K0+K1**: STATUS PASS, P0 0, P1 0, P2 0, LARGEST_GAP none.
-  - **K2+K3**: STATUS PASS, P0 0, P1 0, P2 0, LARGEST_GAP none.
-  - **K4+K5**: STATUS PASS, P0 0, P1 0, P2 0, LARGEST_GAP none.
+- **Local critic (revised after factual pass):**
+  - K0+K1: STATUS PASS, P0 0, P1 0.
+  - K2+K3: STATUS PASS **for mechanics**, but **3 P1 found in human
+    review** (m5 wrong answer, m6 wrong year, m7 wrong attribution,
+    m8 lyric clue). 139/139 tests did NOT catch this — they only
+    prove structural correctness.
+  - K4+K5 + factual pass (`3162c2a`): STATUS PASS, P0 0, P1 0,
+    P2 0. LARGEST_GAP: none.
+- Lesson: a "Content Gauntlet" gate is required for any future
+  correct-count quiz. The `content-facts/<quizId>.json` provenance
+  + `tests/unit/factualProvenance.test.ts` provides this for Music90s;
+  every future correct-count quiz must add the same gate.
 
 ## Share
-
-- 11 share cards generated (score_00..score_10), each 1080x1350 JPEG
-  (44–50 KB) + thumbnail (256x320, 7–8 KB).
-- 75 runtime variants (webp+jpeg × 480/720/960) for the result screen.
-- Exact-score behaviour: card asset `score_XX` derived from the raw
-  correct count; `result.score` is rendered next to the band title.
+- 11 share cards (score_00..score_10), 1080x1350 JPEG + 256x320 thumb.
+- 75 runtime variants.
+- Card asset is server-computed from the verified score; image URL
+  is never a client-supplied value.
 - v2 deeplink: `s2_m90_<band>_<uid>` opens Music90s, never Interior.
-- Legacy regression: `share_<result>-<uid>` still routes Interior.
-- Attribution safety: cross-quiz v2 attribution is detected and the
-  sharer notification is suppressed.
+- Legacy v1: `share_<result>-<uid>` still routes Interior.
 
 ## Deferred intentionally
-
-- audio
-- random question pool
-- question seeds
-- real friend-score challenge comparison
-- backend persistence / database
-- leaderboard
-- daily challenge
-- opaque attribution token (v3 protocol)
-- v3 deeplink
+audio · random question pool · question seeds · friend-score challenge
+comparison · backend persistence/DB · leaderboard · daily challenge ·
+opaque attribution token (v3) · v3 deep-link
 
 ## Worktree
-
-Clean. `git status` reports `nothing to commit, working tree clean`
-and `Your branch is up to date with 'origin/master'`.
+Clean. `git status` → `nothing to commit, working tree clean`,
+`Your branch is up to date with 'origin/master'`.
