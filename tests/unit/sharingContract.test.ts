@@ -111,7 +111,8 @@ describe('shareResult: native share outcome contract', () => {
   })
 
   it('Music90s: prepare builds a score photo result, native success', async () => {
-    const m90 = music90sQuiz.results[0]
+    // score 7 now maps to m90_cassette (7–9) under the 14-question bands
+    const m90 = music90sQuiz.results.find((r) => r.id === 'm90_cassette')!
     const fakeFetch = vi.fn<(input: RequestInfo, init?: RequestInit) => Promise<Response>>(async () =>
       new Response(JSON.stringify({ ok: true, id: 'prepared_music_07' }), {
         status: 200,
@@ -144,7 +145,7 @@ describe('shareResult: native share outcome contract', () => {
     const sentBody = JSON.parse((fakeFetch.mock.calls[0]?.[1] as unknown as { body?: string } | undefined)?.body ?? '')
     expect(sentBody).toMatchObject({
       quizId: 'music90s',
-      resultId: 'm90_rookie',
+      resultId: 'm90_cassette',
       score: 7,
     })
   })
@@ -258,13 +259,13 @@ describe('prepareShareMessage body contract', () => {
         return new Response(JSON.stringify({ ok: true, id: 'p' }), { status: 200 })
       }),
     )
-    const r = await prepareShareMessage('music90s', 'm90_disco', 'init', 8)
+    const r = await prepareShareMessage('music90s', 'm90_disco', 'init', 11)
     expect(r.ok).toBe(true)
     const body = JSON.parse(captured[0]!.init.body as string)
     expect(body).toEqual({
       quizId: 'music90s',
       resultId: 'm90_disco',
-      score: 8,
+      score: 11,
       initDataRaw: 'init',
     })
   })
