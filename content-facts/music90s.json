@@ -1,135 +1,224 @@
 {
   "quiz_id": "music90s",
   "date_convention": "First commercial release of the recording (single or first album track); year of original studio recording.",
-  "verified_on": "2026-08-28",
+  "verified_on": "2026-08-31",
   "questions": {
     "m1": {
       "category": "emoji",
       "difficulty": "easy",
-      "claim": "«Тучи» is a 1996 hit by Иванушки International",
+      "claim": "«Крошка моя» is a 1998 hit by Руки Вверх! (album «Сделай погромче!»)",
       "correct": {
-        "id": "c",
-        "label": "«Тучи»",
-        "sources": ["https://ru.wikipedia.org/wiki/Тучи_(песня)"],
-        "verified_fact": "«Тучи» is the debut single of Иванушки International from the 1996 album «Конечно он».",
-        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-08-28" }
+        "id": "a",
+        "label": "Крошка моя",
+        "sources": [
+          "https://ru.wikipedia.org/wiki/Руки_Вверх!",
+          "https://rukivverh.ru/biography/",
+          "https://soundtimes.ru/populyarnye-pesni-4/ruki-vverkh-kroshka-moya"
+        ],
+        "verified_fact": "«Крошка моя» is a 1998 single by Руки Вверх! from the album «Сделай погромче!» — the band's first Golden Gramophone for this song.",
+        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-08-31" }
       }
     },
     "m2": {
-      "category": "emoji",
+      "category": "artist-history",
       "difficulty": "medium",
-      "claim": "The dominant consumer media formats of the 1990s in Russia were cassette and CD",
-      "correct": {
-        "id": "a",
-        "label": "Кассета и CD",
-        "sources": [
-          "https://en.wikipedia.org/wiki/Compact_disc",
-          "https://en.wikipedia.org/wiki/Compact_Cassette"
-        ],
-        "verified_fact": "Audio cassettes and CDs were the two dominant consumer media of the 1990s.",
-        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-08-28" }
-      },
-      "note": "Reworded to a factually checkable claim (no hyperbole)."
-    },
-    "m3": {
-      "category": "artist",
-      "difficulty": "easy",
-      "claim": "«Крошка моя» is a Руки Вверх! hit",
+      "claim": "Богдан Титомир was a co-founder and vocalist of Кар-Мэн (1989–1991); the other listed artists were not members",
       "correct": {
         "id": "b",
-        "label": "Руки Вверх!",
-        "sources": ["https://en.wikipedia.org/wiki/Ruki_Vverh"],
-        "verified_fact": "«Крошка моя» is one of the signature 1990s hits of Руки Вверх! (duo active 1996–2006, 2008–present per Wikipedia).",
-        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-08-28" }
+        "label": "Богдан Титомир",
+        "sources": [
+          "https://ru.wikipedia.org/wiki/Кар-мэн",
+          "https://ru.wikipedia.org/wiki/Титомир,_Богдан_Петрович"
+        ],
+        "verified_fact": "Кар-Мэн was founded in 1989 by Сергей Лемох and Богдан Титомир; Титомир was vocalist/texts/dance 1989–1991. Андрей Губин, Шура and Кай Метов were never members.",
+        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-08-31" }
+      }
+    },
+    "m3": {
+      "category": "artist-history",
+      "difficulty": "easy",
+      "claim": "Алёна Апина was a vocalist of Комбинация (1988–1991) before solo career",
+      "correct": {
+        "id": "b",
+        "label": "Алёна Апина",
+        "sources": [
+          "https://ru.wikipedia.org/wiki/Алёна_Апина",
+          "https://ru.wikipedia.org/wiki/Комбинация_(группа)"
+        ],
+        "verified_fact": "Алёна Апина (Елена Лёвочкина) was vocalist of Комбинация 1988–1991; Лада Дэнс, Татьяна Овсиенко and Наталья Ветлицкая were not members in that period.",
+        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-08-31" }
       }
     },
     "m4": {
-      "category": "artist",
+      "category": "music-history",
       "difficulty": "medium",
-      "claim": "«Тучи» is an Иванушки International hit",
+      "claim": "Russia at Eurovision 1997 in Dublin was represented by Алла Пугачёва with «Примадонна»",
       "correct": {
         "id": "c",
-        "label": "Иванушки International",
-        "sources": ["https://ru.wikipedia.org/wiki/Тучи_(песня)"],
-        "verified_fact": "«Тучи» is an Иванушки International song.",
-        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-08-28" }
+        "label": "Алла Пугачёва",
+        "sources": [
+          "https://eurovisionworld.com/eurovision/1997/russia",
+          "https://ru.wikipedia.org/wiki/Россия_на_«Евровидении-1997»",
+          "https://en.wikipedia.org/wiki/Russia_in_the_Eurovision_Song_Contest_1997"
+        ],
+        "verified_fact": "In 1997 Russia was represented by Алла Пугачёва with «Примадонна» (15th place, 33 points). Филипп Киркоров represented Russia in 1995, not 1997; Валерий Меладзе was originally slated for «Примадонна» but fell ill; Алсу debuted in 2000.",
+        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-08-31" }
       }
     },
     "m5": {
       "category": "timeline",
       "difficulty": "medium",
-      "claim": "Дискотека Авария is the oldest of the four acts (founded 1990)",
+      "claim": "«Я сошла с ума» was released 19 December 2000 — not a 90s hit — while the other three listed tracks are 90s releases",
       "correct": {
-        "id": "a",
-        "label": "Дискотека Авария — 1990",
-        "sources": ["https://en.wikipedia.org/wiki/Diskoteka_Avariya"],
-        "verified_fact": "Дискотека Авария has been active since 1990 per Wikipedia (Category: Musical groups established in 1990). Older than Иванушки International (1995), Руки Вверх! (1996) and Отпетые мошенники (1996).",
-        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-08-28" }
+        "id": "d",
+        "label": "«Я сошла с ума»",
+        "sources": [
+          "https://ru.wikipedia.org/wiki/Я_сошла_с_ума",
+          "https://ru.wikipedia.org/wiki/Сэра_(песня)",
+          "https://ru.wikipedia.org/wiki/Ветер_с_моря_дул"
+        ],
+        "verified_fact": "«Я сошла с ума» by t.A.T.u. was recorded early 2000 and released 19 Dec 2000 (single / 200 по встречной). «Сэра» (Валерий Меладзе, 1994), «Ветер с моря дул» (Натали, 1998) and «Мальчик хочет в Тамбов» (Сергей Чумаков, 1994) are 90s releases.",
+        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-08-31" }
       }
     },
     "m6": {
-      "category": "timeline",
-      "difficulty": "hard",
-      "claim": "«Тучи» is the earliest of the four tracks (released 1996 on the debut album «Конечно он»)",
+      "category": "mismatch",
+      "difficulty": "medium",
+      "claim": "Pair «Натали — Мальчик хочет в Тамбов» is mismatched; correct performer is Сергей Чумаков; other pairs are correct",
       "correct": {
-        "id": "b",
-        "label": "«Тучи» — 1996",
+        "id": "c",
+        "label": "Натали — «Мальчик хочет в Тамбов»",
         "sources": [
-          "https://ru.wikipedia.org/wiki/Тучи_(песня)",
-          "https://en.wikipedia.org/wiki/Ivanushki_International"
+          "https://ru.wikipedia.org/wiki/Чумаков,_Сергей_Сергеевич",
+          "https://ru.wikipedia.org/wiki/Натали_(певица)",
+          "https://ru.wikipedia.org/wiki/Ворона_(песня_Линды)"
         ],
-        "verified_fact": "«Тучи» released 1996 (debut album «Конечно он»). «Владимирский централ» is from Михаил Круг's 1998 album cycle. «Тополиный пух» is on Иванушки's 1999 album «Об этом я буду кричать всю ночь». «Ариведерчи» is the Земфира single from her 1999 debut album (released 8 March 1999).",
-        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-08-28" }
+        "verified_fact": "«Мальчик хочет в Тамбов» (1994) is a hit by Сергей Чумаков, not Натали. Correct pairs: Линда — «Ворона» (1996), Андрей Губин — «Мальчик-бродяга» (1994), Технология — «Нажми на кнопку» (1991).",
+        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-08-31" }
       }
     },
     "m7": {
-      "category": "title",
-      "difficulty": "medium",
-      "claim": "«Ариведерчи» is on Земфира's 1999 debut album; the other three tracks are not",
+      "category": "music-history",
+      "difficulty": "easy",
+      "claim": "MTV Россия began broadcasting in Russia on 25 September 1998",
       "correct": {
-        "id": "a",
-        "label": "Ариведерчи",
-        "sources": ["https://en.wikipedia.org/wiki/Zemfira_(album)"],
-        "verified_fact": "«Ариведерчи» is track 12 on the 1999 debut album «Земфира». The other three titles are not on the debut tracklist.",
-        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-08-28" }
+        "id": "b",
+        "label": "MTV Россия",
+        "sources": [
+          "https://ru.wikipedia.org/wiki/MTV_Россия",
+          "https://en.wikipedia.org/wiki/MTV_Russia"
+        ],
+        "verified_fact": "MTV Россия launched 25 Sep 1998. МУЗ-ТВ launched 1996, RU.TV 2006, Music Box Russia 2004 — not 1998.",
+        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-08-31" }
       }
     },
     "m8": {
-      "category": "title",
+      "category": "era-tech",
       "difficulty": "easy",
-      "claim": "«Тополиный пух» is on the 1999 Иванушки album «Об этом я буду кричать всю ночь»",
+      "claim": "C90 compact cassette designation means 90 minutes total recording time (45 per side)",
       "correct": {
-        "id": "a",
-        "label": "Тополиный пух",
-        "sources": ["https://en.wikipedia.org/wiki/Ivanushki_International"],
-        "verified_fact": "«Тополиный пух» appears on the 1999 Иванушки International album «Об этом я буду кричать всю ночь». Distractors «Колечко» and «Тучи» are from the 1996 debut; «Кукла» is from the 1997 remixed album.",
-        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-08-28" }
-      },
-      "note": "Replaced a lyric-clue prompt with a factual album prompt."
+        "id": "b",
+        "label": "90 минут записи суммарно",
+        "sources": [
+          "https://en.wikipedia.org/wiki/Compact_Cassette",
+          "https://ru.wikipedia.org/wiki/Компакт-кассета"
+        ],
+        "verified_fact": "C90 = 90 minutes total (2×45). Not 90 songs, not 90 per side (that would be C180), not 90 kbit/s.",
+        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-08-31" }
+      }
     },
     "m9": {
-      "category": "album",
-      "difficulty": "hard",
-      "claim": "«Конечно он» is the debut album of Иванушки International (1996)",
+      "category": "artist",
+      "difficulty": "easy",
+      "claim": "Mr. Credo is a solo stage name (Alexander Makhonin), while Hi-Fi, Демо and Вирус! are groups",
       "correct": {
-        "id": "b",
-        "label": "Конечно он",
-        "sources": ["https://en.wikipedia.org/wiki/Ivanushki_International"],
-        "verified_fact": "«Конечно он» is the 1996 debut studio album. «Твои письма» (1997) and «Подожди меня…» (2000) are second and fourth studio albums. «10 лет во вселенной» (2005) is a compilation.",
-        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-08-28" }
-      },
-      "note": "Replaced the pun-based prompt with a verifiable album-name prompt."
+        "id": "c",
+        "label": "Mr. Credo",
+        "sources": [
+          "https://ru.wikipedia.org/wiki/Mr._Credo",
+          "https://ru.wikipedia.org/wiki/Hi-Fi_(группа)",
+          "https://ru.wikipedia.org/wiki/Демо_(группа)"
+        ],
+        "verified_fact": "Mr. Credo (Александр Махонин, b. 1972) is a solo artist active since 1993. Hi-Fi (1998), Демо (1999) and Вирус! (1999) are groups.",
+        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-08-31" }
+      }
     },
     "m10": {
-      "category": "artist",
-      "difficulty": "hard",
-      "claim": "«Владимирский централ» is a 1998 Михаил Круг chanson hit",
+      "category": "producer",
+      "difficulty": "medium",
+      "claim": "Максим Фадеев was the composer/producer behind Линда's main 90s hits period (mid-90s)",
       "correct": {
         "id": "b",
-        "label": "Михаил Круг",
-        "sources": ["https://en.wikipedia.org/wiki/Mikhail_Krug"],
-        "verified_fact": "«Владимирский централ» is a signature song of Russian chanson singer Михаил Круг (Wikipedia: «Жиган-Лимон» 1994, «Владимирский централ» 1998).",
-        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-08-28" }
+        "label": "Максим Фадеев",
+        "sources": [
+          "https://ru.wikipedia.org/wiki/Линда_(певица)",
+          "https://ru.wikipedia.org/wiki/Фадеев,_Максим_Александрович"
+        ],
+        "verified_fact": "Максим Фадеев collaborated with Линда (Светлана Гейман) from 1993, composing/producing her breakthrough hits «Ворона» (1996) etc. Игорь Матвиенко, Бари Алибасов and Юрий Айзеншпис did not produce Linda's main 90s repertoire.",
+        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-08-31" }
+      }
+    },
+    "m11": {
+      "category": "producer",
+      "difficulty": "easy",
+      "claim": "Группа На-На was created and produced by Бари Алибасов (1989)",
+      "correct": {
+        "id": "a",
+        "label": "На-На",
+        "sources": [
+          "https://ru.wikipedia.org/wiki/На-На",
+          "https://ru.wikipedia.org/wiki/Алибасов,_Бари_Каримович"
+        ],
+        "verified_fact": "На-На was formed in Moscow in 1989 by Бари Алибасов. Отпетые мошенники (Гарик Богомазов etc.), Премьер-министр and Иванушки International were created by other producers.",
+        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-08-31" }
+      }
+    },
+    "m12": {
+      "category": "absurd-description",
+      "difficulty": "medium",
+      "claim": "Absurd POV description (+30 July heat, visually December) matches Иванушки International — «Тополиный пух» (1999) — editorial parody, not lyric excerpt",
+      "correct": {
+        "id": "b",
+        "label": "Тополиный пух",
+        "sources": [
+          "https://ru.wikipedia.org/wiki/Иванушки_International",
+          "https://en.wikipedia.org/wiki/Ivanushki_International"
+        ],
+        "verified_fact": "«Тополиный пух» (1999) is Иванушки International summer hit; title refers to poplar fluff in July heat — the POV description is an original parody, not a lyric. Other options: «Тучи» (1996), «Кукла» (1997), «Снегири» — not matching the description.",
+        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-08-31" }
+      }
+    },
+    "m13": {
+      "category": "timeline",
+      "difficulty": "medium",
+      "claim": "Влад Сташевский, Шура and Андрей Губин are relevant 90s pop artists, while Дима Билан as a widely known performer belongs to the next period (debut early 2000s)",
+      "correct": {
+        "id": "d",
+        "label": "Дима Билан",
+        "sources": [
+          "https://ru.wikipedia.org/wiki/Сташевский,_Влад",
+          "https://ru.wikipedia.org/wiki/Шура_(певец)",
+          "https://ru.wikipedia.org/wiki/Губин,_Андрей_Викторович",
+          "https://ru.wikipedia.org/wiki/Билан,_Дима_Николаевич"
+        ],
+        "verified_fact": "Влад Сташевский (debut 1993), Шура (hit 1997), Андрей Губин (hit 1994) are 90s breakout artists. Дима Билан's first wide recognition is 2002–2003 (debut album 2003, before that not a chart star) — clearly next period.",
+        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-08-31" }
+      }
+    },
+    "m14": {
+      "category": "music-video",
+      "difficulty": "hard",
+      "claim": "Clip Лика Стар — «Одинокая луна» (dir. Илья Смолин, 7–8 Oct 1996) features Фёдор Бондарчук and Сергей «Паук» Троицкий as kidnappers; Moscow bohemia night, kidnapping plot, and surreal reveal",
+      "correct": {
+        "id": "b",
+        "label": "Лика Стар — «Одинокая луна»",
+        "sources": [
+          "https://ru.wikipedia.org/wiki/Лика_Стар",
+          "https://teletype.in/@clipomania/ZgbsiYnB_2y7BwAH",
+          "https://rusradio.ru/persons/2143-lika-star"
+        ],
+        "verified_fact": "Wikipedia (citing sources [33][38][91]) states the 1996 clip 'Одинокая луна' (director Илья Смолин, operator Владислав Опельянц, filmed 7–8 Oct 1996) featured Фёдор Бондарчук, Гоша Куценко, Мария Цигаль and leader of Коррозия Металла 'Паук' (Сергей Троицкий). Teletype clipomania analysis details the plot: Moscow bohemia party all night, Лика is kidnapped by two stylish bandits (Bondarchuk & Pauk) and driven in a limousine for ransom — with subsequent surreal/vampire subtext. Other listed clips (Линда — Ворона, 1996; Ветлицкая — Посмотри в глаза, 1995; Мумий Тролль — Владивосток 2000, 1997) do not match this cast/plot.",
+        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-08-31" }
       }
     }
   }

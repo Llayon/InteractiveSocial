@@ -2,24 +2,12 @@ import { results } from './results.js'
 import type { Question, Quiz } from '../../../features/quiz/schema.js'
 
 /**
- * Music90s content — the second production quiz.
- * 10 FIXED questions: 2 emoji / 2 artist / 2 timeline / 2 title /
- * 2 absurd-description; difficulty 3 easy / 4 medium / 3 hard.
- *
- * Content safety: song titles, artist names and release years only.
+ * Music90s content — 14 FIXED questions: factual gate covers all 14.
+ * Content safety: song titles, artist names and years only.
  * No lyrics, no album art, no audio, no third-party media.
- * Timeline facts are verified band/song chronology (1990 < 1995 < 1996,
- * «Тучи» 1996 < «Владимирский централ» 1998 < 1999-е хиты).
  *
- * Category distribution (fixed at content-fix time):
- *   2 emoji · 3 artist · 2 timeline · 2 title · 1 album
- * (Originally specified 2×5 but the post-review content pass replaced
- *  the two absurd-description prompts with factual album / artist
- *  prompts, and the runtime category is now honest about what the user
- *  actually sees.)
- *
- * Answer ids (a/b/c/d) are intentionally reused across questions: answer
- * identity in the platform is the compound (questionId, answerId).
+ * Answer ids (a/b/c/d) are reused across questions: identity is compound (questionId, answerId).
+ * Fixed order, no random pool, no seed, no timer.
  */
 export const questions: Question[] = [
   {
@@ -27,139 +15,196 @@ export const questions: Question[] = [
     category: 'emoji',
     difficulty: 'easy',
     layout: 'choice',
-    title: 'Эмодзи-шифр: ☁️. Какой хит 90-х зашифрован?',
-    correctAnswerId: 'c',
+    title: 'Какой хит зашифрован?\n💌 ➡️ 📭 😔 ❤️',
+    correctAnswerId: 'a',
     answers: [
-      { id: 'a', title: '«Облака»' },
-      { id: 'b', title: '«Звёзды»' },
-      { id: 'c', title: '«Тучи»' },
-      { id: 'd', title: '«Снегопад»' },
+      { id: 'a', title: 'Крошка моя' },
+      { id: 'b', title: 'Алёшка' },
+      { id: 'c', title: 'Он тебя целует' },
+      { id: 'd', title: 'Чужие губы' },
     ],
   },
   {
     id: 'm2',
-    category: 'emoji',
+    category: 'artist-history',
     difficulty: 'medium',
     layout: 'choice',
-    title: '💿 + 📼. Главные носители музыки 90-х — это …',
-    correctAnswerId: 'a',
+    title: 'Кто из этих артистов действительно начинал в составе «Кар-Мэн»?',
+    correctAnswerId: 'b',
     answers: [
-      { id: 'a', title: 'Кассета и CD' },
-      { id: 'b', title: 'Стриминг и плейлисты' },
-      { id: 'c', title: 'Смс-рингтоны' },
-      { id: 'd', title: 'Ноты и пианино' },
+      { id: 'a', title: 'Андрей Губин' },
+      { id: 'b', title: 'Богдан Титомир' },
+      { id: 'c', title: 'Шура' },
+      { id: 'd', title: 'Кай Метов' },
     ],
   },
   {
     id: 'm3',
-    category: 'artist',
+    category: 'artist-history',
     difficulty: 'easy',
     layout: 'choice',
-    title: 'Хит «Крошка моя» — чей это голос?',
+    title: 'Кто до сольной карьеры была одной из солисток группы «Комбинация»?',
     correctAnswerId: 'b',
     answers: [
-      { id: 'a', title: 'Иванушки International' },
-      { id: 'b', title: 'Руки Вверх!' },
-      { id: 'c', title: 'На-На' },
-      { id: 'd', title: 'Отпетые мошенники' },
+      { id: 'a', title: 'Лада Дэнс' },
+      { id: 'b', title: 'Алёна Апина' },
+      { id: 'c', title: 'Татьяна Овсиенко' },
+      { id: 'd', title: 'Наталья Ветлицкая' },
     ],
   },
   {
     id: 'm4',
-    category: 'artist',
+    category: 'music-history',
     difficulty: 'medium',
     layout: 'choice',
-    title: '«Тучи» — это песня какой группы?',
+    title: 'Кто представлял Россию на «Евровидении» в 1997 году?',
     correctAnswerId: 'c',
     answers: [
-      { id: 'a', title: 'Руки Вверх!' },
-      { id: 'b', title: 'Блестящие' },
-      { id: 'c', title: 'Иванушки International' },
-      { id: 'd', title: 'Ленинград' },
+      { id: 'a', title: 'Филипп Киркоров' },
+      { id: 'b', title: 'Валерий Меладзе' },
+      { id: 'c', title: 'Алла Пугачёва' },
+      { id: 'd', title: 'Алсу' },
     ],
   },
   {
     id: 'm5',
     category: 'timeline',
     difficulty: 'medium',
-    layout: 'comparison',
-    title: 'Кто из этих артистов появился на сцене раньше всех?',
-    correctAnswerId: 'a',
+    layout: 'choice',
+    title: 'Какой из этих хитов уже НЕ относится к 90-м?',
+    correctAnswerId: 'd',
     answers: [
-      { id: 'a', title: 'Дискотека Авария — 1990' },
-      { id: 'b', title: 'Иванушки International — 1995' },
-      { id: 'c', title: 'Руки Вверх! — 1996' },
-      { id: 'd', title: 'Отпетые мошенники — 1996' },
+      { id: 'a', title: '«Сэра»' },
+      { id: 'b', title: '«Ветер с моря дул»' },
+      { id: 'c', title: '«Мальчик хочет в Тамбов»' },
+      { id: 'd', title: '«Я сошла с ума»' },
     ],
   },
   {
     id: 'm6',
-    category: 'timeline',
-    difficulty: 'hard',
-    layout: 'comparison',
-    title: 'Что из этого вышло раньше остальных?',
-    correctAnswerId: 'b',
+    category: 'mismatch',
+    difficulty: 'medium',
+    layout: 'choice',
+    title: 'В какой паре «исполнитель — песня» спрятана ошибка?',
+    correctAnswerId: 'c',
     answers: [
-      { id: 'a', title: '«Владимирский централ» — 1998' },
-      { id: 'b', title: '«Тучи» — 1996' },
-      { id: 'c', title: '«Ариведерчи» — 1999' },
-      { id: 'd', title: '«Тополиный пух» — 1999' },
+      { id: 'a', title: 'Линда — «Ворона»' },
+      { id: 'b', title: 'Андрей Губин — «Мальчик-бродяга»' },
+      { id: 'c', title: 'Натали — «Мальчик хочет в Тамбов»' },
+      { id: 'd', title: 'Технология — «Нажми на кнопку»' },
     ],
   },
   {
     id: 'm7',
-    category: 'title',
-    difficulty: 'medium',
+    category: 'music-history',
+    difficulty: 'easy',
     layout: 'choice',
-    title: 'Какой из этих треков есть на дебютном альбоме Земфиры 1999 года?',
-    correctAnswerId: 'a',
+    title: 'Какой музыкальный телеканал начал вещание в России в 1998 году?',
+    correctAnswerId: 'b',
     answers: [
-      { id: 'a', title: 'Ариведерчи' },
-      { id: 'b', title: 'Хочешь' },
-      { id: 'c', title: 'Искала' },
-      { id: 'd', title: 'Не отпускай' },
+      { id: 'a', title: 'МУЗ-ТВ' },
+      { id: 'b', title: 'MTV Россия' },
+      { id: 'c', title: 'RU.TV' },
+      { id: 'd', title: 'Music Box Russia' },
     ],
   },
   {
     id: 'm8',
-    category: 'title',
+    category: 'era-tech',
     difficulty: 'easy',
     layout: 'choice',
-    title: 'Иванушки International, 1999. Песня с альбома «Об этом я буду кричать всю ночь»?',
-    correctAnswerId: 'a',
+    title: 'На кассете написано C90. Что означает число 90?',
+    correctAnswerId: 'b',
     answers: [
-      { id: 'a', title: 'Тополиный пух' },
-      { id: 'b', title: 'Колечко' },
-      { id: 'c', title: 'Кукла' },
-      { id: 'd', title: 'Тучи' },
+      { id: 'a', title: '90 песен' },
+      { id: 'b', title: '90 минут записи суммарно' },
+      { id: 'c', title: '90 минут на каждой стороне' },
+      { id: 'd', title: '90 кбит/с' },
     ],
   },
   {
     id: 'm9',
-    category: 'album',
-    difficulty: 'hard',
+    category: 'artist',
+    difficulty: 'easy',
     layout: 'choice',
-    title: 'Иванушки International, 1996. Их дебютный альбом — это …',
-    correctAnswerId: 'b',
+    title: 'Что из этого — сценическое имя одного исполнителя, а не название группы?',
+    correctAnswerId: 'c',
     answers: [
-      { id: 'a', title: 'Твои письма' },
-      { id: 'b', title: 'Конечно он' },
-      { id: 'c', title: 'Подожди меня…' },
-      { id: 'd', title: '10 лет во вселенной' },
+      { id: 'a', title: 'Hi-Fi' },
+      { id: 'b', title: 'Демо' },
+      { id: 'c', title: 'Mr. Credo' },
+      { id: 'd', title: 'Вирус!' },
     ],
   },
   {
     id: 'm10',
-    category: 'artist',
-    difficulty: 'hard',
+    category: 'producer',
+    difficulty: 'medium',
     layout: 'choice',
-    title: 'Кто исполнил «Владимирский централ» — гимн тверского шансона 1990-х?',
+    title: 'Кто стоял за музыкальным звучанием Линды в период её главных хитов 90-х?',
     correctAnswerId: 'b',
     answers: [
-      { id: 'a', title: 'Владимир Высоцкий' },
-      { id: 'b', title: 'Михаил Круг' },
-      { id: 'c', title: 'Александр Розенбаум' },
-      { id: 'd', title: 'Сергей Шнуров' },
+      { id: 'a', title: 'Игорь Матвиенко' },
+      { id: 'b', title: 'Максим Фадеев' },
+      { id: 'c', title: 'Бари Алибасов' },
+      { id: 'd', title: 'Юрий Айзеншпис' },
+    ],
+  },
+  {
+    id: 'm11',
+    category: 'producer',
+    difficulty: 'easy',
+    layout: 'choice',
+    title: 'Какую группу создал и продюсировал Бари Алибасов?',
+    correctAnswerId: 'a',
+    answers: [
+      { id: 'a', title: 'На-На' },
+      { id: 'b', title: 'Отпетые мошенники' },
+      { id: 'c', title: 'Премьер-министр' },
+      { id: 'd', title: 'Иванушки International' },
+    ],
+  },
+  {
+    id: 'm12',
+    category: 'absurd-description',
+    difficulty: 'medium',
+    layout: 'choice',
+    title: 'Какой хит «Иванушек» мог бы называться сегодня: «POV: на улице +30, а визуально почему-то декабрь»?',
+    correctAnswerId: 'b',
+    answers: [
+      { id: 'a', title: 'Тучи' },
+      { id: 'b', title: 'Тополиный пух' },
+      { id: 'c', title: 'Кукла' },
+      { id: 'd', title: 'Снегири' },
+    ],
+  },
+  {
+    id: 'm13',
+    category: 'timeline',
+    difficulty: 'medium',
+    layout: 'choice',
+    title: 'Тебе показывают старый музыкальный журнал. Какое имя здесь явно выбивается по времени?',
+    correctAnswerId: 'd',
+    answers: [
+      { id: 'a', title: 'Влад Сташевский' },
+      { id: 'b', title: 'Шура' },
+      { id: 'c', title: 'Андрей Губин' },
+      { id: 'd', title: 'Дима Билан' },
+    ],
+  },
+  {
+    id: 'm14',
+    category: 'music-video',
+    difficulty: 'hard',
+    layout: 'choice',
+    title:
+      'Какой клип можно пересказать как российский фильм Тарантино: московская богема тусуется всю ночь, певицу похищают Бондарчук и Паук, а дальше выясняется, что с этой компанией вообще что-то не так?',
+    correctAnswerId: 'b',
+    answers: [
+      { id: 'a', title: 'Линда — «Ворона»' },
+      { id: 'b', title: 'Лика Стар — «Одинокая луна»' },
+      { id: 'c', title: 'Наталья Ветлицкая — «Посмотри в глаза»' },
+      { id: 'd', title: 'Мумий Тролль — «Владивосток 2000»' },
     ],
   },
 ]
@@ -168,14 +213,14 @@ export const questions: Question[] = [
 export const music90sQuiz: Quiz = {
   id: 'music90s',
   title: 'Ты точно помнишь музыку 90-х?',
-  subtitle: '10 вопросов о кассетах, дисках и хитах, которые знали все.',
+  subtitle: '14 вопросов о кассетах, дисках и хитах, которые знали все.',
   landing: {
     paragraphs: [
       'Кассеты перематывали карандашом, а хиты знали наизусть.',
-      'Десять вопросов — и станет ясно, где ты была в 1999-м: на дискотеке или в другой комнате.',
+      'Четырнадцать вопросов — и станет ясно, где ты была в 1999-м: на дискотеке или в другой комнате.',
       'Отвечай быстро, не гугли.',
     ],
-    meta: ['10 вопросов', 'около 2 минут'],
+    meta: ['14 вопросов', 'около 3 минут'],
   },
   startCta: 'Проверить память',
   shareCtaIntro: 'Пусть попробуют побить твой счёт ↓',
@@ -191,11 +236,11 @@ export const music90sQuiz: Quiz = {
   scoring: {
     kind: 'correct-count',
     bands: [
-      { min: 0, max: 2, resultId: 'm90_rookie' },
-      { min: 3, max: 4, resultId: 'm90_familiar' },
-      { min: 5, max: 6, resultId: 'm90_cassette' },
-      { min: 7, max: 8, resultId: 'm90_disco' },
-      { min: 9, max: 10, resultId: 'm90_legend' },
+      { min: 0, max: 3, resultId: 'm90_rookie' },
+      { min: 4, max: 6, resultId: 'm90_familiar' },
+      { min: 7, max: 9, resultId: 'm90_cassette' },
+      { min: 10, max: 12, resultId: 'm90_disco' },
+      { min: 13, max: 14, resultId: 'm90_legend' },
     ],
   },
   presentation: { kind: 'score' },
@@ -205,4 +250,3 @@ export const music90sQuiz: Quiz = {
     stepDurationMs: 250,
   },
 }
-
