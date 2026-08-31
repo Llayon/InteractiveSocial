@@ -1,4 +1,5 @@
 import { readStartParamFromUrl } from './mock.js'
+import type { MiniAppAdapter } from '../types.js'
 import type { TelegramAdapter } from './types.js'
 
 /**
@@ -9,9 +10,10 @@ import type { TelegramAdapter } from './types.js'
  * - initData is empty (server-side share preparation will be rejected),
  * - native share is reported as unsupported → graceful UI fallback.
  */
-export function createBrowserFallback(): TelegramAdapter {
+export function createBrowserFallback(): MiniAppAdapter & Partial<TelegramAdapter> {
   return {
-    mode: 'browser',
+    platform: 'browser',
+    mode: 'browser' as const,
     ready() {},
     expand() {},
     getStartParam() {

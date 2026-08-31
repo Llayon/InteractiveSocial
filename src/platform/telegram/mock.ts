@@ -1,4 +1,5 @@
-import type { HapticStyle, TelegramAdapter, TelegramUser } from './types.js'
+import type { HapticStyle } from '../types.js'
+import type { TelegramAdapter, TelegramUser } from './types.js'
 
 /** Reads a Telegram start parameter from plain URL query params. */
 export function readStartParamFromUrl(search?: string): string | null {
@@ -21,7 +22,8 @@ export function createMockTelegram(options: MockTelegramOptions = {}): TelegramA
   const user: TelegramUser = { id: 900_000_001, firstName: 'Гость', username: 'mock_user' }
 
   return {
-    mode: 'mock',
+    platform: 'mock',
+    mode: 'mock' as const,
     ready() {},
     expand() {},
     getStartParam() {

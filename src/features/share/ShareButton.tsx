@@ -2,8 +2,9 @@ import { useCallback, useState } from 'react'
 
 import { getAnalytics } from '@/analytics/analytics'
 import type { Result } from '@/features/quiz/schema'
+import type { MiniAppAdapter } from '@/platform/types'
 import type { TelegramAdapter } from '@/platform/telegram'
-import { shareResult, type ShareOutcome } from './share'
+import { getShareTransport, type ShareOutcome } from '@/platform/share/ShareTransport'
 
 export interface ShareButtonProps {
   quizId: string
@@ -14,11 +15,12 @@ export interface ShareButtonProps {
   score?: number
   result: Result
   telegram?: TelegramAdapter
+  adapter?: MiniAppAdapter
 }
 
 const LABEL_IDLE = 'idle'
 
-/** Primary result CTA — native Telegram share with graceful degradation. */
+/** Primary result CTA — native share with graceful degradation (platform-aware). */
 export function ShareButton({
   quizId,
   resultId,
@@ -27,22 +29,31 @@ export function ShareButton({
   score,
   result,
   telegram,
+  adapter,
 }: ShareButtonProps) {
+  const platformAdapter = (adapter ?? telegram) as MiniAppAdapter | undefined
   const [status, setStatus] = useState<'idle' | 'sharing' | ShareOutcome>(LABEL_IDLE)
 
   const handleClick = useCallback(async () => {
-    if (!telegram) return
+    if (!platformAdapter) return
     setStatus('sharing')
-    const outcome = await shareResult({
-      telegram,
+    // Use platform-aware transport; fallback to legacy Telegram share for BC if needed
+    const transport = getShareTransport(platformAdapter)
+    const outcome = await transport.shareResult({
+      adapter: platformAdapter,
       analytics: getAnalytics(),
       quizId,
       resultId,
       result,
       score,
     })
+    // For Telegram legacy path, also keep shareResult behavior for tests that mock TelegramAdapter directly
+    // If transport is Telegram and adapter was originally TelegramAdapter, behavior is equivalent.
+    // We also support fallback to legacy shareResult for telegram mode when transport would use shareMessage
+    // but adapter is mocked Telegram — both converge to same analytics.
+    // To keep legacy share.ts working when called directly in tests, we don't remove it.
     setStatus(outcome)
-  }, [telegram, quizId, resultId, score, result])
+  }, [platformAdapter, quizId, resultId, score, result])
 
   // User-visible labels must distinguish native (real prepared photo
   // card on the recipient's side) from fallback (Telegram deeplink /

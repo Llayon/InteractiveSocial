@@ -1,0 +1,6 @@
+export type { PlatformKind, MiniAppAdapter, MiniAppUser, HapticStyle } from './types.js'
+export { detectPlatform, isMockEmulatingMax, detectPlatformFromSignals } from './detect.js'
+export { createPlatformAdapter } from './factory.js'
+export { getMaxWebApp, ensureMaxBridgeLoaded } from './max/bridge.js'
+export { createMaxAdapter } from './max/adapter.js'
+export { createMaxMock } from './max/mock.js'

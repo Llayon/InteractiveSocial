@@ -30,13 +30,38 @@ export const test = base.extend<{ errorCollector: ErrorCollector }>({
     await page.route(/telegram\.org/, (route) =>
       route.fulfill({ status: 200, contentType: 'application/javascript', body: '' }),
     )
-    // Deterministic prepared-message backend.
+    // Deterministic prepared-message backend (Telegram + MAX).
     await page.route('**/api/share/prepare', (route) =>
       route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({ ok: true, id: 'prepared_e2e_1' }),
       }),
+    )
+    await page.route('**/api/max/share/prepare', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ ok: true, mid: 'max_mid_e2e_1' }),
+      }),
+    )
+    await page.route('**/api/results/deliver', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ ok: true, deliveredSelf: true, deliveredSharer: false }),
+      }),
+    )
+    await page.route('**/api/max/results/deliver', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ ok: true, deliveredSelf: true, deliveredSharer: false }),
+      }),
+    )
+    // MAX bridge script — avoid 404 in offline E2E (also mocked via no static tag, but keep for safety)
+    await page.route(/st\.max\.ru/, (route) =>
+      route.fulfill({ status: 200, contentType: 'application/javascript', body: '' }),
     )
 
     page.on('pageerror', (error) => errors.push(`pageerror: ${error.message}`))

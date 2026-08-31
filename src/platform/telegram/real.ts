@@ -116,7 +116,8 @@ export function createRealTelegram(): TelegramAdapter {
   }
 
   return {
-    mode: 'telegram',
+    platform: 'telegram',
+    mode: 'telegram' as const,
     ready() {
       try {
         postEvent('web_app_ready')

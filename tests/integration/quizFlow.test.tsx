@@ -6,6 +6,7 @@ import type { TelegramAdapter } from '@/platform/telegram'
 
 function createTestTelegram(): TelegramAdapter {
   return {
+    platform: 'mock',
     mode: 'mock',
     ready: vi.fn(),
     expand: vi.fn(),

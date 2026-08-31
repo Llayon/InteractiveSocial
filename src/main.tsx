@@ -2,12 +2,13 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { App } from './app/App'
 import { bootstrap } from './app/bootstrap'
-import { createTelegramAdapter } from './platform/telegram'
+import { createPlatformAdapter } from './platform/factory'
 import '@/design/tokens.css'
 import '@/design/styles.css'
 
-const telegram = createTelegramAdapter()
-bootstrap({ telegram })
+const platformAdapter = createPlatformAdapter()
+const telegram = platformAdapter as unknown as import('./platform/telegram').TelegramAdapter
+bootstrap({ telegram, adapter: platformAdapter })
 
 const container = document.getElementById('root')
 if (!container) {
@@ -16,6 +17,6 @@ if (!container) {
 
 createRoot(container).render(
   <StrictMode>
-    <App telegram={telegram} />
+    <App telegram={telegram} adapter={platformAdapter} />
   </StrictMode>,
 )

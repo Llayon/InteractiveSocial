@@ -1,32 +1,14 @@
-export type TelegramMode = 'telegram' | 'mock' | 'browser'
+import type { HapticStyle, MiniAppAdapter, MiniAppUser, PlatformKind } from '../types.js'
 
-export interface TelegramUser {
-  id: number
-  firstName: string
-  username?: string
-}
+export type TelegramMode = PlatformKind
+export type TelegramUser = MiniAppUser
+export type { HapticStyle, MiniAppUser, PlatformKind, MiniAppAdapter }
 
-export type HapticStyle = 'light' | 'medium' | 'heavy' | 'soft' | 'rigid'
-
-export interface TelegramAdapter {
-  /**
-   * telegram   — running inside a real Telegram Mini App container
-   * mock       — explicit deterministic mock (dev / ?mock=1 / E2E)
-   * browser    — plain web fallback outside Telegram (no fake identity)
-   */
-  readonly mode: TelegramMode
-  ready(): void
-  expand(): void
-  getStartParam(): string | null
-  getUser(): TelegramUser | null
-  /** Raw initData string for server-side validation. Empty outside Telegram. */
-  getInitDataRaw(): string
-  haptic(style?: HapticStyle): void
-  /**
-   * Opens the native Telegram share sheet for a prepared inline message.
-   * Resolves 'sent' only on confirmed Telegram shareMessageSent event,
-   * 'failed' on shareMessageFailed or timeout,
-   * 'unsupported' when the client cannot open the share sheet at all.
-   */
-  shareMessage(preparedId: string): Promise<'sent' | 'failed' | 'unsupported'>
+export interface TelegramAdapter extends MiniAppAdapter {
+  // Back-compat: real Telegram adapter also supports shareMessage for prepared inline messages.
+  // MAX mock/browser adapters may not expose it; callers should check platform or use ShareTransport.
+  shareMessage?(preparedId: string): Promise<'sent' | 'failed' | 'unsupported'>
+  // Alias for BC: mode is actually PlatformKind, but keep name stable
+  readonly mode: PlatformKind
+  getUser(): MiniAppUser | null
 }

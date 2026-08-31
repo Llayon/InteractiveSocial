@@ -248,6 +248,19 @@ export async function shareResult(options: {
     )
   }
 
+  if (typeof telegram.shareMessage !== 'function') {
+    analytics.track('share_native_failed', {
+      quiz_id: quizId,
+      result_id: resultId,
+      reason: 'share_unsupported_client',
+    })
+    analytics.track('share_failed', {
+      quiz_id: quizId,
+      result_id: resultId,
+      reason: 'share_unsupported_client',
+    })
+    return fallbackShare(quizId, v2StartParam, quizTitle, total, result, score, onAnalytics)
+  }
   const outcome = await telegram.shareMessage(prepared.preparedId)
   if (outcome === 'sent') {
     analytics.track('share_success', {

@@ -44,7 +44,8 @@ function makeAnalytics(): { analytics: Analytics; events: AnalyticsEvent[] } {
 }
 
 function makeTelegram(overrides: Partial<TelegramAdapter> = {}): TelegramAdapter {
-  return {
+  const base: TelegramAdapter = {
+    platform: 'telegram',
     mode: 'telegram',
     ready: () => undefined,
     expand: () => undefined,
@@ -55,6 +56,10 @@ function makeTelegram(overrides: Partial<TelegramAdapter> = {}): TelegramAdapter
     shareMessage: () => Promise.resolve('unsupported'),
     ...overrides,
   }
+  // keep platform in sync if mode overridden
+  if (overrides.mode && !overrides.platform) (base as unknown as Record<string, unknown>).platform = overrides.mode
+  if (overrides.platform && !overrides.mode) (base as unknown as Record<string, unknown>).mode = overrides.platform
+  return base
 }
 
 describe('buildFallbackShareUrl returns a t.me deep link, never a raw Vercel URL', () => {

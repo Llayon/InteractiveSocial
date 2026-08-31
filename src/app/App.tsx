@@ -15,25 +15,28 @@ import {
 } from '@/features/quiz/quizReducer'
 import type { SelectedAnswer } from '@/features/quiz/schema'
 import { ResultScreen } from '@/features/result/Result'
-import { deliverCompletedResult } from '@/features/share/deliver'
+import { deliverCompletedResult, deliverCompletedResultForPlatform } from '@/features/share/deliver'
+import type { MiniAppAdapter } from '@/platform/types'
 import type { TelegramAdapter } from '@/platform/telegram'
 import { initialScreen, screenAfterQuizStart, screenForCompletedQuiz, type Screen } from './routes'
 
 export interface AppProps {
   /** Platform adapter; defaults to the environment-detected implementation. */
   telegram?: TelegramAdapter
+  adapter?: MiniAppAdapter
 }
 
-export function App({ telegram }: AppProps) {
+export function App({ telegram, adapter }: AppProps) {
+  const platformAdapter = (adapter ?? telegram) as MiniAppAdapter | undefined
   // Canonical quiz resolution — never `quizzes[0]` directly. Unknown or
   // malformed launch ids deterministically fall back to the default quiz.
   const quiz = useMemo(
     () =>
       resolveQuizFromLaunch({
-        startParam: telegram?.getStartParam() ?? null,
+        startParam: platformAdapter?.getStartParam() ?? null,
         search: typeof window === 'undefined' ? '' : window.location.search,
       }),
-    [telegram],
+    [platformAdapter],
   )
   const analytics = useMemo(() => getAnalytics(), [])
   const [screen, setScreen] = useState<Screen>(initialScreen)
@@ -54,15 +57,15 @@ export function App({ telegram }: AppProps) {
   const handleStart = useCallback(() => {
     dispatch({ type: 'start' })
     setScreen(screenAfterQuizStart())
-    telegram?.haptic('light')
+    platformAdapter?.haptic('light')
     analytics.trackOnce(`quiz_start:${attempt}`, 'quiz_start', { quiz_id: quiz.id })
-  }, [analytics, attempt, quiz.id, telegram])
+  }, [analytics, attempt, quiz.id, platformAdapter])
 
   const lastTrackedAnswer = useRef<string>('')
   const handleAnswer = useCallback(
     (selected: SelectedAnswer) => {
       dispatch({ type: 'answer', questionId: selected.questionId, answerId: selected.answerId })
-      telegram?.haptic('light')
+      platformAdapter?.haptic('light')
 
       const position = quiz.questions.findIndex((q) => q.id === selected.questionId)
       const dedupeKey = `${attempt}:${selected.questionId}:${selected.answerId}`
@@ -79,18 +82,18 @@ export function App({ telegram }: AppProps) {
         })
       }
     },
-    [analytics, attempt, quiz, telegram],
+    [analytics, attempt, quiz, platformAdapter],
   )
 
   const handleBack = useCallback(() => {
     dispatch({ type: 'back' })
-    telegram?.haptic('light')
-  }, [telegram])
+    platformAdapter?.haptic('light')
+  }, [platformAdapter])
 
   const handleNext = useCallback(() => {
     dispatch({ type: 'next' })
-    telegram?.haptic('light')
-  }, [telegram])
+    platformAdapter?.haptic('light')
+  }, [platformAdapter])
 
   const revealFinishedRef = useRef<string>('')
   useEffect(() => {
@@ -115,13 +118,26 @@ export function App({ telegram }: AppProps) {
       ...quizCompleteTelemetry(quiz, state.answers),
     })
 
-    // Fire-and-forget: inside Telegram, ask the backend to send the user
+    // Fire-and-forget: inside messenger, ask the backend to send the user
     // their own result card and (if launched via a friend's share link)
     // notify the sharer. Must never block or break the reveal UX.
-    if (telegram?.mode === 'telegram' && telegram.getInitDataRaw()) {
-      void deliverCompletedResult(quiz.id, outcome.resultId, telegram.getInitDataRaw(), score)
+    // Platform-scoped: MAX uses /api/max/results/deliver, Telegram uses /api/results/deliver.
+    // Mock never triggers real deliver (E2E would 404), but real MAX/Telegram do.
+    if (
+      platformAdapter &&
+      (platformAdapter.platform === 'telegram' || platformAdapter.platform === 'max') &&
+      platformAdapter.getInitDataRaw()
+    ) {
+      const raw = platformAdapter.getInitDataRaw()
+      if (raw) {
+        if (platformAdapter.platform === 'max') {
+          void deliverCompletedResultForPlatform('max', quiz.id, outcome.resultId, raw, score)
+        } else {
+          void deliverCompletedResult(quiz.id, outcome.resultId, raw, score)
+        }
+      }
     }
-  }, [state.phase, state.answers, analytics, attempt, quiz, telegram])
+  }, [state.phase, state.answers, analytics, attempt, quiz, platformAdapter])
 
   const handleRestart = useCallback(() => {
     dispatch({ type: 'restart' })
@@ -151,7 +167,8 @@ export function App({ telegram }: AppProps) {
         <ResultScreen
           quiz={quiz}
           outcome={outcome}
-          telegram={telegram}
+          telegram={platformAdapter as unknown as import('@/platform/telegram').TelegramAdapter}
+          adapter={platformAdapter}
           onRestart={handleRestart}
         />
       )
