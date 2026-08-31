@@ -7,7 +7,7 @@ async function answerMusic14(page: import('@playwright/test').Page) {
 }
 
 test.describe('MAX mock journey', () => {
-  test('landing → music14 → result → share (MAX mock)', async ({ page, errorCollector }, testInfo) => {
+  test('landing → music14 → result → share (MAX mock)', async ({ page, errorCollector }) => {
     await page.goto('/?mock=1&platform=max&startapp=quiz_music90s')
     await expect(page.getByTestId('start-cta')).toBeVisible()
     await page.getByTestId('start-cta').click()
