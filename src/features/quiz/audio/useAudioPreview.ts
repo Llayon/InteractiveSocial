@@ -84,12 +84,12 @@ export function useAudioPreview(options: UseAudioPreviewOptions): UseAudioPrevie
   // When question or content changes, reset state and stop previous audio
   useEffect(() => {
     stopAndCleanup()
-    // abort previous audio element if question changed
+    // abort previous audio element if question changed - do NOT set src='' as it triggers error event
     if (audioRef.current) {
       try {
         audioRef.current.pause()
-        audioRef.current.src = ''
-        audioRef.current.load?.()
+        // detach error listener to prevent stale error after unmount
+        // (listeners are per-element, discarding element is enough)
       } catch {}
       audioRef.current = null
     }
@@ -145,23 +145,6 @@ export function useAudioPreview(options: UseAudioPreviewOptions): UseAudioPrevie
       stopGlobalAudio(audio)
       globalActiveAudio = audio
 
-      // Ensure correct start position
-      try {
-        // If metadata not loaded yet, this may throw or be ignored; we also set on canplay
-        audio.currentTime = content.startSeconds
-      } catch {}
-
-      const onSeeked = () => {
-        audio.removeEventListener('seeked', onSeeked)
-      }
-      // For browsers that need seek after metadata
-      const onLoadedMetadata = () => {
-        try { audio.currentTime = content.startSeconds } catch {}
-        audio.removeEventListener('loadedmetadata', onLoadedMetadata)
-      }
-      audio.addEventListener('loadedmetadata', onLoadedMetadata)
-      audio.addEventListener('seeked', onSeeked)
-
       setState('loading')
       setErrorType(null)
       try {
@@ -190,61 +173,81 @@ export function useAudioPreview(options: UseAudioPreviewOptions): UseAudioPrevie
         }
       }, 8000) as unknown as number
 
-      const playPromise = audio.play()
-      if (playPromise && typeof playPromise.then === 'function') {
-        playPromise
-          .then(() => {
-            clearTimers()
-            // ensure startSeconds still applied after play started
-            try { if (Math.abs(audio.currentTime - content.startSeconds) > 0.5) audio.currentTime = content.startSeconds } catch {}
-            setState('playing')
-            try {
-              getAnalytics().track('audio_started', {
-                quiz_id: quizId,
-                question_id: questionId,
-                track_id: content.trackId,
-              })
-            } catch {}
-            // Exactly 4s window
-            timeoutRef.current = window.setTimeout(() => {
-              try { audio.pause() } catch {}
-              try { audio.currentTime = content.startSeconds } catch {}
-              setState('played')
-              if (globalActiveAudio === audio) globalActiveAudio = null
+      const doPlay = () => {
+        try {
+          audio.currentTime = content.startSeconds
+        } catch {}
+        const playPromiseInner = audio.play()
+        if (playPromiseInner && typeof playPromiseInner.then === 'function') {
+          playPromiseInner
+            .then(() => {
+              clearTimers()
+              // ensure startSeconds still applied after play started (some browsers reset)
+              try { if (Math.abs(audio.currentTime - content.startSeconds) > 0.5) audio.currentTime = content.startSeconds } catch {}
+              setState('playing')
               try {
-                getAnalytics().track('audio_complete_4s', {
+                getAnalytics().track('audio_started', {
                   quiz_id: quizId,
                   question_id: questionId,
                   track_id: content.trackId,
                 })
               } catch {}
-            }, 4000) as unknown as number
-            if (isReplay) setHasReplayed(true)
-          })
-          .catch(() => {
-            clearTimers()
-            setState('error')
-            setErrorType('preview_play_error')
-            try {
-              getAnalytics().track('audio_error', {
-                quiz_id: quizId,
-                question_id: questionId,
-                track_id: content.trackId,
-                error_type: 'preview_play_error',
-              })
-            } catch {}
-          })
-      } else {
-        // fallback for environments where play() doesn't return promise (jsdom mock)
-        clearTimers()
-        setState('playing')
-        timeoutRef.current = window.setTimeout(() => {
-          try { audio.pause() } catch {}
-          try { audio.currentTime = content.startSeconds } catch {}
-          setState('played')
-        }, 4000) as unknown as number
-        if (isReplay) setHasReplayed(true)
+              // Exactly 4s window
+              timeoutRef.current = window.setTimeout(() => {
+                try { audio.pause() } catch {}
+                try { audio.currentTime = content.startSeconds } catch {}
+                setState('played')
+                if (globalActiveAudio === audio) globalActiveAudio = null
+                try {
+                  getAnalytics().track('audio_complete_4s', {
+                    quiz_id: quizId,
+                    question_id: questionId,
+                    track_id: content.trackId,
+                  })
+                } catch {}
+              }, 4000) as unknown as number
+              if (isReplay) setHasReplayed(true)
+            })
+            .catch(() => {
+              clearTimers()
+              setState('error')
+              setErrorType('preview_play_error')
+              try {
+                getAnalytics().track('audio_error', {
+                  quiz_id: quizId,
+                  question_id: questionId,
+                  track_id: content.trackId,
+                  error_type: 'preview_play_error',
+                })
+              } catch {}
+            })
+        } else {
+          clearTimers()
+          setState('playing')
+          timeoutRef.current = window.setTimeout(() => {
+            try { audio.pause() } catch {}
+            try { audio.currentTime = content.startSeconds } catch {}
+            setState('played')
+          }, 4000) as unknown as number
+          if (isReplay) setHasReplayed(true)
+        }
       }
+
+      // If metadata not yet loaded, wait for it before seeking/playing to avoid InvalidStateError
+      // readyState: 0=HAVE_NOTHING, 1=HAVE_METADATA
+      if (audio.readyState === 0) {
+        const onLoaded = () => {
+          audio.removeEventListener('loadedmetadata', onLoaded)
+          audio.removeEventListener('canplay', onLoaded)
+          doPlay()
+        }
+        audio.addEventListener('loadedmetadata', onLoaded)
+        audio.addEventListener('canplay', onLoaded)
+        // Trigger load if needed
+        try { audio.load() } catch {}
+        return
+      }
+      doPlay()
     },
     [content, quizId, questionId, state, getOrCreateAudio, clearTimers],
   )
