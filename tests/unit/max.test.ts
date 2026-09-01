@@ -419,12 +419,15 @@ describe('MAX BRIDGE BOOTSTRAP', () => {
     const fs = await import('node:fs')
     const html = fs.readFileSync('index.html', 'utf-8')
     expect(html).not.toContain('https://st.max.ru/js/max-web-app.js')
-    expect(html).toContain('https://telegram.org/js/telegram-web-app.js')
-    // MAX bridge must be loaded dynamically via ensureMaxBridgeLoaded, not as blocking script
-    const bridgeSrc = fs.readFileSync('src/platform/max/bridge.ts', 'utf-8')
-    expect(bridgeSrc).toContain('https://st.max.ru/js/max-web-app.js')
+    expect(html).not.toContain('https://telegram.org/js/telegram-web-app.js')
+    // Both bridges must be loaded dynamically async, not as blocking scripts
+    const maxBridge = fs.readFileSync('src/platform/max/bridge.ts', 'utf-8')
+    expect(maxBridge).toContain('https://st.max.ru/js/max-web-app.js')
+    const tgBridge = fs.readFileSync('src/platform/telegram/bridge.ts', 'utf-8')
+    expect(tgBridge).toContain('https://telegram.org/js/telegram-web-app.js')
     const mainSrc = fs.readFileSync('src/main.tsx', 'utf-8')
     expect(mainSrc).toContain('ensureMaxBridgeLoaded')
+    expect(mainSrc).toContain('ensureTelegramBridgeLoaded')
   })
 
   it('no pre-existing window.WebApp → browser, after bridge → max (via signals)', () => {

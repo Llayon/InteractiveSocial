@@ -21,9 +21,11 @@ pushStage('ADAPTER_CREATED')
 const telegram = platformAdapter as unknown as import('./platform/telegram').TelegramAdapter
 bootstrap({ telegram, adapter: platformAdapter })
 
-// Load MAX Bridge only for detected MAX launch, non-blocking, bounded timeout.
-// Do not block first paint; failure must not leave white screen.
-// The static parser-blocking script was removed from index.html per P0 fix.
+// Platform bridges: load ONLY required bridge asynchronously, never parser-blocking.
+// MAX launch → async load max-web-app.js
+// Telegram launch → async load telegram-web-app.js (if not already present)
+// Browser → neither
+// All bridges have bounded timeout and never block first paint.
 if (platformAdapter.platform === 'max') {
   pushStage('MAX_BRIDGE_LOAD_STARTED')
   void import('./platform/max/bridge.js')
@@ -34,10 +36,20 @@ if (platformAdapter.platform === 'max') {
     }))
     .catch((e) => {
       pushStage('MAX_BRIDGE_FAILED:' + (e instanceof Error ? e.name : 'unknown'))
-      /* bridge load failure must not break app — haptics/share degrade */
+    })
+} else if (platformAdapter.platform === 'telegram') {
+  pushStage('TELEGRAM_BRIDGE_LOAD_STARTED')
+  void import('./platform/telegram/bridge.js')
+    .then(({ ensureTelegramBridgeLoaded }) => ensureTelegramBridgeLoaded().then((v) => {
+      pushStage(v ? 'TELEGRAM_BRIDGE_READY' : 'TELEGRAM_BRIDGE_FAILED:empty')
+    }).catch((e) => {
+      pushStage('TELEGRAM_BRIDGE_FAILED:' + (e instanceof Error ? e.name : 'unknown'))
+    }))
+    .catch((e) => {
+      pushStage('TELEGRAM_BRIDGE_FAILED:' + (e instanceof Error ? e.name : 'unknown'))
     })
 } else {
-  pushStage('MAX_BRIDGE_SKIPPED:' + platformAdapter.platform)
+  pushStage('BRIDGE_SKIPPED:' + platformAdapter.platform)
 }
 
 const container = document.getElementById('root')
