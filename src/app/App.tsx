@@ -26,6 +26,11 @@ export interface AppProps {
   adapter?: MiniAppAdapter
 }
 
+function pushStage(s: string) {
+  try {
+    ;(window as unknown as { __pushStage?: (s:string)=>void }).__pushStage?.(s)
+  } catch {}
+}
 export function App({ telegram, adapter }: AppProps) {
   const platformAdapter = (adapter ?? telegram) as MiniAppAdapter | undefined
   // Expose for E2E bootstrap tests (not for production logic)
@@ -35,16 +40,22 @@ export function App({ telegram, adapter }: AppProps) {
       ;(window as unknown as Record<string, unknown>).__startParam = platformAdapter?.getStartParam() ?? null
     }
   }, [platformAdapter])
+  useEffect(() => {
+    pushStage('APP_MOUNTED')
+  }, [])
   // Canonical quiz resolution — never `quizzes[0]` directly. Unknown or
   // malformed launch ids deterministically fall back to the default quiz.
-  const quiz = useMemo(
-    () =>
-      resolveQuizFromLaunch({
-        startParam: platformAdapter?.getStartParam() ?? null,
-        search: typeof window === 'undefined' ? '' : window.location.search,
-      }),
-    [platformAdapter],
-  )
+  const quiz = useMemo(() => {
+    const q = resolveQuizFromLaunch({
+      startParam: platformAdapter?.getStartParam() ?? null,
+      search: typeof window === 'undefined' ? '' : window.location.search,
+    })
+    // Diagnostic: quiz resolved (no private data)
+    try {
+      pushStage('QUIZ_RESOLVED:' + q.id)
+    } catch {}
+    return q
+  }, [platformAdapter])
   const analytics = useMemo(() => getAnalytics(), [])
   const [screen, setScreen] = useState<Screen>(initialScreen)
   const [state, dispatch] = useReducer(

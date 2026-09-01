@@ -1,13 +1,28 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "vite",
-  "rewrites": [{ "source": "/((?!api/).*)", "destination": "/index.html" }],
+  "rewrites": [
+    { "source": "/max-diag-a8952ab", "destination": "/index.html" },
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ],
   "functions": {
     "api/**/*.ts": {
       "includeFiles": "certs/**"
     }
   },
   "headers": [
+    {
+      "source": "/index.html",
+      "headers": [{ "key": "Cache-Control", "value": "no-store, max-age=0" }]
+    },
+    {
+      "source": "/",
+      "headers": [{ "key": "Cache-Control", "value": "no-store, max-age=0" }]
+    },
+    {
+      "source": "/max-diag-a8952ab",
+      "headers": [{ "key": "Cache-Control", "value": "no-store, max-age=0" }]
+    },
     {
       "source": "/share-cards/(.*)",
       "headers": [

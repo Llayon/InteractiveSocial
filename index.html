@@ -7,9 +7,89 @@
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
     <title>Какой у тебя интерьерный характер?</title>
+    <script>
+      // DIAGNOSTIC BUILD a8952ab — minimal boot probe before React
+      window.__BUILD_SHA__ = 'a8952ab';
+      window.__BOOT_STAGES__ = [];
+      window.__BOOT_ERRORS__ = [];
+      function __pushStage(s) {
+        try {
+          window.__BOOT_STAGES__.push(s + '@' + Date.now());
+          var el = document.getElementById('boot-stages');
+          if (el) el.textContent = window.__BOOT_STAGES__.join(' | ');
+          try { localStorage.setItem('__boot_stages', JSON.stringify(window.__BOOT_STAGES__)); } catch(e) {}
+          try { sessionStorage.setItem('__boot_stages', JSON.stringify(window.__BOOT_STAGES__)); } catch(e) {}
+          // best-effort server beacon (no private data)
+          try {
+            var payload = JSON.stringify({ buildSha: window.__BUILD_SHA__, stage: s, platformHint: (location.hash.indexOf('WebAppData')>-1?'hasWebAppData':'noWebAppData') + '|' + (location.hash.indexOf('WebAppPlatform')>-1?'hasPlatform':'noPlatform'), userAgent: navigator.userAgent.slice(0,120) });
+            if (navigator.sendBeacon) navigator.sendBeacon('/api/diagnostics/boot', payload);
+            else fetch('/api/diagnostics/boot', { method:'POST', headers:{'content-type':'application/json'}, body: payload, keepalive:true }).catch(function(){});
+          } catch(e) {}
+        } catch(e) {}
+      }
+      window.__pushStage = __pushStage;
+      __pushStage('HTML_LOADED');
+      // Global error capture BEFORE main.tsx
+      window.onerror = function(msg, src, line, col, err) {
+        try {
+          var rec = { stage: 'HTML_LOADED', name: err && err.name || 'Error', message: String(msg).slice(0,300), file: String(src||'').slice(-60), line: line, col: col, stack: err && err.stack ? String(err.stack).slice(0,500) : '' };
+          window.__BOOT_ERRORS__.push(rec);
+          var el = document.getElementById('boot-errors');
+          if (el) el.textContent = 'BOOT ERROR stage=' + rec.stage + ' name=' + rec.name + ' message=' + rec.message + ' file=' + rec.file;
+          __pushStage('JS_ERROR:' + rec.name);
+          try { localStorage.setItem('__boot_errors', JSON.stringify(window.__BOOT_ERRORS__)); } catch(e) {}
+          // also beacon
+          try {
+            var p = JSON.stringify({ buildSha: window.__BUILD_SHA__, stage: 'JS_ERROR', errorName: rec.name, errorMessage: rec.message.slice(0,120), file: rec.file, line: line, column: col, platformHint: (location.hash.indexOf('WebAppData')>-1?'hasWebAppData':'noWebAppData'), userAgent: navigator.userAgent.slice(0,120) });
+            if (navigator.sendBeacon) navigator.sendBeacon('/api/diagnostics/boot', p);
+            else fetch('/api/diagnostics/boot', { method:'POST', headers:{'content-type':'application/json'}, body: p, keepalive:true }).catch(function(){});
+          } catch(e) {}
+        } catch(e) {}
+      };
+      window.onunhandledrejection = function(ev) {
+        try {
+          var r = ev && ev.reason;
+          var rec2 = { stage: 'UNHANDLED_REJECTION', name: r && r.name || 'Rejection', message: String(r && r.message || r).slice(0,300) };
+          window.__BOOT_ERRORS__.push(rec2);
+          var el2 = document.getElementById('boot-errors');
+          if (el2) el2.textContent = 'UNHANDLED_REJECTION name=' + rec2.name + ' message=' + rec2.message;
+          __pushStage('UNHANDLED_REJECTION:' + rec2.name);
+          try { localStorage.setItem('__boot_errors', JSON.stringify(window.__BOOT_ERRORS__)); } catch(e) {}
+          try {
+            var p2 = JSON.stringify({ buildSha: window.__BUILD_SHA__, stage: 'UNHANDLED_REJECTION', errorName: rec2.name, errorMessage: rec2.message.slice(0,120), platformHint: (location.hash.indexOf('WebAppData')>-1?'hasWebAppData':'noWebAppData'), userAgent: navigator.userAgent.slice(0,120) });
+            if (navigator.sendBeacon) navigator.sendBeacon('/api/diagnostics/boot', p2);
+            else fetch('/api/diagnostics/boot', { method:'POST', headers:{'content-type':'application/json'}, body: p2, keepalive:true }).catch(function(){});
+          } catch(e) {}
+        } catch(e) {}
+      };
+      // Asset load failure capture
+      window.addEventListener('error', function(e) {
+        var t = e && e.target;
+        if (t && (t.tagName === 'SCRIPT' || t.tagName === 'LINK')) {
+          var src2 = t.src || t.href || '';
+          if (src2) {
+            try {
+              window.__BOOT_ERRORS__.push({ stage: 'ASSET_FAILED', file: src2.slice(-80) });
+              var el3 = document.getElementById('boot-errors');
+              if (el3) el3.textContent = 'ASSET_FAILED file=' + src2.slice(-80);
+              __pushStage('ASSET_FAILED');
+            } catch(e2) {}
+          }
+        }
+      }, true);
+    </script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+      #boot-probe{position:fixed;top:0;left:0;z-index:99999;background:#000;color:#0f0;font:10px/12px monospace;padding:4px 6px;max-width:100vw;overflow:hidden;white-space:nowrap;opacity:0.9}
+      #boot-stages{position:fixed;top:18px;left:0;z-index:99999;background:#111;color:#ff0;font:9px/10px monospace;padding:3px 6px;max-width:100vw;overflow:hidden;white-space:nowrap;opacity:0.85}
+      #boot-errors{position:fixed;top:36px;left:0;z-index:99999;background:#400;color:#fff;font:10px/12px monospace;padding:4px 6px;max-width:100vw;overflow:auto;white-space:pre-wrap;max-height:40vh;display:none}
+    </style>
   </head>
   <body>
+    <div id="boot-probe">BOOT_HTML_a8952ab</div>
+    <div id="boot-stages">BOOT_STAGES: HTML_LOADED</div>
+    <div id="boot-errors"></div>
+    <script>try{ var be=document.getElementById('boot-errors'); if(window.__BOOT_ERRORS__ && window.__BOOT_ERRORS__.length) be.style.display='block'; }catch(e){}</script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
