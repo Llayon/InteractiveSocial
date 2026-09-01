@@ -24,6 +24,7 @@
     "@tma.js/sdk-react": "^3.0.23",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
+    "undici": "^8.10.1",
     "zod": "^4.4.3"
   },
   "devDependencies": {
