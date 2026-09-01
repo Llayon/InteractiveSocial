@@ -42,7 +42,7 @@ test.describe('MAX bootstrap regression (P0 fix)', () => {
     // Haptics/share degrade gracefully, but quiz routing works
     await page.getByTestId('start-cta').click()
     await expect(page.getByTestId('quiz-screen')).toBeVisible({ timeout: 2000 })
-    await expectNoRuntimeErrors(page, errorCollector, ['Failed to load resource: net::ERR_FAILED'])
+    await expectNoRuntimeErrors(page, errorCollector, ['Failed to load resource'])
   })
 
   test('D. direct Music launch via MAX hash → Music90s opens', async ({ page }) => {

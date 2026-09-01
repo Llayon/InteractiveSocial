@@ -4,14 +4,14 @@ test.describe('diagnostic build', () => {
   test('boot probe visible even before React', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' })
     await expect(page.locator('#boot-probe')).toBeVisible()
-    await expect(page.locator('#boot-probe')).toContainText('BOOT_HTML_a8952ab')
+    await expect(page.locator('#boot-probe')).toContainText('BOOT_HTML_a0b0e98')
     await expect(page.locator('#boot-stages')).toContainText('HTML_LOADED')
   })
 
   test('versioned path serves same diagnostic HTML', async ({ page }) => {
-    await page.goto('/max-diag-a8952ab', { waitUntil: 'domcontentloaded' })
+    await page.goto('/max-diag-a0b0e98', { waitUntil: 'domcontentloaded' })
     await expect(page.locator('#boot-probe')).toBeVisible()
-    await expect(page.locator('#boot-probe')).toContainText('BOOT_HTML_a8952ab')
+    await expect(page.locator('#boot-probe')).toContainText('BOOT_HTML_a0b0e98')
     await expect(page.getByTestId('start-cta')).toBeVisible({ timeout: 2000 })
   })
 
