@@ -1,5 +1,6 @@
 import type { MiniAppAdapter, MiniAppUser } from '../types.js'
 import { getMaxWebApp } from './bridge.js'
+import { extractInitDataRawFromHash, extractStartParamFromHash } from '../detect.js'
 import { readStartParamFromUrl } from '../telegram/mock.js'
 
 function parseUserFromInitDataUnsafe(): MiniAppUser | null {
@@ -20,12 +21,37 @@ function getStartParamFromMax(): string | null {
     const v = wa.initDataUnsafe.start_param.trim()
     if (v) return v
   }
-  // Fallback to URL (e.g. https://max.ru/<bot>?startapp=...)
+  // Official fallbacks per docs: WebAppStartParam URL value, then start_param inside WebAppData
+  // 1) URL search fallback (e.g. ?startapp=..., manual)
   try {
-    return readStartParamFromUrl()
+    const fromUrl = readStartParamFromUrl()
+    if (fromUrl) return fromUrl
   } catch {
-    return null
+    // ignore
   }
+  // 2) Hash WebAppData fallback for client routing before Bridge ready
+  //    WebAppData contains encoded initData with start_param
+  try {
+    const fromHash = extractStartParamFromHash()
+    if (fromHash) return fromHash
+  } catch {
+    // ignore
+  }
+  // 3) Also check explicit WebAppStartParam in hash/search if present
+  try {
+    if (typeof window !== 'undefined') {
+      const hash = window.location.hash || ''
+      const params = new URLSearchParams(hash.startsWith('#') ? hash.slice(1) : hash)
+      const v = params.get('WebAppStartParam')
+      if (v && v.trim()) return v.trim()
+      const search = new URLSearchParams(window.location.search)
+      const s = search.get('WebAppStartParam')
+      if (s && s.trim()) return s.trim()
+    }
+  } catch {
+    // ignore
+  }
+  return null
 }
 
 /**
@@ -33,12 +59,16 @@ function getStartParamFromMax(): string | null {
  * All MAX-specific calls live here.
  */
 export function createMaxAdapter(): MiniAppAdapter {
-  // Capture synchronously at creation time (initData is static per launch)
-  const initDataRaw = (() => {
+  // initData is static per launch, but Bridge may not be ready at adapter creation.
+  // getInitDataRaw is dynamic: prefer window.WebApp.initData, fallback to WebAppData from hash.
+  // This is safe for transport because server validates HMAC; client does NOT treat as trusted identity.
+  const getRaw = (): string => {
     const wa = getMaxWebApp()
     if (wa && typeof wa.initData === 'string' && wa.initData.length > 0) return wa.initData
+    const fromHash = extractInitDataRawFromHash()
+    if (fromHash) return fromHash
     return ''
-  })()
+  }
 
   return {
     platform: 'max',
@@ -54,12 +84,13 @@ export function createMaxAdapter(): MiniAppAdapter {
     },
     getUser() {
       // Prefer initDataUnsafe user; fallback to parsing initData raw if needed
+      // If Bridge not yet available, returning null is acceptable — do not delay render
       const viaUnsafe = parseUserFromInitDataUnsafe()
       if (viaUnsafe) return viaUnsafe
-      // Try parsing raw initData user JSON
-      if (!initDataRaw) return null
+      const raw = getRaw()
+      if (!raw) return null
       try {
-        const params = new URLSearchParams(initDataRaw)
+        const params = new URLSearchParams(raw)
         const userJson = params.get('user')
         if (!userJson) return null
         const parsed = JSON.parse(userJson) as { id?: number; first_name?: string; username?: string }
@@ -70,7 +101,7 @@ export function createMaxAdapter(): MiniAppAdapter {
       }
     },
     getInitDataRaw() {
-      return initDataRaw
+      return getRaw()
     },
     haptic(style = 'light') {
       try {

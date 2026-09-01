@@ -28,6 +28,13 @@ export interface AppProps {
 
 export function App({ telegram, adapter }: AppProps) {
   const platformAdapter = (adapter ?? telegram) as MiniAppAdapter | undefined
+  // Expose for E2E bootstrap tests (not for production logic)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      ;(window as unknown as Record<string, unknown>).__platform = platformAdapter?.platform ?? 'none'
+      ;(window as unknown as Record<string, unknown>).__startParam = platformAdapter?.getStartParam() ?? null
+    }
+  }, [platformAdapter])
   // Canonical quiz resolution — never `quizzes[0]` directly. Unknown or
   // malformed launch ids deterministically fall back to the default quiz.
   const quiz = useMemo(

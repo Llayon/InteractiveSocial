@@ -415,11 +415,16 @@ describe('QUIZ REGRESSION', () => {
 })
 
 describe('MAX BRIDGE BOOTSTRAP', () => {
-  it('index.html contains official MAX bridge script', async () => {
+  it('index.html does NOT contain parser-blocking MAX script (P0 fix)', async () => {
     const fs = await import('node:fs')
     const html = fs.readFileSync('index.html', 'utf-8')
-    expect(html).toContain('https://st.max.ru/js/max-web-app.js')
+    expect(html).not.toContain('https://st.max.ru/js/max-web-app.js')
     expect(html).toContain('https://telegram.org/js/telegram-web-app.js')
+    // MAX bridge must be loaded dynamically via ensureMaxBridgeLoaded, not as blocking script
+    const bridgeSrc = fs.readFileSync('src/platform/max/bridge.ts', 'utf-8')
+    expect(bridgeSrc).toContain('https://st.max.ru/js/max-web-app.js')
+    const mainSrc = fs.readFileSync('src/main.tsx', 'utf-8')
+    expect(mainSrc).toContain('ensureMaxBridgeLoaded')
   })
 
   it('no pre-existing window.WebApp → browser, after bridge → max (via signals)', () => {

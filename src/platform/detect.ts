@@ -32,17 +32,78 @@ function isRealMaxEnvironment(): boolean {
 }
 
 /**
+ * Strong MAX launch hint that works WITHOUT window.WebApp.
+ * Official: URL hash contains #WebAppData=...&WebAppPlatform=...&WebAppVersion=...
+ * per https://dev.max.ru/docs/webapps/validation and /bridge.
+ * This is available BEFORE max-web-app.js loads, so detection does not block on CDN.
+ * Do NOT treat manual `?startapp=` in search as MAX.
+ */
+export function hasMaxLaunchParamsInUrl(): boolean {
+  try {
+    if (typeof window === 'undefined') return false
+    const hash = window.location.hash || ''
+    if (!hash) return false
+    const withoutHash = hash.startsWith('#') ? hash.slice(1) : hash
+    if (!withoutHash) return false
+    const params = new URLSearchParams(withoutHash)
+    // Strong signal: both WebAppData and WebAppPlatform must be present
+    // WebAppData is the encoded initData string, WebAppPlatform is ios/android/desktop/web
+    if (params.has('WebAppData') && params.has('WebAppPlatform')) return true
+    return false
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Extract raw initData string from location.hash WebAppData (fallback when Bridge not yet ready).
+ * WebAppData value is URL-encoded initData; URLSearchParams decoding gives the raw string.
+ */
+export function extractInitDataRawFromHash(): string {
+  try {
+    if (typeof window === 'undefined') return ''
+    const hash = window.location.hash || ''
+    const withoutHash = hash.startsWith('#') ? hash.slice(1) : hash
+    if (!withoutHash) return ''
+    const params = new URLSearchParams(withoutHash)
+    const webAppData = params.get('WebAppData')
+    if (!webAppData) return ''
+    // URLSearchParams already decodes, but WebAppData was encoded once, so this is the raw initData
+    return webAppData
+  } catch {
+    return ''
+  }
+}
+
+/**
+ * Extract start_param from WebAppData in hash (for client routing before Bridge).
+ */
+export function extractStartParamFromHash(): string | null {
+  try {
+    const raw = extractInitDataRawFromHash()
+    if (!raw) return null
+    const inner = new URLSearchParams(raw)
+    const v = inner.get('start_param')
+    return v && v.trim() ? v.trim() : null
+  } catch {
+    return null
+  }
+}
+
+/**
  * Determines platform kind.
  *
- * Order:
+ * Order (fixed for MAX bootstrap regression):
  * 1. ?mock=1 forces mock. If &platform=max is present, mock simulates MAX, else Telegram-like mock (back-compat).
  * 2. navigator.webdriver → mock (Playwright)
  * 3. import.meta.env.DEV → mock (dev mode)
- * 4. real MAX detection
- * 5. real Telegram detection
- * 6. browser fallback
+ * 4. MAX launch URL hint (hash WebAppData+WebAppPlatform) — works WITHOUT window.WebApp, so CDN never blocks first paint
+ * 5. real MAX detection via window.WebApp (after bridge loads)
+ * 6. real Telegram detection
+ * 7. browser fallback
  *
  * Detection never classifies Telegram as MAX or vice versa.
+ * Normal browser with manual `?startapp=` alone does NOT become MAX — requires WebAppData+WebAppPlatform.
  */
 export function detectPlatform(): PlatformKind {
   if (typeof window === 'undefined') return 'browser'
@@ -50,17 +111,12 @@ export function detectPlatform(): PlatformKind {
   if (params.has('mock')) {
     // MAX mock is explicit via ?mock=1&platform=max
     const p = params.get('platform')
-    if (p === 'max') return 'max' // treat mock MAX as 'max' for some flows, but consumer may map to 'mock'
-    // Historically mock returns 'mock' regardless; we keep that for Telegram mock.
-    // The factory will handle ?mock=1&platform=max → mock-mode MAX adapter.
-    // To satisfy "mock" platform for tests, we return 'mock' but factory checks platform param.
-    // For simplicity, if platform=max, we return 'mock' with MAX semantics — but type says 'max'|'mock'.
-    // We choose to return 'mock' for any mock query, and factory decides adapter.
-    // However for detection unit tests we want MAX mock to be distinguishable, so return 'mock' here
-    // and let factory override. To pass K1.1 collision tests, detectPlatform itself should return 'mock'
-    // when ?mock is set, regardless of inner platform.
+    if (p === 'max') return 'max'
     return 'mock'
   }
+  // Strong MAX launch hint works WITHOUT window.WebApp and must not be blocked by CDN.
+  // Check before webdriver/DEV so MAX E2E (Playwright) still resolves to MAX even with webdriver=true.
+  if (hasMaxLaunchParamsInUrl()) return 'max'
   if (typeof navigator !== 'undefined' && (navigator as unknown as { webdriver?: boolean }).webdriver === true) return 'mock'
   if (typeof import.meta !== 'undefined' && (import.meta as unknown as { env?: { DEV?: boolean } }).env?.DEV) return 'mock'
   if (isRealMaxEnvironment()) return 'max'
