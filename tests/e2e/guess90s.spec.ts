@@ -10,8 +10,8 @@ async function answerAllGuessQuestions(
   page: import('@playwright/test').Page,
   pick: (questionId: string, options: string[]) => Promise<string>,
 ): Promise<void> {
-  for (let i = 1; i <= 10; i++) {
-    await expect(page.getByTestId('progress')).toHaveText(`${pad(i)} / 10`)
+  for (let i = 1; i <= 20; i++) {
+    await expect(page.getByTestId('progress')).toHaveText(`${pad(i)} / 20`)
     // Audio preview should be present for every question
     const audio = page.getByTestId('audio-preview')
     await expect(audio).toBeVisible()
@@ -38,8 +38,8 @@ async function answerAllGuessQuestions(
     }
     const chosen = await pick(`g${i}`, ids)
     await page.locator(`[data-answer-id="${chosen}"]`).first().click()
-    if (i < 10) {
-      await expect(page.getByTestId('progress')).toHaveText(`${pad(i + 1)} / 10`, { timeout: 3000 })
+    if (i < 20) {
+      await expect(page.getByTestId('progress')).toHaveText(`${pad(i + 1)} / 20`, { timeout: 3000 })
     }
     // After answer, track info should be revealed (only after feedback)
     // Wait for next question transition before checking track info persistence
@@ -47,7 +47,8 @@ async function answerAllGuessQuestions(
 }
 
 test.describe('guess90s journey (?quiz=guess90s, mock mode)', () => {
-  test('landing → 10 audio questions → reveal → score result → share → restart', async ({
+  test.setTimeout(60000)
+  test('landing → 20 audio questions → reveal → score result → share → restart', async ({
     page,
     errorCollector,
   }, testInfo) => {
@@ -62,7 +63,7 @@ test.describe('guess90s journey (?quiz=guess90s, mock mode)', () => {
 
     await page.getByTestId('start-cta').click()
     await expect(page.getByTestId('quiz-screen')).toBeVisible()
-    await expect(page.getByTestId('progress')).toHaveText('01 / 10')
+    await expect(page.getByTestId('progress')).toHaveText('01 / 20')
     await expect(page.getByTestId('quiz-question')).toHaveAttribute('data-content-kind', 'audio-preview')
     await page.screenshot({
       path: `gauntlet/reports/evidence/${testInfo.project.name}/g-02-quiz.png`,
@@ -75,7 +76,7 @@ test.describe('guess90s journey (?quiz=guess90s, mock mode)', () => {
     await expect(page.getByTestId('result-title')).toBeVisible()
     await expect(page.locator('[data-presentation="score"]')).toHaveCount(1)
     await expect(page.getByTestId('result-score')).toBeVisible()
-    await expect(page.getByTestId('result-score')).toContainText('/ 10')
+    await expect(page.getByTestId('result-score')).toContainText('/ 20')
     await page.screenshot({
       path: `gauntlet/reports/evidence/${testInfo.project.name}/g-03-result.png`,
       fullPage: true,
@@ -93,21 +94,21 @@ test.describe('guess90s journey (?quiz=guess90s, mock mode)', () => {
   test('feedback lock and track reveal after answer', async ({ page, errorCollector }) => {
     await page.goto('/?mock=1&quiz=guess90s')
     await page.getByTestId('start-cta').click()
-    await expect(page.getByTestId('progress')).toHaveText('01 / 10')
+    await expect(page.getByTestId('progress')).toHaveText('01 / 20')
     // pick wrong answer 'b' (correct is 'a') to test wrong mark and track reveal
     await page.locator('[data-answer-id="b"]').first().click()
     await expect(page.getByTestId('answer-mark-wrong')).toBeVisible({ timeout: 1500 })
     // After feedback, audio track info should be visible
     await expect(page.getByTestId('audio-track-info')).toBeVisible({ timeout: 1500 })
     await expect(page.getByTestId('audio-apple-link')).toHaveAttribute('href', /music\.apple\.com/)
-    await expect(page.getByTestId('progress')).toHaveText('02 / 10', { timeout: 3000 })
+    await expect(page.getByTestId('progress')).toHaveText('02 / 20', { timeout: 3000 })
     await expectNoRuntimeErrors(page, errorCollector)
   })
 
   test('replay does not block answering', async ({ page, errorCollector }) => {
     await page.goto('/?mock=1&quiz=guess90s')
     await page.getByTestId('start-cta').click()
-    await expect(page.getByTestId('progress')).toHaveText('01 / 10')
+    await expect(page.getByTestId('progress')).toHaveText('01 / 20')
     const playBtn = page.getByTestId('audio-play-button')
     await playBtn.click()
     // Wait for played state (mock will go playing immediately, our hook will go played after 4s)
@@ -120,7 +121,7 @@ test.describe('guess90s journey (?quiz=guess90s, mock mode)', () => {
     }
     // Still able to answer
     await page.locator('[data-answer-id="a"]').first().click()
-    await expect(page.getByTestId('progress')).toHaveText('02 / 10', { timeout: 3000 })
+    await expect(page.getByTestId('progress')).toHaveText('02 / 20', { timeout: 3000 })
     await expectNoRuntimeErrors(page, errorCollector)
   })
 })
@@ -132,7 +133,7 @@ test.describe('guess90s deeplink', () => {
     const heading = await page.getByRole('heading', { level: 1 }).textContent()
     expect(heading ?? '').toContain('4 секунд')
     await page.getByTestId('start-cta').click()
-    await expect(page.getByTestId('progress')).toHaveText('01 / 10')
+    await expect(page.getByTestId('progress')).toHaveText('01 / 20')
     await expectNoRuntimeErrors(page, errorCollector)
   })
 

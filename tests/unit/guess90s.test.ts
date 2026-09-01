@@ -44,9 +44,9 @@ describe('guess90s quiz definition', () => {
   it('uses correct-count scoring', () => {
     expect(guess90sQuiz.scoring.kind).toBe('correct-count')
   })
-  it('has 10 playthrough questions (catalog 20, playthrough 10)', () => {
-    expect(guess90sQuiz.questions).toHaveLength(10)
-    expect(questions).toHaveLength(10)
+  it('has 20 playthrough questions (catalog 20, playthrough 20)', () => {
+    expect(guess90sQuiz.questions).toHaveLength(20)
+    expect(questions).toHaveLength(20)
   })
   it('every question is audio-preview with duration 4', () => {
     for (const q of guess90sQuiz.questions) {
@@ -73,12 +73,12 @@ describe('guess90s quiz definition', () => {
   })
   it('question ids are unique and category audio', () => {
     const ids = guess90sQuiz.questions.map((q) => q.id)
-    expect(new Set(ids).size).toBe(10)
+    expect(new Set(ids).size).toBe(20)
     for (const q of guess90sQuiz.questions) {
       expect(q.category).toBe('audio')
     }
   })
-  it('result bands cover 0..10 with 5 g90_* ids', () => {
+  it('result bands cover 0..20 with 5 g90_* ids', () => {
     const bands = guess90sQuiz.scoring.kind === 'correct-count' ? guess90sQuiz.scoring.bands : []
     expect(bands.map((b) => b.resultId)).toEqual([
       'g90_rookie',
@@ -89,7 +89,7 @@ describe('guess90s quiz definition', () => {
     ])
     const sorted = [...bands].sort((a, b) => a.min - b.min)
     expect(sorted[0].min).toBe(0)
-    expect(sorted[sorted.length - 1].max).toBe(10)
+    expect(sorted[sorted.length - 1].max).toBe(20)
     for (let i = 0; i < sorted.length - 1; i++) {
       expect(sorted[i].max + 1).toBe(sorted[i + 1].min)
     }
@@ -115,7 +115,7 @@ describe('guess90s scoring', () => {
   it('all correct -> g90_legend', () => {
     const allCorrect = guess90sQuiz.questions.map((q) => ({ questionId: q.id, answerId: q.correctAnswerId! }))
     const outcome = resolveOutcome(guess90sQuiz, allCorrect)
-    expect(outcome).toEqual({ kind: 'correct-count', resultId: 'g90_legend', correct: 10, total: 10 })
+    expect(outcome).toEqual({ kind: 'correct-count', resultId: 'g90_legend', correct: 20, total: 20 })
   })
   it('0 correct -> g90_rookie', () => {
     const allWrong = guess90sQuiz.questions.map((q) => ({
@@ -126,9 +126,10 @@ describe('guess90s scoring', () => {
     expect(outcome.resultId).toBe('g90_rookie')
     expect((outcome as unknown as { correct: number }).correct).toBe(0)
   })
-  it('8/10 -> g90_disco (spec example)', () => {
-    expect(resolveBandResultId(guess90sQuiz, 8)).toBe('g90_disco')
-    expect(resolveBandResultId(guess90sQuiz, 9)).toBe('g90_disco')
+  it('16/20 -> g90_disco (spec example scaled)', () => {
+    expect(resolveBandResultId(guess90sQuiz, 16)).toBe('g90_disco')
+    expect(resolveBandResultId(guess90sQuiz, 18)).toBe('g90_disco')
+    expect(resolveBandResultId(guess90sQuiz, 8)).toBe('g90_familiar')
   })
   it('failed preview skip does not count as wrong', () => {
     // Simulate skip marker: should not increment correct count
@@ -136,7 +137,7 @@ describe('guess90s scoring', () => {
       { questionId: guess90sQuiz.questions[0].id, answerId: '__skipped__' },
       ...guess90sQuiz.questions.slice(1, 6).map((q) => ({ questionId: q.id, answerId: q.correctAnswerId! })),
     ]
-    // 5 correct out of 5 answered non-skipped -> 5/10 but skipped ignored for correct count
+    // 5 correct out of 5 answered non-skipped -> 5/20 but skipped ignored for correct count
     expect(computeCorrectCount(guess90sQuiz, answers)).toBe(5)
     // If we had counted skipped as wrong, correct would still be 5, but we verify skipped not counted as correct
     const withoutSkip = guess90sQuiz.questions.slice(1, 6).map((q) => ({ questionId: q.id, answerId: q.correctAnswerId! }))

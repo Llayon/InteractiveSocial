@@ -4,14 +4,13 @@ import type { Question, Quiz } from '../../../features/quiz/schema.js'
 
 /**
  * guess90s — audio-preview 90s music quiz.
- * Catalog: 20 entries (all verified). Playthrough: first 10 deterministically.
- * No randomization infrastructure for MVP; all 20 remain available for review.
+ * Catalog: 20 entries (all verified). Playthrough: all 20 deterministically.
  * Each question uses audio-preview content branching (content.kind), never quiz.id.
  */
 
 function buildQuestions(): Question[] {
-  // Deterministic subset: first 10 catalog entries for production path
-  const playthrough = guess90sCatalog.slice(0, 10)
+  // Full 20-track playthrough
+  const playthrough = guess90sCatalog.slice(0, 20)
 
   return playthrough.map((entry, idx) => {
     const questionId = `g${idx + 1}`
@@ -68,14 +67,14 @@ export const questions: Question[] = buildQuestions()
 export const guess90sQuiz: Quiz = {
   id: 'guess90s',
   title: 'Угадай хит 90-х с 4 секунд',
-  subtitle: '10 хитов · 4 секунды на каждый · узнаешь?',
+  subtitle: '20 хитов · 4 секунды на каждый · узнаешь?',
   landing: {
     paragraphs: [
       'Нажми PLAY — услышишь 4 секунды хита из 90-х.',
       'Угадай трек быстрее, чем вспомнишь, где лежат старые кассеты.',
       'Никаких подсказок — только слух и память.',
     ],
-    meta: ['10 вопросов', 'около 2 минут'],
+    meta: ['20 вопросов', 'около 4 минут'],
   },
   startCta: 'Угадать хит',
   shareCtaIntro: 'Поделись результатом и брось вызов друзьям ↓',
@@ -91,11 +90,11 @@ export const guess90sQuiz: Quiz = {
   scoring: {
     kind: 'correct-count',
     bands: [
-      { min: 0, max: 3, resultId: 'g90_rookie' },
-      { min: 4, max: 5, resultId: 'g90_familiar' },
-      { min: 6, max: 7, resultId: 'g90_cassette' },
-      { min: 8, max: 9, resultId: 'g90_disco' },
-      { min: 10, max: 10, resultId: 'g90_legend' },
+      { min: 0, max: 5, resultId: 'g90_rookie' },
+      { min: 6, max: 10, resultId: 'g90_familiar' },
+      { min: 11, max: 14, resultId: 'g90_cassette' },
+      { min: 15, max: 18, resultId: 'g90_disco' },
+      { min: 19, max: 20, resultId: 'g90_legend' },
     ],
   },
   presentation: { kind: 'score' },
