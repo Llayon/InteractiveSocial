@@ -82,7 +82,7 @@ export const guess90sCatalog: CatalogEntry[] = [
     trackId: 1083903004,
     previewUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/5c/30/29/5c3029b5-a468-1289-e5cf-280bee871162/mzaf_13194750963359141580.plus.aac.p.m4a',
     trackViewUrl: 'https://music.apple.com/ru/album/%D0%BD%D0%B5-%D0%B4%D0%B0%D0%BD%D0%BE/1083902948?i=1083903004&uo=4',
-    startSeconds: 14,
+    startSeconds: 13,
     durationSeconds: 4,
     attribution: 'Preview provided courtesy of Apple',
     releaseYear: 1999,
@@ -91,7 +91,7 @@ export const guess90sCatalog: CatalogEntry[] = [
     vocalsDuringClip: false,
     recognizability: 'high',
     status: 'PASS',
-    notes: 'Fragment 14-18 instrumental per user review, no vocal at start, high recognizability',
+    notes: 'Fragment 13-17 instrumental per user review (14-18 shifted -1s), no vocal at start, high recognizability',
   },
   {
     artist: 'Шура',
