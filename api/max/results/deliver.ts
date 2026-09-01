@@ -26,11 +26,11 @@ async function sendMaxPhoto(
 ): Promise<boolean> {
   const payload: Record<string, unknown> = {
     user_id: chatId,
-    text: `${caption}\n\n${deepLink}\n${imageUrl}`,
-    link: deepLink,
-    attachments: [{ type: 'image', url: imageUrl, photo_url: imageUrl }],
-    inline_keyboard: [[{ text: 'Пройти тест', url: deepLink }]],
-    keyboard: { inline_keyboard: [[{ text: 'Пройти тест', url: deepLink }]] },
+    text: `${caption}\n\n${deepLink}`,
+    attachments: [
+      { type: 'image', payload: { url: imageUrl } },
+      { type: 'inline_keyboard', payload: { buttons: [[{ type: 'link', text: 'Пройти тест', url: deepLink }]] } },
+    ],
   }
   const r = await maxSendMessage(token, payload as never, {
     quizId: opts?.quizId,

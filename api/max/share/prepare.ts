@@ -117,30 +117,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     quiz.copy.shareHeadline,
   ].join('\n')
 
-  // MAX Bot API: send message with image attachment if supported, else text+link
-  // We try remote URL first (official contract says remote URL may be accepted).
-  // If MAX requires upload token, this will be rejected and we fallback to text link in future iteration.
-  // For now we send text + link and attempt attachments field — if MAX ignores unknown fields, text still delivers.
+  // MAX Bot API: image attachments via external URL are officially supported
+  // per https://dev.max.ru/docs-api/methods/POST/messages → attachments `image`
+  // with `payload.url`. We use server-resolved APP_BASE_URL/share-cards/*.jpg.
   const payload: Record<string, unknown> = {
     user_id: userId,
-    text: `${messageText}\n\n${deepLink}\n${imageUrl}`,
-    // Attempt to attach image — MAX may accept URL or require upload token.
-    // We include both photo_url style and attachments array for compatibility probing.
-    // Structured logging will show status.
-    link: deepLink,
+    text: `${messageText}\n\n${deepLink}`,
     attachments: [
       {
         type: 'image',
-        url: imageUrl,
-        // some versions expect payload.url, some payload.photo_url
-        photo_url: imageUrl,
-        thumbnail_url: thumbUrl,
+        payload: { url: imageUrl },
+      },
+      {
+        type: 'inline_keyboard',
+        payload: { buttons: [[{ type: 'link', text: 'Пройти тест', url: deepLink }]] },
       },
     ],
-    // Inline keyboard: try both telegram-style and max-style; MAX will ignore unknown
-    inline_keyboard: [[{ text: 'Пройти тест', url: deepLink }]],
-    keyboard: { inline_keyboard: [[{ text: 'Пройти тест', url: deepLink }]] },
   }
+  void thumbUrl // thumb is 1:1 with imageUrl, not needed as separate attachment — keep for log
 
   // Wrap with timeout via maxSendMessage
   try {

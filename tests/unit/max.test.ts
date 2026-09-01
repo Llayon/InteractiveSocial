@@ -6,7 +6,7 @@ import { validateMaxInitData, signMaxInitData, MaxInitDataValidationError } from
 import { resolveQuizFromLaunch } from '@/content/quizzes/resolveQuiz'
 import { quizzes } from '@/content/quizzes/index'
 import { resolveAttribution } from '../../api/_lib/attribution'
-import { MAX_API_BASE_URL, maxGetMe, maxSendMessage } from '../../api/_lib/maxApi'
+import { MAX_API_BASE_URL, maxGetMe, maxSendMessage, parseMaxMessageResponse } from '../../api/_lib/maxApi'
 
 const BOT_TOKEN = '123456:TEST_MAX_TOKEN_FOR_UNIT'
 const WRONG_TOKEN = '123456:WRONG_TOKEN'
@@ -271,10 +271,13 @@ describe('MAX Bot API contract', () => {
     vi.stubGlobal('fetch', fetchMock)
     await maxGetMe('t')
     expect(String((fetchMock.mock.calls[0] as unknown as [string])?.[0])).toContain('platform-api2.max.ru')
-    const fetchMock2 = vi.fn(async () => new Response(JSON.stringify({ mid: '123' }), { status: 200 }))
+    const fetchMock2 = vi.fn(async () =>
+      new Response(JSON.stringify({ message: { body: { mid: 'mid_123' } } }), { status: 200 }),
+    )
     vi.stubGlobal('fetch', fetchMock2)
-    await maxSendMessage('t', { user_id: 1, text: 'hi' })
-    expect(String((fetchMock2.mock.calls[0] as unknown as [string])?.[0])).toBe('https://platform-api2.max.ru/messages')
+    const res = await maxSendMessage('t', { user_id: 1, text: 'hi' })
+    expect(String((fetchMock2.mock.calls[0] as unknown as [string])?.[0])).toBe('https://platform-api2.max.ru/messages?user_id=1')
+    expect(res.mid).toBe('mid_123')
   })
 
   it('29. timeouts handled (abort)', async () => {
@@ -305,6 +308,52 @@ describe('MAX Bot API contract', () => {
     const res = await prepareMaxShareMessage('music90s', 'm90_legend', 'invalid_raw', 12)
     expect(res.ok).toBe(false)
     expect(typeof (res as { code?: string }).code).toBe('string')
+  })
+
+  it('POST /messages contract: valid response with body.mid', async () => {
+    const fetchMock = vi.fn(async () =>
+      new Response(JSON.stringify({ message: { body: { mid: 'mid_valid_123' } } }), { status: 200 }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    const res = await maxSendMessage('t', { user_id: 1, text: 'hi' })
+    expect(res.ok).toBe(true)
+    expect(res.mid).toBe('mid_valid_123')
+  })
+
+  it('POST /messages contract: direct Message body.mid', async () => {
+    const parsed = parseMaxMessageResponse({ body: { mid: 'direct_mid' } })
+    expect(parsed.ok).toBe(true)
+    expect(parsed.mid).toBe('direct_mid')
+  })
+
+  it('POST /messages contract: missing body → failure', () => {
+    expect(parseMaxMessageResponse({ message: {} }).ok).toBe(false)
+    expect(parseMaxMessageResponse({ message: { body: {} } }).ok).toBe(false)
+  })
+
+  it('POST /messages contract: missing mid → failure', () => {
+    expect(parseMaxMessageResponse({ message: { body: { text: 'hi' } } }).ok).toBe(false)
+    const fetchMock = vi.fn(async () =>
+      new Response(JSON.stringify({ message: { body: {} } }), { status: 200 }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    return maxSendMessage('t', { user_id: 1, text: 'hi' }).then((res) => {
+      expect(res.ok).toBe(false)
+      expect(res.mid).toBeUndefined()
+    })
+  })
+
+  it('POST /messages contract: malformed response → failure', () => {
+    expect(parseMaxMessageResponse(null).ok).toBe(false)
+    expect(parseMaxMessageResponse({}).ok).toBe(false)
+    expect(parseMaxMessageResponse({ message: 'not_object' }).ok).toBe(false)
+    expect(parseMaxMessageResponse({ body: null }).ok).toBe(false)
+  })
+
+  it('POST /messages contract: undocumented top-level mid rejected', () => {
+    // Old heuristic accepted {mid: '123'}; now must be body.mid
+    expect(parseMaxMessageResponse({ mid: '123' }).ok).toBe(false)
+    expect(parseMaxMessageResponse({ message_id: '123' }).ok).toBe(false)
   })
 })
 
@@ -362,5 +411,69 @@ describe('QUIZ REGRESSION', () => {
     const { music90sQuiz } = await import('@/content/quizzes/music90s/quiz')
     const r = music90sQuiz.results.find((x) => x.id === 'm90_legend')!
     expect(resolveShareCardAsset(music90sQuiz, r, 14)).toBe(scoreCardAsset(14))
+  })
+})
+
+describe('MAX BRIDGE BOOTSTRAP', () => {
+  it('index.html contains official MAX bridge script', async () => {
+    const fs = await import('node:fs')
+    const html = fs.readFileSync('index.html', 'utf-8')
+    expect(html).toContain('https://st.max.ru/js/max-web-app.js')
+    expect(html).toContain('https://telegram.org/js/telegram-web-app.js')
+  })
+
+  it('no pre-existing window.WebApp → browser, after bridge → max (via signals)', () => {
+    // Model the circular dependency: detect requires WebApp, but WebApp not yet loaded → browser
+    expect(detectPlatformFromSignals({ hasMockQuery: false, isDev: false, isMaxEnv: false, isTelegramEnv: false })).toBe('browser')
+    // After bridge bootstrap, MAX signals become true
+    expect(detectPlatformFromSignals({ hasMockQuery: false, isDev: false, isMaxEnv: true, isTelegramEnv: false })).toBe('max')
+  })
+
+  it('ensureMaxBridgeLoaded creates script element when WebApp absent', async () => {
+    const { ensureMaxBridgeLoaded } = await import('@/platform/max/bridge')
+    // Clear any existing WebApp to force load path
+    const w = globalThis as unknown as Record<string, unknown>
+    const prev = w.WebApp
+    delete w.WebApp
+    // Mock document.createElement to capture script src
+    const origCreate = document.createElement.bind(document)
+    let capturedSrc = ''
+    const spy = vi.spyOn(document, 'createElement').mockImplementation(((tag: string) => {
+      const el = origCreate(tag)
+      if (tag === 'script') {
+        Object.defineProperty(el, 'src', {
+          get() {
+            return capturedSrc
+          },
+          set(v: string) {
+            capturedSrc = v
+          },
+          configurable: true,
+        })
+        // Prevent actual network load: make onload fire quickly
+        setTimeout(() => el.dispatchEvent(new Event('load')), 0)
+      }
+      return el
+    }) as unknown as typeof document.createElement)
+    const promise = ensureMaxBridgeLoaded()
+    // Should have attempted to create script with official URL
+    expect(capturedSrc).toBe('https://st.max.ru/js/max-web-app.js')
+    spy.mockRestore()
+    w.WebApp = prev
+    // Don't await fully (would timeout 5s), just ensure promise exists
+    expect(promise).toBeInstanceOf(Promise)
+  })
+})
+
+describe('IMAGE DELIVERY', () => {
+  it('remote URL is officially supported for image attachments (MAX POST /messages)', async () => {
+    // per https://dev.max.ru/docs-api/methods/POST/messages → attachments image with payload.url
+    // Our server code uses payload: { url: APP_BASE_URL/share-cards/... } — verify shape
+    const fs = await import('node:fs')
+    const prepareSrc = fs.readFileSync('api/max/share/prepare.ts', 'utf-8')
+    expect(prepareSrc).toContain('payload: { url: imageUrl }')
+    expect(prepareSrc).toContain("type: 'image'")
+    const deliverSrc = fs.readFileSync('api/max/results/deliver.ts', 'utf-8')
+    expect(deliverSrc).toContain('payload: { url: imageUrl }')
   })
 })

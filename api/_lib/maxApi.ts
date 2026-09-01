@@ -150,10 +150,42 @@ export interface MaxSendMessagePayload {
 }
 
 export interface MaxSendMessageResult {
-  message?: { mid?: string; sender?: unknown }
-  mid?: string
-  // tolerate variations
+  message?: { body?: { mid?: string; [k: string]: unknown }; [k: string]: unknown }
+  body?: { mid?: string; [k: string]: unknown }
   [k: string]: unknown
+}
+
+/**
+ * Strict parser for POST /messages response per official docs:
+ * https://dev.max.ru/docs-api/methods/POST/messages → result `message` object Message
+ * https://dev.max.ru/docs-api/objects/Message → `body.mid`
+ * Official TS client: `const message = await bot.api.sendMessageToUser(...); message.body.mid`
+ *
+ * Supports both:
+ * - wrapped: `{ message: { body: { mid } } }`  (as documented `message` field)
+ * - direct:  `{ body: { mid } }`               (if API returns Message directly)
+ * Missing `body.mid` is a structured failure — never synthesize success.
+ */
+export function parseMaxMessageResponse(json: unknown): { ok: boolean; mid?: string; body?: unknown } {
+  if (!json || typeof json !== 'object') return { ok: false }
+  const j = json as Record<string, unknown>
+  // wrapped form
+  if (j.message && typeof j.message === 'object') {
+    const msg = j.message as Record<string, unknown>
+    if (msg.body && typeof msg.body === 'object') {
+      const body = msg.body as Record<string, unknown>
+      if (typeof body.mid === 'string' && body.mid.length > 0) return { ok: true, mid: body.mid, body }
+      return { ok: false }
+    }
+    return { ok: false }
+  }
+  // direct Message form
+  if (j.body && typeof j.body === 'object') {
+    const body = j.body as Record<string, unknown>
+    if (typeof body.mid === 'string' && body.mid.length > 0) return { ok: true, mid: body.mid, body }
+    return { ok: false }
+  }
+  return { ok: false }
 }
 
 export async function maxSendMessage(
@@ -162,7 +194,18 @@ export async function maxSendMessage(
   opts?: { timeoutMs?: number; quizId?: string; resultId?: string },
 ): Promise<{ ok: boolean; mid?: string; status: number; raw?: unknown }> {
   const timeoutMs = opts?.timeoutMs ?? DEFAULT_TIMEOUT_MS
-  const url = `${MAX_API_BASE}/messages`
+  // Official contract: POST /messages?user_id=... or ?chat_id=... with body = NewMessageBody
+  // Payload may contain user_id/chat_id for backward compat; move to query.
+  const bodyPayload = { ...payload } as Record<string, unknown>
+  const userId = bodyPayload.user_id as number | undefined
+  const chatId = bodyPayload.chat_id as number | undefined
+  delete bodyPayload.user_id
+  delete bodyPayload.chat_id
+  const params = new URLSearchParams()
+  if (typeof userId === 'number') params.set('user_id', String(userId))
+  if (typeof chatId === 'number') params.set('chat_id', String(chatId))
+  const query = params.toString() ? `?${params.toString()}` : ''
+  const url = `${MAX_API_BASE}/messages${query}`
   let response: Response
   try {
     response = await fetchWithTimeout(
@@ -170,7 +213,7 @@ export async function maxSendMessage(
       {
         method: 'POST',
         headers: { Authorization: token, 'content-type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(bodyPayload),
       },
       timeoutMs,
     )
@@ -190,23 +233,15 @@ export async function maxSendMessage(
   } catch {
     json = null
   }
-  // MAX returns 200 with message body on success; extract mid heuristically
-  let mid: string | undefined
-  if (json && typeof json === 'object') {
-    const j = json as Record<string, unknown>
-    if (typeof j.mid === 'string') mid = j.mid
-    else if (j.message && typeof j.message === 'object' && typeof (j.message as Record<string, unknown>).mid === 'string') {
-      mid = (j.message as Record<string, unknown>).mid as string
-    } else if (typeof j.message_id === 'string') mid = j.message_id as string
-  }
-  const ok = response.ok
+  const parsed = parseMaxMessageResponse(json)
+  const ok = response.ok && parsed.ok
   safeLog(
     'messages',
     response.status,
     ok,
-    `quizId=${opts?.quizId ?? 'n/a'} resultId=${opts?.resultId ?? 'n/a'} mid=${mid ? 'present' : 'none'}`,
+    `quizId=${opts?.quizId ?? 'n/a'} resultId=${opts?.resultId ?? 'n/a'} mid=${parsed.mid ? 'present' : 'none'}`,
   )
-  return { ok, mid, status: response.status, raw: json }
+  return { ok, mid: parsed.mid, status: response.status, raw: json }
 }
 
 /**
