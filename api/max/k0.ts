@@ -42,9 +42,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     })
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error)
+    const cause = error instanceof Error && (error as unknown as { cause?: unknown }).cause
+    const causeMsg = cause instanceof Error ? cause.message : cause ? String(cause) : undefined
     // Try to extract HTTP status from error message like "http_401: ..."
     const m = /http_(\d+)/.exec(msg)
     const status = m ? Number(m[1]) : 500
-    res.status(status).json({ ok: false, error: msg, status })
+    res.status(status).json({ ok: false, error: msg, cause: causeMsg, status })
   }
 }
