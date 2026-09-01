@@ -80,6 +80,14 @@ export function App({ telegram, adapter }: AppProps) {
   }, [analytics, attempt, quiz.id, platformAdapter])
 
   const lastTrackedAnswer = useRef<string>('')
+  const replayedQuestions = useRef<Set<string>>(new Set())
+  const handleAudioReplay = useCallback((questionId: string) => {
+    replayedQuestions.current.add(questionId)
+    const q = quiz.questions.find((qq) => qq.id === questionId)
+    const trackId = q?.content?.kind === 'audio-preview' ? q.content.trackId : undefined
+    analytics.track('audio_replay', { quiz_id: quiz.id, question_id: questionId, ...(trackId ? { track_id: trackId } : {}) })
+  }, [quiz, analytics])
+
   const handleAnswer = useCallback(
     (selected: SelectedAnswer) => {
       dispatch({ type: 'answer', questionId: selected.questionId, answerId: selected.answerId })
@@ -91,7 +99,14 @@ export function App({ telegram, adapter }: AppProps) {
         lastTrackedAnswer.current = dedupeKey
         // Scoring-aware telemetry: the App NEVER inspects answer weights or
         // correctness itself — the scoring module owns that knowledge.
-        const payload = questionAnsweredTelemetry(quiz, selected.questionId, selected.answerId, position + 1)
+        const isAudio = quiz.questions.find((qq) => qq.id === selected.questionId)?.content?.kind === 'audio-preview'
+        const payload = questionAnsweredTelemetry(
+          quiz,
+          selected.questionId,
+          selected.answerId,
+          position + 1,
+          isAudio ? { replayed: replayedQuestions.current.has(selected.questionId) } : undefined,
+        )
         analytics.track('question_answered', {
           quiz_id: quiz.id,
           question_id: selected.questionId,
@@ -101,6 +116,15 @@ export function App({ telegram, adapter }: AppProps) {
       }
     },
     [analytics, attempt, quiz, platformAdapter],
+  )
+
+  const handleSkip = useCallback(
+    (questionId: string) => {
+      dispatch({ type: 'skip', questionId })
+      platformAdapter?.haptic('light')
+      // Skipped questions are not counted as wrong; analytics already tracked preview_skip in Quiz
+    },
+    [platformAdapter],
   )
 
   const handleBack = useCallback(() => {
@@ -176,6 +200,8 @@ export function App({ telegram, adapter }: AppProps) {
           onAnswer={handleAnswer}
           onBack={handleBack}
           onNext={handleNext}
+          onSkip={handleSkip}
+          onAudioReplay={handleAudioReplay}
           onRevealFinished={() => dispatch({ type: 'reveal-finished' })}
         />
       )

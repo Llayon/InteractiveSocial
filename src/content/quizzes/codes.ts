@@ -44,6 +44,16 @@ const RAW_CODES: Record<string, RawQuizCodes> = {
       m90_legend: 'lg',
     },
   },
+  guess90s: {
+    quizCode: 'g90',
+    results: {
+      g90_rookie: 'gr',
+      g90_familiar: 'gf',
+      g90_cassette: 'gc',
+      g90_disco: 'gd',
+      g90_legend: 'gl',
+    },
+  },
 }
 
 interface QuizCodeEntry {

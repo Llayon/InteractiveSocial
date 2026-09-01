@@ -175,13 +175,14 @@ export function resolveResultId(
  * Correct-count scoring
  * ------------------------------------------------------------------ */
 
-/** Counts how many selected answers were the declared correct answer. */
+/** Counts how many selected answers were the declared correct answer. Skipped markers are ignored. */
 export function computeCorrectCount(
   quiz: Quiz,
   answers: readonly SelectedAnswer[],
 ): number {
   let correct = 0
   for (const selected of answers) {
+    if (selected.answerId === '__skipped__') continue
     const question = quiz.questions.find((q) => q.id === selected.questionId)
     if (!question || !question.correctAnswerId) continue
     if (selected.answerId === question.correctAnswerId) correct += 1
@@ -246,6 +247,7 @@ export function questionAnsweredTelemetry(
   questionId: string,
   answerId: string,
   position: number,
+  extra?: { replayed?: boolean },
 ): Record<string, unknown> {
   const question = quiz.questions.find((q) => q.id === questionId)
   const answer = question
@@ -262,10 +264,12 @@ export function questionAnsweredTelemetry(
     }
   }
 
+  const isAudio = question?.content?.kind === 'audio-preview'
   return {
     is_correct: Boolean(question?.correctAnswerId && answerId === question.correctAnswerId),
-    category: question?.category ?? '',
+    category: isAudio ? 'audio' : (question?.category ?? ''),
     position,
+    ...(isAudio && extra?.replayed !== undefined ? { replayed: extra.replayed } : {}),
   }
 }
 

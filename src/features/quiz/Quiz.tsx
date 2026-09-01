@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 
+import { getAnalytics } from '@/analytics/analytics'
 import { RUNTIME_IMAGE_MANIFEST } from '@/images/manifest'
 import { QuizProgress } from './QuizProgress'
 import { QuizQuestion } from './QuizQuestion'
@@ -14,6 +15,8 @@ export interface QuizProps {
   onAnswer: (selected: SelectedAnswer) => void
   onBack: () => void
   onNext: () => void
+  onSkip?: (questionId: string) => void
+  onAudioReplay?: (questionId: string) => void
   /** Fired by the reveal overlay when its sequence completes. */
   onRevealFinished: () => void
 }
@@ -75,6 +78,8 @@ export function Quiz({
   onAnswer,
   onBack,
   onNext,
+  onSkip,
+  onAudioReplay,
   onRevealFinished,
 }: QuizProps) {
   const total = quiz.questions.length
@@ -147,37 +152,96 @@ export function Quiz({
   // share assets are never prefetched). The preload itself is delayed inside
   // the idle callback so the critical load of the visible question is never
   // contended and E2E network phases stay deterministic.
+  // Audio-preview prefetch: prepare N+1 preview conservatively (single Audio, low priority).
   useEffect(() => {
     const next = quiz.questions[currentIndex + 1]
-    if (!next || next.layout !== 'image-cards') return
-    const w = window as Window & {
-      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number
-      cancelIdleCallback?: (id: number) => void
-    }
-    let timer: ReturnType<typeof setTimeout> | undefined
-    let cancelIdle: (() => void) | undefined
-    const preload = () => {
-      for (const answer of next.answers) {
-        if (!answer.assetKey || !RUNTIME_IMAGE_MANIFEST.quiz[answer.assetKey]) continue
-        const img = new Image()
-        img.src = `/optimized/quiz/${answer.assetKey}-480.webp`
+    if (!next) return
+    if (next.layout === 'image-cards') {
+      const w = window as Window & {
+        requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number
+        cancelIdleCallback?: (id: number) => void
+      }
+      let timer: ReturnType<typeof setTimeout> | undefined
+      let cancelIdle: (() => void) | undefined
+      const preload = () => {
+        for (const answer of next.answers) {
+          if (!answer.assetKey || !RUNTIME_IMAGE_MANIFEST.quiz[answer.assetKey]) continue
+          const img = new Image()
+          img.src = `/optimized/quiz/${answer.assetKey}-480.webp`
+        }
+      }
+      const schedule = () => {
+        timer = setTimeout(preload, 250)
+      }
+      if (typeof w.requestIdleCallback === 'function') {
+        const id = w.requestIdleCallback(schedule, { timeout: 2_000 })
+        cancelIdle = () => w.cancelIdleCallback?.(id)
+      } else {
+        const id = window.setTimeout(schedule, 300)
+        cancelIdle = () => window.clearTimeout(id)
+      }
+      return () => {
+        cancelIdle?.()
+        if (timer !== undefined) clearTimeout(timer)
       }
     }
-    const schedule = () => {
-      timer = setTimeout(preload, 250)
-    }
-    if (typeof w.requestIdleCallback === 'function') {
-      const id = w.requestIdleCallback(schedule, { timeout: 2_000 })
-      cancelIdle = () => w.cancelIdleCallback?.(id)
-    } else {
-      const id = window.setTimeout(schedule, 300)
-      cancelIdle = () => window.clearTimeout(id)
-    }
-    return () => {
-      cancelIdle?.()
-      if (timer !== undefined) clearTimeout(timer)
+    if (next.content?.kind === 'audio-preview') {
+      const w = window as Window & {
+        requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number
+        cancelIdleCallback?: (id: number) => void
+      }
+      let timer: ReturnType<typeof setTimeout> | undefined
+      let cancelIdle: (() => void) | undefined
+      const nextPreviewUrl = next.content.previewUrl
+      const preload = () => {
+        try {
+          const audio = new Audio(nextPreviewUrl)
+          audio.preload = 'auto'
+          // trigger load without playing
+          audio.load()
+        } catch {}
+      }
+      const schedule = () => {
+        timer = setTimeout(preload, 300)
+      }
+      if (typeof w.requestIdleCallback === 'function') {
+        const id = w.requestIdleCallback(schedule, { timeout: 2_000 })
+        cancelIdle = () => w.cancelIdleCallback?.(id)
+      } else {
+        const id = window.setTimeout(schedule, 350)
+        cancelIdle = () => window.clearTimeout(id)
+      }
+      return () => {
+        cancelIdle?.()
+        if (timer !== undefined) clearTimeout(timer)
+      }
     }
   }, [currentIndex, quiz])
+
+  const handleSkipAudio = useCallback(() => {
+    if (!question) return
+    // Analytics for skip - must include trackId where available
+    if (question.content?.kind === 'audio-preview') {
+      try {
+        getAnalytics().track('preview_skip', {
+          quiz_id: quiz.id,
+          question_id: question.id,
+          track_id: question.content.trackId,
+        })
+      } catch {}
+    }
+    if (onSkip) {
+      onSkip(question.id)
+    } else {
+      // Fallback: advance via next if no skip handler (should not happen in audio quiz)
+      onNext()
+    }
+  }, [question, quiz.id, onSkip, onNext])
+
+  const handleAudioReplay = useCallback(() => {
+    if (!question) return
+    onAudioReplay?.(question.id)
+  }, [question, onAudioReplay])
 
   if (phase === 'revealing') {
     return (
@@ -201,12 +265,15 @@ export function Quiz({
 
       <QuizQuestion
         question={question}
+        quizId={quiz.id}
         selectedAnswerId={displayedAnswerId}
         locked={locked}
         revealCorrectAnswerId={revealCorrectAnswerId}
         feedbackCorrectMessage={behavior.mode === 'feedback' ? behavior.correctMessage : undefined}
         feedbackWrongMessage={behavior.mode === 'feedback' ? behavior.wrongMessage : undefined}
         onAnswer={handleAnswer}
+        onSkipAudio={handleSkipAudio}
+        onAudioReplay={handleAudioReplay}
       />
 
       <div className="quiz__nav">

@@ -16,6 +16,15 @@ export type AnalyticsEvent =
   | 'share_fallback_native'
   | 'share_fallback_clipboard'
   | 'restart'
+  | 'audio_play'
+  | 'audio_started'
+  | 'audio_complete_4s'
+  | 'audio_replay'
+  | 'audio_error'
+  | 'preview_load_error'
+  | 'preview_play_error'
+  | 'preview_timeout'
+  | 'preview_skip'
 
 export interface AnalyticsContext {
   quiz_id?: string

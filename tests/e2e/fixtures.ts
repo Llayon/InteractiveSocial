@@ -22,6 +22,40 @@ export const test = base.extend<{ errorCollector: ErrorCollector }>({
       window.addEventListener('unhandledrejection', (event) => {
         w.__unhandledRejections?.push(String(event.reason))
       })
+      // Mock Audio for guess90s to avoid live Apple CDN in E2E
+      const MockAudio = class {
+        src: string
+        currentTime = 0
+        preload = 'auto'
+        crossOrigin = ''
+        paused = true
+        _listeners: Record<string, (() => void)[]> = {}
+        constructor(src?: string) {
+          this.src = src ?? ''
+          // simulate metadata loaded quickly
+          setTimeout(() => {
+            const cbs = this._listeners['loadedmetadata'] ?? []
+            cbs.forEach((fn) => { try { fn() } catch {} })
+          }, 10)
+        }
+        play(): Promise<void> {
+          this.paused = false
+          // simulate 4s complete via ended, but hook uses timeout not ended event; just resolve
+          return Promise.resolve()
+        }
+        pause(): void {
+          this.paused = true
+        }
+        load(): void {}
+        addEventListener(type: string, cb: () => void): void {
+          if (!this._listeners[type]) this._listeners[type] = []
+          this._listeners[type].push(cb)
+        }
+        removeEventListener(type: string, cb: () => void): void {
+          this._listeners[type] = (this._listeners[type] ?? []).filter((f) => f !== cb)
+        }
+      } as unknown as typeof Audio
+      ;(window as unknown as Record<string, unknown>).Audio = MockAudio
     })
 
     // No real Telegram runtime and no CDN dependency in E2E. We fulfill with
@@ -62,6 +96,12 @@ export const test = base.extend<{ errorCollector: ErrorCollector }>({
     // MAX bridge script — avoid 404 in offline E2E (also mocked via no static tag, but keep for safety)
     await page.route(/st\.max\.ru/, (route) =>
       route.fulfill({ status: 200, contentType: 'application/javascript', body: '' }),
+    )
+    await page.route(/telegram\.org\/js\/telegram-web-app\.js/, (route) =>
+      route.fulfill({ status: 200, contentType: 'application/javascript', body: '' }),
+    )
+    await page.route('**/api/diagnostics/boot', (route) =>
+      route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) }),
     )
 
     page.on('pageerror', (error) => errors.push(`pageerror: ${error.message}`))

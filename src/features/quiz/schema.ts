@@ -60,6 +60,26 @@ export type QuestionLayout = z.infer<typeof questionLayoutSchema>
 export const difficultySchema = z.enum(['easy', 'medium', 'hard'])
 export type Difficulty = z.infer<typeof difficultySchema>
 
+export const audioPreviewContentSchema = z.object({
+  kind: z.literal('audio-preview'),
+  provider: z.literal('apple-itunes'),
+  trackId: z.number().int().positive(),
+  previewUrl: z.string().url(),
+  trackViewUrl: z.string().url(),
+  startSeconds: z.number().nonnegative(),
+  durationSeconds: z.literal(4),
+  attribution: z.literal('Preview provided courtesy of Apple'),
+  /** Display metadata revealed only after answer (never before to avoid spoilers). */
+  trackTitle: z.string().min(1).optional(),
+  artistName: z.string().min(1).optional(),
+})
+
+export type AudioPreviewContent = z.infer<typeof audioPreviewContentSchema>
+
+export const questionContentSchema = z.discriminatedUnion('kind', [audioPreviewContentSchema])
+
+export type QuestionContent = z.infer<typeof questionContentSchema>
+
 export const questionSchema = z.object({
   id: z.string().min(1),
   title: z.string().min(1),
@@ -77,6 +97,7 @@ export const questionSchema = z.object({
    */
   correctAnswerId: z.string().optional(),
   image: z.string().optional(),
+  content: questionContentSchema.optional(),
   answers: z.array(answerSchema).min(2),
 })
 

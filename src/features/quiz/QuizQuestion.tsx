@@ -1,9 +1,11 @@
 import type { Answer, Question } from './schema'
 import { PALETTE_SEGMENT_PROPORTIONS } from './schema'
 import { OptimizedImage } from '@/images/OptimizedImage'
+import { AudioPreviewPlayer } from './audio/AudioPreviewPlayer'
 
 export interface QuizQuestionProps {
   question: Question
+  quizId?: string
   selectedAnswerId?: string
   /** Feedback-mode lock: no further taps are accepted while set. */
   locked?: boolean
@@ -13,6 +15,8 @@ export interface QuizQuestionProps {
   feedbackCorrectMessage?: string
   feedbackWrongMessage?: string
   onAnswer: (answer: Answer) => void
+  onSkipAudio?: () => void
+  onAudioReplay?: () => void
 }
 
 /**
@@ -22,12 +26,15 @@ export interface QuizQuestionProps {
  */
 export function QuizQuestion({
   question,
+  quizId,
   selectedAnswerId,
   locked = false,
   revealCorrectAnswerId,
   feedbackCorrectMessage,
   feedbackWrongMessage,
   onAnswer,
+  onSkipAudio,
+  onAudioReplay,
 }: QuizQuestionProps) {
   const layoutClass =
     question.layout === 'compact'
@@ -49,9 +56,23 @@ export function QuizQuestion({
     return undefined
   }
 
+  const isAudioPreview = question.content?.kind === 'audio-preview'
+
   return (
-    <div className="question" data-testid="quiz-question" data-layout={question.layout}>
+    <div className="question" data-testid="quiz-question" data-layout={question.layout} data-content-kind={question.content?.kind ?? 'default'}>
       <h2 className="question__title">{question.title}</h2>
+
+      {isAudioPreview && question.content?.kind === 'audio-preview' && quizId && (
+        <AudioPreviewPlayer
+          content={question.content}
+          quizId={quizId}
+          questionId={question.id}
+          onSkip={onSkipAudio}
+          onReplayed={onAudioReplay}
+          revealTrackInfo={Boolean(locked && (selectedAnswerId !== undefined || revealCorrectAnswerId !== undefined))}
+          disabled={false}
+        />
+      )}
 
       {question.layout === 'palette' ? (
         <div className="answers answers--palette">

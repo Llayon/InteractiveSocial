@@ -12,6 +12,7 @@ export interface QuizMachineState {
 export type QuizAction =
   | { type: 'start' }
   | { type: 'answer'; questionId: string; answerId: string }
+  | { type: 'skip'; questionId: string }
   | { type: 'back' }
   | { type: 'next' }
   | { type: 'reveal-finished' }
@@ -75,6 +76,26 @@ export function quizReducer(
       if (state.phase !== 'active') return state
       if (state.currentIndex === 0) return state
       return { ...state, currentIndex: state.currentIndex - 1 }
+    }
+
+    case 'skip': {
+      if (state.phase !== 'active') return state
+      const question = quiz.questions[state.currentIndex]
+      if (!question || question.id !== action.questionId) return state
+      // Infrastructure failure skip: advance without counting as wrong. Record a
+      // sentinel so answers.length still covers the question for completion,
+      // but scoring ignores it (see computeCorrectCount).
+      const existingIndex = state.answers.findIndex((a) => a.questionId === action.questionId)
+      const skipped: SelectedAnswer = { questionId: action.questionId, answerId: '__skipped__' }
+      const answers =
+        existingIndex >= 0
+          ? state.answers.map((a, i) => (i === existingIndex ? skipped : a))
+          : [...state.answers, skipped]
+      const isLast = state.currentIndex === quiz.questions.length - 1
+      if (isLast) {
+        return { ...state, answers, phase: 'revealing' }
+      }
+      return { ...state, answers, currentIndex: state.currentIndex + 1 }
     }
 
     case 'next': {

@@ -6,13 +6,14 @@ import {
 } from '../../features/quiz/schema.js'
 import { interiorCharacterQuiz } from './interior-character/quiz.js'
 import { music90sQuiz } from './music90s/quiz.js'
+import { guess90sQuiz } from './guess90s/quiz.js'
 
 /**
  * Active quiz registry. New quizzes are added here as pure configuration —
  * no engine, UI or share changes required. Registry-level invariants are
  * validated fail-fast at load time (build/startup failure on drift).
  */
-const rawQuizzes = [interiorCharacterQuiz, music90sQuiz]
+const rawQuizzes = [interiorCharacterQuiz, music90sQuiz, guess90sQuiz]
 
 /** Quiz id grammar: lowercase, digits and dashes. */
 const QUIZ_ID_REGEX = /^[a-z][a-z0-9-]{0,63}$/
