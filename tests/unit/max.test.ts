@@ -174,8 +174,9 @@ describe('SHARE SECURITY (MAX prepare/deliver guards)', () => {
     const { resolveShareCardAsset, scoreCardAsset } = await import('@/features/quiz/scoring')
     const { music90sQuiz } = await import('@/content/quizzes/music90s/quiz')
     const m90 = music90sQuiz.results.find((r) => r.id === 'm90_cassette')!
-    // For music quiz, card is score-driven
-    expect(resolveShareCardAsset(music90sQuiz, m90, 7)).toBe(scoreCardAsset(7))
+    // For music quiz, card is score-driven and quiz-scoped (m90_score_09 vs g90_score_09)
+    expect(resolveShareCardAsset(music90sQuiz, m90, 7)).toBe(scoreCardAsset(music90sQuiz, 7))
+    expect(resolveShareCardAsset(music90sQuiz, m90, 7)).toBe('m90_score_07')
     expect(resolveShareCardAsset(music90sQuiz, m90, 7)).not.toContain('http')
   })
 
@@ -417,7 +418,8 @@ describe('QUIZ REGRESSION', () => {
     const { resolveShareCardAsset, scoreCardAsset } = await import('@/features/quiz/scoring')
     const { music90sQuiz } = await import('@/content/quizzes/music90s/quiz')
     const r = music90sQuiz.results.find((x) => x.id === 'm90_legend')!
-    expect(resolveShareCardAsset(music90sQuiz, r, 14)).toBe(scoreCardAsset(14))
+    expect(resolveShareCardAsset(music90sQuiz, r, 14)).toBe(scoreCardAsset(music90sQuiz, 14))
+    expect(resolveShareCardAsset(music90sQuiz, r, 14)).toBe('m90_score_14')
   })
 })
 

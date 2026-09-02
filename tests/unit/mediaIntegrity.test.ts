@@ -33,12 +33,13 @@ describe('media integrity: content ↔ runtime manifest', () => {
     }
   })
 
-  it('exact-score cards (score_00..score_NN) exist for correct-count quizzes', () => {
+  it('exact-score cards (quiz-scoped, e.g. m90_score_00) exist for correct-count quizzes', () => {
     for (const quiz of quizzes) {
       if (quiz.scoring.kind !== 'correct-count') continue
       const total = quiz.questions.length
+      const prefix = quiz.id === 'music90s' ? 'm90' : quiz.id === 'guess90s' ? 'g90' : quiz.id
       for (let s = 0; s <= total; s++) {
-        const key = `score_${String(s).padStart(2, '0')}`
+        const key = `${prefix}_score_${String(s).padStart(2, '0')}`
         expect(
           RUNTIME_IMAGE_MANIFEST.results[key],
           `${quiz.id} exact-score card "${key}" missing from manifest`,
@@ -58,6 +59,13 @@ describe('media integrity: content ↔ runtime manifest', () => {
         }
       }
       for (const result of quiz.results) usedResultKeys.add(result.id)
+      if (quiz.scoring.kind === 'correct-count') {
+        const prefix = quiz.id === 'music90s' ? 'm90' : quiz.id === 'guess90s' ? 'g90' : quiz.id
+        const total = quiz.questions.length
+        for (let s = 0; s <= total; s++) usedResultKeys.add(`${prefix}_score_${String(s).padStart(2, '0')}`)
+        // legacy generic score_XX kept for backwards compat of old share links
+        for (let s = 0; s <= total; s++) usedResultKeys.add(`score_${String(s).padStart(2, '0')}`)
+      }
     }
     for (const key of Object.keys(RUNTIME_IMAGE_MANIFEST.quiz)) {
       if (!usedQuizKeys.has(key)) console.warn(`[media] stale manifest entry quiz/${key}`)

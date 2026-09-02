@@ -3,6 +3,7 @@ import type { Result } from '../../../features/quiz/schema.js'
 /**
  * guess90s score results — five bands covering 0..20.
  * Namespaced g90_* to guarantee global uniqueness.
+ * Exact-score assets are quiz-scoped (g90_score_00 … g90_score_20) to avoid collision with m90_score_09 (9/18 vs 9/20).
  */
 export const results: Result[] = [
   {
@@ -18,7 +19,7 @@ export const results: Result[] = [
       shareQuote: 'Я угадала только пару хитов по 4 секундам 🎧 А ты сколько угадаешь?',
       shareCta: 'Бросить вызов',
     },
-    shareImage: 'score_00',
+    shareImage: 'g90_score_00',
   },
   {
     id: 'g90_familiar',
@@ -33,7 +34,7 @@ export const results: Result[] = [
       shareQuote: 'Я угадала 8 из 20 хитов 90-х по 4 секундам. Побьёшь?',
       shareCta: 'Бросить вызов',
     },
-    shareImage: 'score_08',
+    shareImage: 'g90_score_08',
   },
   {
     id: 'g90_cassette',
@@ -48,7 +49,7 @@ export const results: Result[] = [
       shareQuote: 'Я — кассетный человек: 12 из 20 по 4 секундам. Сможешь больше?',
       shareCta: 'Бросить вызов',
     },
-    shareImage: 'score_12',
+    shareImage: 'g90_score_12',
   },
   {
     id: 'g90_disco',
@@ -63,7 +64,7 @@ export const results: Result[] = [
       shareQuote: 'Я угадала 16 из 20 хитов 90-х всего по 4 секундам 🎧 А ты сколько угадаешь?',
       shareCta: 'Бросить вызов',
     },
-    shareImage: 'score_16',
+    shareImage: 'g90_score_16',
   },
   {
     id: 'g90_legend',
@@ -78,6 +79,6 @@ export const results: Result[] = [
       shareQuote: 'Я легенда кассетного века — 20 из 20 по 4 секундам! Твой ход 🎧',
       shareCta: 'Бросить вызов',
     },
-    shareImage: 'score_20',
+    shareImage: 'g90_score_20',
   },
 ]

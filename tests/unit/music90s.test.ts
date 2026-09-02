@@ -7,6 +7,7 @@ import {
   resolveBandResultId,
   resolveCorrectCountOutcome,
   resolveOutcome,
+  resolveShareCardAsset,
   scoreCardAsset,
 } from '@/features/quiz/scoring'
 
@@ -262,21 +263,30 @@ describe('Music90s: outcome boundary', () => {
   })
 })
 
-describe('Music90s: share-card asset key encoding', () => {
-  it('two-digit zero-padded score_XX', () => {
-    expect(scoreCardAsset(0)).toBe('score_00')
-    expect(scoreCardAsset(7)).toBe('score_07')
-    expect(scoreCardAsset(18)).toBe('score_18')
+describe('Music90s: share-card asset key encoding (quiz-scoped)', () => {
+  it('two-digit zero-padded m90_score_XX', () => {
+    expect(scoreCardAsset(q, 0)).toBe('m90_score_00')
+    expect(scoreCardAsset(q, 7)).toBe('m90_score_07')
+    expect(scoreCardAsset(q, 18)).toBe('m90_score_18')
   })
-  it('covers 0..18', () => {
+  it('covers 0..18 with quiz prefix', () => {
     for (let s = 0; s <= 18; s++) {
-      expect(scoreCardAsset(s)).toBe(`score_${String(s).padStart(2, '0')}`)
+      expect(scoreCardAsset(q, s)).toBe(`m90_score_${String(s).padStart(2, '0')}`)
     }
   })
   it('boundary assets exist logically (resolver)', () => {
-    expect(scoreCardAsset(17)).toBe('score_17')
-    expect(scoreCardAsset(18)).toBe('score_18')
-    expect(scoreCardAsset(14)).toBe('score_14')
-    expect(scoreCardAsset(0)).toBe('score_00')
+    expect(scoreCardAsset(q, 17)).toBe('m90_score_17')
+    expect(scoreCardAsset(q, 18)).toBe('m90_score_18')
+    expect(scoreCardAsset(q, 14)).toBe('m90_score_14')
+    expect(scoreCardAsset(q, 0)).toBe('m90_score_00')
+  })
+  it('music90s 9 → m90_score_09 (9/18) and 18 → m90_score_18 (18/18)', () => {
+    expect(scoreCardAsset(q, 9)).toBe('m90_score_09')
+    expect(scoreCardAsset(q, 18)).toBe('m90_score_18')
+    // via resolver
+    const r9 = q.results.find((r) => r.id === resolveBandResultId(q, 9))!
+    const r18 = q.results.find((r) => r.id === resolveBandResultId(q, 18))!
+    expect(resolveShareCardAsset(q, r9, 9)).toBe('m90_score_09')
+    expect(resolveShareCardAsset(q, r18, 18)).toBe('m90_score_18')
   })
 })

@@ -54,40 +54,51 @@ const SOURCES = [
     aspect: '4/5',
   })),
   // Music90s band hero: the shareImage of each music90s result IS one of the
-  // score_XX cards (representative score in the band), so the same asset is
-  // already produced. To keep manifest.results lookup working for the
-  // approved result id (m90_rookie, m90_familiar …), we duplicate the
-  // mapping to the canonical band score card.
+  // quiz-scoped score cards (m90_score_XX), so the same asset is already produced.
+  // To keep manifest.results lookup working for the approved result id (m90_rookie …),
+  // we duplicate the mapping to the canonical band score card.
   ...[
-    ['score_00', 'm90_rookie'],
-    ['score_05', 'm90_familiar'],
-    ['score_08', 'm90_cassette'],
-    ['score_11', 'm90_disco'],
-    ['score_14', 'm90_legend'],
-    ['score_17', 'm90_era17'],
-    ['score_18', 'm90_era18'],
+    ['m90_score_00', 'm90_rookie'],
+    ['m90_score_05', 'm90_familiar'],
+    ['m90_score_08', 'm90_cassette'],
+    ['m90_score_11', 'm90_disco'],
+    ['m90_score_14', 'm90_legend'],
+    ['m90_score_17', 'm90_era17'],
+    ['m90_score_18', 'm90_era18'],
   ].map(([src, key]) => ({
     name: key,
     sourceFile: `score-cards/${src}.png`,
     bucket: 'results',
     aspect: '4/5',
   })),
-  // Guess90s band hero: same score_XX reuse (representative scores).
+  // Guess90s band hero: same quiz-scoped reuse (representative scores).
   ...[
-    ['score_00', 'g90_rookie'],
-    ['score_08', 'g90_familiar'],
-    ['score_12', 'g90_cassette'],
-    ['score_16', 'g90_disco'],
-    ['score_20', 'g90_legend'],
+    ['g90_score_00', 'g90_rookie'],
+    ['g90_score_08', 'g90_familiar'],
+    ['g90_score_12', 'g90_cassette'],
+    ['g90_score_16', 'g90_disco'],
+    ['g90_score_20', 'g90_legend'],
   ].map(([src, key]) => ({
     name: key,
     sourceFile: `score-cards/${src}.png`,
     bucket: 'results',
     aspect: '4/5',
   })),
-  // Exact-score cards: same pipeline, names = score_00..score_20.
-  // Source masters come from assets-source/score-cards/score_XX.png (produced
-  // by scripts/generate-score-cards.ps1). Music90s uses 0..18, guess90s 0..20.
+  // Exact-score cards — QUIZ-SCOPED to prevent denominator collision (m90_score_09 = 9/18 vs g90_score_09 = 9/20).
+  // Source masters come from assets-source/score-cards/m90_score_XX.png and g90_score_XX.png (produced by generate-score-cards.ps1).
+  ...Array.from({ length: 19 }, (_, i) => ({
+    name: `m90_score_${String(i).padStart(2, '0')}`,
+    sourceFile: `score-cards/m90_score_${String(i).padStart(2, '0')}.png`,
+    bucket: 'results',
+    aspect: '4/5',
+  })),
+  ...Array.from({ length: 21 }, (_, i) => ({
+    name: `g90_score_${String(i).padStart(2, '0')}`,
+    sourceFile: `score-cards/g90_score_${String(i).padStart(2, '0')}.png`,
+    bucket: 'results',
+    aspect: '4/5',
+  })),
+  // Legacy generic score_XX kept for backwards compat of old share links (m90 alias for 0..18, g90 for 19..20)
   ...Array.from({ length: 21 }, (_, i) => ({
     name: `score_${String(i).padStart(2, '0')}`,
     sourceFile: `score-cards/score_${String(i).padStart(2, '0')}.png`,

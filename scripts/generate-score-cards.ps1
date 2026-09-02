@@ -1,7 +1,9 @@
-# Deterministic exact-score card generator for correct-count quizzes (Music90s + Guess90s).
-# ONE template, 21 outputs (score_00..score_20). Music90s uses 0..18 (/18), Guess90s uses 0..20 (/20).
+# Deterministic exact-score card generator — QUIZ-SCOPED.
+# Produces quiz-scoped assets to prevent denominator collision:
+#   m90_score_00..m90_score_18  →  N / 18  (music90s, 18Q)
+#   g90_score_00..g90_score_20  →  N / 20  (guess90s, 20Q)
 # Source masters in assets-source/score-cards/ -> production assets:
-#   scripts/optimize-share-cards.ps1  -> public/share-cards/score_XX.jpg + _thumb.jpg
+#   scripts/optimize-share-cards.ps1  -> public/share-cards/m90_score_XX.jpg + g90_score_XX.jpg
 # Visual direction: premium editorial nostalgia (cream / wine / silver / cassette).
 
 Add-Type -AssemblyName System.Drawing
@@ -18,7 +20,7 @@ $silver = [System.Drawing.Color]::FromArgb(178, 171, 158)
 $muted  = [System.Drawing.Color]::FromArgb(139, 129, 117)
 $inkSoft= [System.Drawing.Color]::FromArgb(253, 249, 244)
 $EN_DASH = [char]0x2013
-$IZ = [char]0x438 + [char]0x437 + ' 18'
+$IZ18 = [char]0x438 + [char]0x437 + ' 18'
 $IZ20 = [char]0x438 + [char]0x437 + ' 20'
 
 function Cyr([int[]]$codes) {
@@ -27,28 +29,41 @@ function Cyr([int[]]$codes) {
   return $sb.ToString()
 }
 
-# Band strings (codepoints only; no UTF-8 source bytes).
-$T_SLUC   = Cyr @(0x421, 0x43b, 0x443, 0x447, 0x430, 0x439, 0x43d, 0x43e) + ' ' + Cyr @(0x437, 0x430, 0x433, 0x43b, 0x44f, 0x43d, 0x443, 0x43b, 0x430) + ' ' + Cyr @(0x432) + ' ' + '9' + '0' + '-' + Cyr @(0x435)
-$T_GDE    = Cyr @(0x413, 0x434, 0x435) + '-' + Cyr @(0x442, 0x43e) + ' ' + Cyr @(0x44d, 0x442, 0x43e) + ' ' + Cyr @(0x438, 0x433, 0x440, 0x430, 0x43b, 0x43e)
-$T_CASS    = Cyr @(0x41A, 0x430, 0x441, 0x441, 0x435, 0x442, 0x43D, 0x44B, 0x439) + ' ' + Cyr @(0x447, 0x435, 0x43B, 0x43E, 0x432, 0x435, 0x43A)
-$T_DISCO2  = Cyr @(0x417, 0x432, 0x435, 0x437, 0x434, 0x430) + ' ' + Cyr @(0x448, 0x43a, 0x43e, 0x43b, 0x44c, 0x43d, 0x43e, 0x439) + ' ' + Cyr @(0x434, 0x438, 0x441, 0x43a, 0x43e, 0x442, 0x435, 0x43a, 0x438)
-$T_GLAVRED = Cyr @(0x413, 0x43b, 0x430, 0x432, 0x440, 0x435, 0x434) + ' ' + Cyr @(0x436, 0x443, 0x440, 0x43d, 0x430, 0x43b, 0x430) + ' ' + 'C' + 'o' + 'o' + 'l'
-$T_TYEST  = Cyr @(0x422, 0x44b) + ' ' + Cyr @(0x438) + ' ' + Cyr @(0x435, 0x441, 0x442, 0x44c) + ' ' + '9' + '0' + '-' + Cyr @(0x435)
+# Quiz-scoped band titles (codepoints only; no UTF-8 source bytes).
+# Music90s (m90) 18Q
+$T_M90_SLUC   = Cyr @(0x421, 0x43b, 0x443, 0x447, 0x430, 0x439, 0x43d, 0x43e) + ' ' + Cyr @(0x437, 0x430, 0x433, 0x43b, 0x44f, 0x43d, 0x443, 0x43b, 0x430) + ' ' + Cyr @(0x432) + ' ' + '9' + '0' + '-' + Cyr @(0x435)
+$T_M90_GDE    = Cyr @(0x413, 0x434, 0x435) + '-' + Cyr @(0x442, 0x43e) + ' ' + Cyr @(0x44d, 0x442, 0x43e) + ' ' + Cyr @(0x438, 0x433, 0x440, 0x430, 0x43b, 0x43e)
+$T_M90_CASSMEM = Cyr @(0x41a, 0x430, 0x441, 0x441, 0x435, 0x442, 0x43d, 0x430, 0x44f) + ' ' + Cyr @(0x43f, 0x430, 0x43c, 0x44f, 0x442, 0x44c)
+$T_M90_DISCO2  = Cyr @(0x417, 0x432, 0x435, 0x437, 0x434, 0x430) + ' ' + Cyr @(0x448, 0x43a, 0x43e, 0x43b, 0x44c, 0x43d, 0x43e, 0x439) + ' ' + Cyr @(0x434, 0x438, 0x441, 0x43a, 0x43e, 0x442, 0x435, 0x43a, 0x438)
+$T_M90_GLAVRED = Cyr @(0x413, 0x43b, 0x430, 0x432, 0x440, 0x435, 0x434) + ' ' + Cyr @(0x436, 0x443, 0x440, 0x43d, 0x430, 0x43b, 0x430) + ' ' + 'C' + 'o' + 'o' + 'l'
+$T_M90_TYEST  = Cyr @(0x422, 0x44b) + ' ' + Cyr @(0x438) + ' ' + Cyr @(0x435, 0x441, 0x442, 0x44c) + ' ' + '9' + '0' + '-' + Cyr @(0x435)
+# Guess90s (g90) 20Q
+$T_G90_ROOKIE = Cyr @(0x422, 0x44b) + ' ' + Cyr @(0x441, 0x43b, 0x443, 0x447, 0x430, 0x439, 0x43d, 0x43e) + ' ' + Cyr @(0x437, 0x430, 0x448, 0x43b, 0x430) + ' ' + Cyr @(0x432) + ' ' + '9' + '0' + '-' + Cyr @(0x435)
+$T_G90_FAM    = Cyr @(0x413, 0x434, 0x435) + '-' + Cyr @(0x442, 0x43e) + ' ' + Cyr @(0x44d, 0x442, 0x43e) + ' ' + Cyr @(0x441, 0x43b, 0x44b, 0x448, 0x430, 0x43b, 0x430)
+$T_G90_CASS   = Cyr @(0x41A, 0x430, 0x441, 0x441, 0x435, 0x442, 0x43D, 0x44B, 0x439) + ' ' + Cyr @(0x447, 0x435, 0x43B, 0x43E, 0x432, 0x435, 0x43A)
+$T_G90_DISCO  = Cyr @(0x414, 0x438, 0x441, 0x43a, 0x43e, 0x442, 0x435, 0x43a, 0x430) + ' ' + '1' + '9' + '9' + '9'
+$T_G90_LEGEND = Cyr @(0x41b, 0x435, 0x433, 0x435, 0x43d, 0x434, 0x430) + ' ' + Cyr @(0x43a, 0x430, 0x441, 0x441, 0x435, 0x442, 0x43d, 0x43e, 0x433, 0x43e) + ' ' + Cyr @(0x432, 0x435, 0x43a, 0x430)
 $T_THROW   = Cyr @(0x411, 0x440, 0x43E, 0x441, 0x438, 0x442, 0x44C) + ' ' + Cyr @(0x432, 0x44B, 0x437, 0x43E, 0x432)
 
-$bands = @(
-  @{ max = 4;  title = $T_SLUC;    sub = '0' + $EN_DASH + '4 ' + $IZ },
-  @{ max = 7;  title = $T_GDE;     sub = '5' + $EN_DASH + '7 ' + $IZ },
-  @{ max = 10; title = $T_CASS;    sub = '8' + $EN_DASH + '10 ' + $IZ },
-  @{ max = 13; title = $T_DISCO2;  sub = '11' + $EN_DASH + '13 ' + $IZ },
-  @{ max = 16; title = $T_GLAVRED; sub = '14' + $EN_DASH + '16 ' + $IZ },
-  @{ max = 17; title = $T_TYEST;   sub = '17 ' + $IZ },
-  @{ max = 18; title = $T_TYEST;   sub = '18 ' + $IZ },
-  @{ max = 19; title = $T_TYEST;   sub = '19 ' + $IZ20 },
-  @{ max = 20; title = $T_TYEST;   sub = '20 ' + $IZ20 }
+$m90Bands = @(
+  @{ max = 4;  title = $T_M90_SLUC;     sub = '0' + $EN_DASH + '4 ' + $IZ18 },
+  @{ max = 7;  title = $T_M90_GDE;      sub = '5' + $EN_DASH + '7 ' + $IZ18 },
+  @{ max = 10; title = $T_M90_CASSMEM;  sub = '8' + $EN_DASH + '10 ' + $IZ18 },
+  @{ max = 13; title = $T_M90_DISCO2;   sub = '11' + $EN_DASH + '13 ' + $IZ18 },
+  @{ max = 16; title = $T_M90_GLAVRED;  sub = '14' + $EN_DASH + '16 ' + $IZ18 },
+  @{ max = 17; title = $T_M90_TYEST;    sub = '17 ' + $IZ18 },
+  @{ max = 18; title = $T_M90_TYEST;    sub = '18 ' + $IZ18 }
 )
 
-function Band-For([int]$score) {
+$g90Bands = @(
+  @{ max = 5;  title = $T_G90_ROOKIE; sub = '0' + $EN_DASH + '5 ' + $IZ20 },
+  @{ max = 10; title = $T_G90_FAM;    sub = '6' + $EN_DASH + '10 ' + $IZ20 },
+  @{ max = 14; title = $T_G90_CASS;   sub = '11' + $EN_DASH + '14 ' + $IZ20 },
+  @{ max = 18; title = $T_G90_DISCO;  sub = '15' + $EN_DASH + '18 ' + $IZ20 },
+  @{ max = 20; title = $T_G90_LEGEND; sub = '19' + $EN_DASH + '20 ' + $IZ20 }
+)
+
+function Band-For([int]$score, $bands) {
   foreach ($b in $bands) { if ($score -le $b.max) { return $b } }
   return $bands[-1]
 }
@@ -69,8 +84,7 @@ function Draw-Cassette {
 }
 
 function New-ScoreCard {
-  param([int]$score)
-  $band = Band-For $score
+  param([int]$score, $band, [string]$totalStr)
   $bmp = New-Object System.Drawing.Bitmap($W, $H)
   $g = [System.Drawing.Graphics]::FromImage($bmp)
   $g.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::AntiAlias
@@ -86,7 +100,6 @@ function New-ScoreCard {
   Draw-Cassette $g ([int]($W/2)) 470 620 300
   $fScore = New-Object System.Drawing.Font('Georgia', 190, [System.Drawing.FontStyle]::Bold)
   $scoreRect = New-Object System.Drawing.RectangleF(40, 380, ($W - 80), 320)
-  $totalStr = if ($score -le 18) { '18' } else { '20' }
   $g.DrawString(('{0} / {1}' -f $score, $totalStr), $fScore, (New-Object System.Drawing.SolidBrush($wine)), $scoreRect, $center)
   $fTitle = New-Object System.Drawing.Font('Georgia', 66, [System.Drawing.FontStyle]::Regular)
   $titleRect = New-Object System.Drawing.RectangleF(70, 760, ($W - 140), 200)
@@ -112,12 +125,36 @@ function New-ScoreCard {
 }
 
 New-Item -ItemType Directory -Force -Path $outDir | Out-Null
-for ($s = 0; $s -le 20; $s++) {
-  $name = 'score_{0:d2}' -f $s
+# Music90s: m90_score_00..m90_score_18
+for ($s = 0; $s -le 18; $s++) {
+  $band = Band-For $s $m90Bands
+  $name = 'm90_score_{0:d2}' -f $s
   $path = Join-Path $outDir ($name + '.png')
-  $bmp = New-ScoreCard $s
+  $bmp = New-ScoreCard $s $band '18'
   $bmp.Save($path, [System.Drawing.Imaging.ImageFormat]::Png)
   $bmp.Dispose()
   Write-Host ('  {0}.png  ({1} KB)' -f $name, [math]::Round((Get-Item $path).Length / 1KB))
+}
+# Guess90s: g90_score_00..g90_score_20
+for ($s = 0; $s -le 20; $s++) {
+  $band = Band-For $s $g90Bands
+  $name = 'g90_score_{0:d2}' -f $s
+  $path = Join-Path $outDir ($name + '.png')
+  $bmp = New-ScoreCard $s $band '20'
+  $bmp.Save($path, [System.Drawing.Imaging.ImageFormat]::Png)
+  $bmp.Dispose()
+  Write-Host ('  {0}.png  ({1} KB)' -f $name, [math]::Round((Get-Item $path).Length / 1KB))
+}
+# Legacy generic score_00..score_20 kept for backwards compat of old share links (copies of m90 for 0..18, g90 for 19..20)
+# Generate them as well to avoid 404 for old URLs — they are not used for new shares.
+for ($s = 0; $s -le 18; $s++) {
+  $src = Join-Path $outDir ('m90_score_{0:d2}.png' -f $s)
+  $dst = Join-Path $outDir ('score_{0:d2}.png' -f $s)
+  Copy-Item -LiteralPath $src -Destination $dst -Force
+}
+for ($s = 19; $s -le 20; $s++) {
+  $src = Join-Path $outDir ('g90_score_{0:d2}.png' -f $s)
+  $dst = Join-Path $outDir ('score_{0:d2}.png' -f $s)
+  Copy-Item -LiteralPath $src -Destination $dst -Force
 }
 Write-Host 'done.'

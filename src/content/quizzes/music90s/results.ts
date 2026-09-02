@@ -3,10 +3,11 @@ import type { Result } from '../../../features/quiz/schema.js'
 /**
  * Music90s score results — seven semantic bands covering 0..18.
  * The exact score (7/18, 17/18, 18/18 …) is rendered separately on top of the band
- * and drives the exact-score share card set (score_00 … score_18).
+ * and drives the exact-score share card set (m90_score_00 … m90_score_18).
  * Result ids are globally namespaced (m90_*) per the registry policy.
  * Backward compat: m90_legend (code 'lg') is retained for 14–16 — old s2_m90_lg_* links still resolve.
  * Two new ids m90_era17 / m90_era18 (codes 'l7' / 'l8') are standalone 17 and 18 outcomes.
+ * Quiz-scoped asset keys prevent collision with guess90s (g90_score_09 = 9/20 vs m90_score_09 = 9/18).
  */
 export const results: Result[] = [
   {
@@ -23,7 +24,7 @@ export const results: Result[] = [
       shareQuote: 'Я случайно заглянула в 90-е 😅\n\nИ, кажется, быстро вышла. Сколько наберёшь ты?',
       shareCta: 'Бросить вызов',
     },
-    shareImage: 'score_00',
+    shareImage: 'm90_score_00',
   },
   {
     id: 'm90_familiar',
@@ -39,7 +40,7 @@ export const results: Result[] = [
       shareQuote: 'Кажется, где-то это всё играло 📻\n\nПроверишь свою память?',
       shareCta: 'Бросить вызов',
     },
-    shareImage: 'score_05',
+    shareImage: 'm90_score_05',
   },
   {
     id: 'm90_cassette',
@@ -55,7 +56,7 @@ export const results: Result[] = [
       shareQuote: 'Моя кассетная память ещё держится 📼\n\nА ты сколько вспомнишь?',
       shareCta: 'Бросить вызов',
     },
-    shareImage: 'score_08',
+    shareImage: 'm90_score_08',
   },
   {
     id: 'm90_disco',
@@ -71,7 +72,7 @@ export const results: Result[] = [
       shareQuote: 'Мой статус: звезда школьной дискотеки 🪩\n\nПопробуй набрать больше!',
       shareCta: 'Бросить вызов',
     },
-    shareImage: 'score_11',
+    shareImage: 'm90_score_11',
   },
   {
     id: 'm90_legend',
@@ -87,7 +88,7 @@ export const results: Result[] = [
       shareQuote: 'Мой уровень: главный редактор журнала Cool 💅\n\nТвой ход — рискнёшь повторить?',
       shareCta: 'Бросить вызов',
     },
-    shareImage: 'score_14',
+    shareImage: 'm90_score_14',
   },
   {
     id: 'm90_era17',
@@ -103,7 +104,7 @@ export const results: Result[] = [
       shareQuote: '17 из 18. Одну всё-таки не вспомнила 👑\n\nА у тебя сколько?',
       shareCta: 'Бросить вызов',
     },
-    shareImage: 'score_17',
+    shareImage: 'm90_score_17',
   },
   {
     id: 'm90_era18',
@@ -119,6 +120,6 @@ export const results: Result[] = [
       shareQuote: '18 из 18. Всё угадала 👑\n\nТеперь попробуй ты.',
       shareCta: 'Бросить вызов',
     },
-    shareImage: 'score_18',
+    shareImage: 'm90_score_18',
   },
 ]

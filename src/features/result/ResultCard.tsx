@@ -21,7 +21,7 @@ export function ResultCard({ quiz, result, score, children }: ResultCardProps) {
   const isScore = presentation.kind === 'score'
   // Hero identity: correct-count shows the exact-score card; personality
   // keeps the approved per-result artwork.
-  const heroAsset = isScore && typeof score === 'number' ? scoreCardAsset(score) : result.id
+  const heroAsset = isScore && typeof score === 'number' ? scoreCardAsset(quiz, score) : result.id
 
   return (
     <article

@@ -83,10 +83,30 @@ foreach ($entry in $mapping.GetEnumerator()) {
 }
 
 if (Test-Path $scoreSourceDir) {
+  # Quiz-scoped exact-score cards: prevent denominator collision (m90 9/18 vs g90 9/20)
+  for ($s = 0; $s -le 18; $s++) {
+    $name = 'm90_score_{0:d2}' -f $s
+    $src = Join-Path $scoreSourceDir ($name + '.png')
+    if (-not (Test-Path $src)) { Write-Warning "missing score master: $name.png"; continue }
+    Convert-Card -SourcePath $src -DestPath (Join-Path $out ("$name.jpg")) `
+      -TargetW 1080 -TargetH 1350 -Quality 74
+    Convert-Card -SourcePath $src -DestPath (Join-Path $out ("${name}_thumb.jpg")) `
+      -TargetW 256 -TargetH 320 -Quality 80
+  }
+  for ($s = 0; $s -le 20; $s++) {
+    $name = 'g90_score_{0:d2}' -f $s
+    $src = Join-Path $scoreSourceDir ($name + '.png')
+    if (-not (Test-Path $src)) { Write-Warning "missing score master: $name.png"; continue }
+    Convert-Card -SourcePath $src -DestPath (Join-Path $out ("$name.jpg")) `
+      -TargetW 1080 -TargetH 1350 -Quality 74
+    Convert-Card -SourcePath $src -DestPath (Join-Path $out ("${name}_thumb.jpg")) `
+      -TargetW 256 -TargetH 320 -Quality 80
+  }
+  # Legacy generic score_XX kept for backwards compat of old share links (will be phased out)
   for ($s = 0; $s -le 20; $s++) {
     $name = 'score_{0:d2}' -f $s
     $src = Join-Path $scoreSourceDir ($name + '.png')
-    if (-not (Test-Path $src)) { Write-Warning "missing score master: $name.png"; continue }
+    if (-not (Test-Path $src)) { continue }
     Convert-Card -SourcePath $src -DestPath (Join-Path $out ("$name.jpg")) `
       -TargetW 1080 -TargetH 1350 -Quality 74
     Convert-Card -SourcePath $src -DestPath (Join-Path $out ("${name}_thumb.jpg")) `

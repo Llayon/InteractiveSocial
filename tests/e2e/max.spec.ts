@@ -1,8 +1,12 @@
 import { expect, test, expectNoRuntimeErrors } from './fixtures'
 
 async function answerMusic18(page: import('@playwright/test').Page) {
-  for (let i = 0; i < 18; i++) {
+  const pad = (n: number) => String(n).padStart(2, '0')
+  for (let i = 1; i <= 18; i++) {
     await page.getByTestId('answer-option').first().click()
+    if (i < 18) {
+      await expect(page.getByTestId('progress')).toHaveText(`${pad(i + 1)} / 18`, { timeout: 3000 })
+    }
   }
 }
 

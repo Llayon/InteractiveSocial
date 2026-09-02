@@ -285,19 +285,32 @@ export function quizCompleteTelemetry(
   return { result_id: outcome.resultId, total_scores: computeBreakdown(quiz, answers).totals }
 }
 
-/** Two-digit zero-padded score key, e.g. 8 → "score_08". */
-export function scoreCardAsset(score: number): string {
+/** Quiz-scoped prefix for exact-score assets (no collision between quizzes). */
+function quizScorePrefix(quiz: Quiz): string {
+  if (quiz.id === 'music90s') return 'm90'
+  if (quiz.id === 'guess90s') return 'g90'
+  return quiz.id
+}
+
+/** Two-digit zero-padded quiz-scoped score key, e.g. music90s 8 → "m90_score_08", guess90s 8 → "g90_score_08". */
+export function scoreCardAsset(quiz: Quiz, score: number): string {
+  const prefix = quizScorePrefix(quiz)
+  return `${prefix}_score_${String(Math.max(0, score)).padStart(2, '0')}`
+}
+
+/** Legacy helper: generic key without quiz scope (kept for migration, do not use for new shares). */
+export function legacyScoreCardAsset(score: number): string {
   return `score_${String(Math.max(0, score)).padStart(2, '0')}`
 }
 
 /**
  * Transport/share image key for an outcome. Correct-count quizzes use the
- * exact-score card set (score_00 … score_NN); personality quizzes keep the
- * per-result approved card.
+ * exact-score card set (m90_score_00 … / g90_score_00 …); personality quizzes keep the
+ * per-result approved card. Quiz-scoped to prevent denominator collision (e.g. m90_score_09 = 9/18 vs g90_score_09 = 9/20).
  */
 export function resolveShareCardAsset(quiz: Quiz, result: Result, score?: number): string {
   if (quiz.scoring.kind === 'correct-count' && typeof score === 'number') {
-    return scoreCardAsset(score)
+    return scoreCardAsset(quiz, score)
   }
   return result.shareImage
 }
