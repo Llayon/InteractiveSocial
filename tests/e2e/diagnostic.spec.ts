@@ -1,11 +1,18 @@
 import { expect, test } from './fixtures'
 
 test.describe('diagnostic build', () => {
-  test('boot probe visible even before React', async ({ page }) => {
-    await page.goto('/', { waitUntil: 'domcontentloaded' })
+  test('boot probe visible even before React (diag mode)', async ({ page }) => {
+    await page.goto('/?diag=1', { waitUntil: 'domcontentloaded' })
     await expect(page.locator('#boot-probe')).toBeVisible()
     await expect(page.locator('#boot-probe')).toContainText('BOOT_HTML_a0b0e98')
     await expect(page.locator('#boot-stages')).toContainText('HTML_LOADED')
+  })
+
+  test('prod without diag hides boot probe', async ({ page }) => {
+    await page.goto('/', { waitUntil: 'domcontentloaded' })
+    await expect(page.locator('#boot-probe')).toBeHidden()
+    await expect(page.locator('#boot-stages')).toBeHidden()
+    await expect(page.getByTestId('start-cta')).toBeVisible({ timeout: 2000 })
   })
 
   test('versioned path serves same diagnostic HTML', async ({ page }) => {
@@ -15,10 +22,10 @@ test.describe('diagnostic build', () => {
     await expect(page.getByTestId('start-cta')).toBeVisible({ timeout: 2000 })
   })
 
-  test('stale asset 404 still shows boot error, not white screen', async ({ page }) => {
+  test('stale asset 404 still shows boot error, not white screen (diag)', async ({ page }) => {
     // Simulate stale index.html pointing to old hashed asset that is now 404
     await page.route(/\/assets\/index-.*\.js/, (route) => route.fulfill({ status: 404, body: 'Not Found' }))
-    await page.goto('/', { waitUntil: 'domcontentloaded' })
+    await page.goto('/?diag=1', { waitUntil: 'domcontentloaded' })
     // Even with main JS 404, boot probe should still be visible (HTML marker)
     await expect(page.locator('#boot-probe')).toBeVisible()
     // And asset failure should be captured in boot-errors or stages

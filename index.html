@@ -30,12 +30,13 @@
       window.__pushStage = __pushStage;
       __pushStage('HTML_LOADED');
       // Global error capture BEFORE main.tsx
+      function isDiagMode(){ try{ return location.pathname.indexOf('max-diag')>-1 || location.search.indexOf('diag')>-1 || location.search.indexOf('debug')>-1; }catch(e){ return false; } }
       window.onerror = function(msg, src, line, col, err) {
         try {
           var rec = { stage: 'HTML_LOADED', name: err && err.name || 'Error', message: String(msg).slice(0,300), file: String(src||'').slice(-60), line: line, col: col, stack: err && err.stack ? String(err.stack).slice(0,500) : '' };
           window.__BOOT_ERRORS__.push(rec);
           var el = document.getElementById('boot-errors');
-          if (el) el.textContent = 'BOOT ERROR stage=' + rec.stage + ' name=' + rec.name + ' message=' + rec.message + ' file=' + rec.file;
+          if (el) { el.textContent = 'BOOT ERROR stage=' + rec.stage + ' name=' + rec.name + ' message=' + rec.message + ' file=' + rec.file; if(isDiagMode()) el.style.display='block'; }
           __pushStage('JS_ERROR:' + rec.name);
           try { localStorage.setItem('__boot_errors', JSON.stringify(window.__BOOT_ERRORS__)); } catch(e) {}
           // also beacon
@@ -52,7 +53,7 @@
           var rec2 = { stage: 'UNHANDLED_REJECTION', name: r && r.name || 'Rejection', message: String(r && r.message || r).slice(0,300) };
           window.__BOOT_ERRORS__.push(rec2);
           var el2 = document.getElementById('boot-errors');
-          if (el2) el2.textContent = 'UNHANDLED_REJECTION name=' + rec2.name + ' message=' + rec2.message;
+          if (el2) { el2.textContent = 'UNHANDLED_REJECTION name=' + rec2.name + ' message=' + rec2.message; if(isDiagMode()) el2.style.display='block'; }
           __pushStage('UNHANDLED_REJECTION:' + rec2.name);
           try { localStorage.setItem('__boot_errors', JSON.stringify(window.__BOOT_ERRORS__)); } catch(e) {}
           try {
@@ -71,7 +72,7 @@
             try {
               window.__BOOT_ERRORS__.push({ stage: 'ASSET_FAILED', file: src2.slice(-80) });
               var el3 = document.getElementById('boot-errors');
-              if (el3) el3.textContent = 'ASSET_FAILED file=' + src2.slice(-80);
+              if (el3) { el3.textContent = 'ASSET_FAILED file=' + src2.slice(-80); if(isDiagMode()) el3.style.display='block'; }
               __pushStage('ASSET_FAILED');
             } catch(e2) {}
           }
@@ -80,8 +81,8 @@
     </script>
     <!-- messenger bridges loaded async per-platform by main.tsx; no parser-blocking CDN -->
     <style>
-      #boot-probe{position:fixed;top:0;left:0;z-index:99999;background:#000;color:#0f0;font:10px/12px monospace;padding:4px 6px;max-width:100vw;overflow:hidden;white-space:nowrap;opacity:0.9}
-      #boot-stages{position:fixed;top:18px;left:0;z-index:99999;background:#111;color:#ff0;font:9px/10px monospace;padding:3px 6px;max-width:100vw;overflow:hidden;white-space:nowrap;opacity:0.85}
+      #boot-probe{position:fixed;top:0;left:0;z-index:99999;background:#000;color:#0f0;font:10px/12px monospace;padding:4px 6px;max-width:100vw;overflow:hidden;white-space:nowrap;opacity:0.9;display:none}
+      #boot-stages{position:fixed;top:18px;left:0;z-index:99999;background:#111;color:#ff0;font:9px/10px monospace;padding:3px 6px;max-width:100vw;overflow:hidden;white-space:nowrap;opacity:0.85;display:none}
       #boot-errors{position:fixed;top:36px;left:0;z-index:99999;background:#400;color:#fff;font:10px/12px monospace;padding:4px 6px;max-width:100vw;overflow:auto;white-space:pre-wrap;max-height:40vh;display:none}
     </style>
   </head>
@@ -89,7 +90,20 @@
     <div id="boot-probe">BOOT_HTML_a0b0e98</div>
     <div id="boot-stages">BOOT_STAGES: HTML_LOADED</div>
     <div id="boot-errors"></div>
-    <script>try{ var be=document.getElementById('boot-errors'); if(window.__BOOT_ERRORS__ && window.__BOOT_ERRORS__.length) be.style.display='block'; }catch(e){}</script>
+    <script>
+      // Show diagnostic overlay only on versioned diagnostic path or ?diag=1 / ?debug=1 (keeps prod clean, tests use ?diag=1)
+      (function(){
+        try{
+          var isDiag = location.pathname.indexOf('max-diag')>-1 || location.search.indexOf('diag')>-1 || location.search.indexOf('debug')>-1;
+          if(isDiag){
+            var p=document.getElementById('boot-probe'); if(p) p.style.display='block';
+            var s=document.getElementById('boot-stages'); if(s) s.style.display='block';
+            var e=document.getElementById('boot-errors'); if(e && window.__BOOT_ERRORS__ && window.__BOOT_ERRORS__.length) e.style.display='block';
+          }
+        }catch(e){}
+      })();
+      try{ var be=document.getElementById('boot-errors'); if(window.__BOOT_ERRORS__ && window.__BOOT_ERRORS__.length && (location.pathname.indexOf('max-diag')>-1 || location.search.indexOf('diag')>-1 || location.search.indexOf('debug')>-1)) be.style.display='block'; }catch(e){}
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
