@@ -1,5 +1,5 @@
-# Deterministic exact-score card generator for correct-count quizzes (Music90s).
-# ONE template, 15 outputs (score_00..score_14).
+# Deterministic exact-score card generator for correct-count quizzes (Music90s + Guess90s).
+# ONE template, 21 outputs (score_00..score_20). Music90s uses 0..18 (/18), Guess90s uses 0..20 (/20).
 # Source masters in assets-source/score-cards/ -> production assets:
 #   scripts/optimize-share-cards.ps1  -> public/share-cards/score_XX.jpg + _thumb.jpg
 # Visual direction: premium editorial nostalgia (cream / wine / silver / cassette).
@@ -18,7 +18,8 @@ $silver = [System.Drawing.Color]::FromArgb(178, 171, 158)
 $muted  = [System.Drawing.Color]::FromArgb(139, 129, 117)
 $inkSoft= [System.Drawing.Color]::FromArgb(253, 249, 244)
 $EN_DASH = [char]0x2013
-$IZ = [char]0x438 + [char]0x437 + ' 14'
+$IZ = [char]0x438 + [char]0x437 + ' 18'
+$IZ20 = [char]0x438 + [char]0x437 + ' 20'
 
 function Cyr([int[]]$codes) {
   $sb = New-Object System.Text.StringBuilder
@@ -27,19 +28,24 @@ function Cyr([int[]]$codes) {
 }
 
 # Band strings (codepoints only; no UTF-8 source bytes).
-$T_RUSKAS = Cyr @(0x42B) + ' ' + Cyr @(0x43F, 0x43E, 0x434, 0x43A, 0x440, 0x430, 0x434, 0x430) + ' ' + Cyr @(0x432) + ' 90-' + [char]0x445
-$T_SLUSH   = Cyr @(0x42B) + ' ' + Cyr @(0x433, 0x434, 0x435) + '-' + Cyr @(0x442, 0x43E) + ' ' + Cyr @(0x44D, 0x442, 0x43E) + ' ' + Cyr @(0x441, 0x43B, 0x44B, 0x448, 0x430, 0x43B, 0x430)
+$T_SLUC   = Cyr @(0x421, 0x43b, 0x443, 0x447, 0x430, 0x439, 0x43d, 0x43e) + ' ' + Cyr @(0x437, 0x430, 0x433, 0x43b, 0x44f, 0x43d, 0x443, 0x43b, 0x430) + ' ' + Cyr @(0x432) + ' ' + '9' + '0' + '-' + Cyr @(0x435)
+$T_GDE    = Cyr @(0x413, 0x434, 0x435) + '-' + Cyr @(0x442, 0x43e) + ' ' + Cyr @(0x44d, 0x442, 0x43e) + ' ' + Cyr @(0x438, 0x433, 0x440, 0x430, 0x43b, 0x43e)
 $T_CASS    = Cyr @(0x41A, 0x430, 0x441, 0x441, 0x435, 0x442, 0x43D, 0x44B, 0x439) + ' ' + Cyr @(0x447, 0x435, 0x43B, 0x43E, 0x432, 0x435, 0x43A)
-$T_DISCO   = Cyr @(0x414, 0x438, 0x441, 0x43A, 0x43E, 0x442, 0x435, 0x43A, 0x430) + ' 1999'
-$T_LEGEND  = Cyr @(0x41B, 0x435, 0x433, 0x435, 0x43D, 0x434, 0x430) + ' ' + Cyr @(0x43A, 0x430, 0x441, 0x441, 0x435, 0x442, 0x43D, 0x43E, 0x433, 0x43E) + ' ' + Cyr @(0x432, 0x435, 0x43A, 0x430)
+$T_DISCO2  = Cyr @(0x417, 0x432, 0x435, 0x437, 0x434, 0x430) + ' ' + Cyr @(0x448, 0x43a, 0x43e, 0x43b, 0x44c, 0x43d, 0x43e, 0x439) + ' ' + Cyr @(0x434, 0x438, 0x441, 0x43a, 0x43e, 0x442, 0x435, 0x43a, 0x438)
+$T_GLAVRED = Cyr @(0x413, 0x43b, 0x430, 0x432, 0x440, 0x435, 0x434) + ' ' + Cyr @(0x436, 0x443, 0x440, 0x43d, 0x430, 0x43b, 0x430) + ' ' + 'C' + 'o' + 'o' + 'l'
+$T_TYEST  = Cyr @(0x422, 0x44b) + ' ' + Cyr @(0x438) + ' ' + Cyr @(0x435, 0x441, 0x442, 0x44c) + ' ' + '9' + '0' + '-' + Cyr @(0x435)
 $T_THROW   = Cyr @(0x411, 0x440, 0x43E, 0x441, 0x438, 0x442, 0x44C) + ' ' + Cyr @(0x432, 0x44B, 0x437, 0x43E, 0x432)
 
 $bands = @(
-  @{ max = 3;  title = $T_RUSKAS; sub = '0' + $EN_DASH + '3 ' + $IZ },
-  @{ max = 6;  title = $T_SLUSH;  sub = '4' + $EN_DASH + '6 ' + $IZ },
-  @{ max = 9;  title = $T_CASS;   sub = '7' + $EN_DASH + '9 ' + $IZ },
-  @{ max = 12; title = $T_DISCO;  sub = '10' + $EN_DASH + '12 ' + $IZ },
-  @{ max = 14; title = $T_LEGEND; sub = '13' + $EN_DASH + '14' }
+  @{ max = 4;  title = $T_SLUC;    sub = '0' + $EN_DASH + '4 ' + $IZ },
+  @{ max = 7;  title = $T_GDE;     sub = '5' + $EN_DASH + '7 ' + $IZ },
+  @{ max = 10; title = $T_CASS;    sub = '8' + $EN_DASH + '10 ' + $IZ },
+  @{ max = 13; title = $T_DISCO2;  sub = '11' + $EN_DASH + '13 ' + $IZ },
+  @{ max = 16; title = $T_GLAVRED; sub = '14' + $EN_DASH + '16 ' + $IZ },
+  @{ max = 17; title = $T_TYEST;   sub = '17 ' + $IZ },
+  @{ max = 18; title = $T_TYEST;   sub = '18 ' + $IZ },
+  @{ max = 19; title = $T_TYEST;   sub = '19 ' + $IZ20 },
+  @{ max = 20; title = $T_TYEST;   sub = '20 ' + $IZ20 }
 )
 
 function Band-For([int]$score) {
@@ -80,7 +86,8 @@ function New-ScoreCard {
   Draw-Cassette $g ([int]($W/2)) 470 620 300
   $fScore = New-Object System.Drawing.Font('Georgia', 190, [System.Drawing.FontStyle]::Bold)
   $scoreRect = New-Object System.Drawing.RectangleF(40, 380, ($W - 80), 320)
-  $g.DrawString(('{0} / 14' -f $score), $fScore, (New-Object System.Drawing.SolidBrush($wine)), $scoreRect, $center)
+  $totalStr = if ($score -le 18) { '18' } else { '20' }
+  $g.DrawString(('{0} / {1}' -f $score, $totalStr), $fScore, (New-Object System.Drawing.SolidBrush($wine)), $scoreRect, $center)
   $fTitle = New-Object System.Drawing.Font('Georgia', 66, [System.Drawing.FontStyle]::Regular)
   $titleRect = New-Object System.Drawing.RectangleF(70, 760, ($W - 140), 200)
   $g.DrawString($band.title, $fTitle, (New-Object System.Drawing.SolidBrush($ink)), $titleRect, $center)
@@ -105,7 +112,7 @@ function New-ScoreCard {
 }
 
 New-Item -ItemType Directory -Force -Path $outDir | Out-Null
-for ($s = 0; $s -le 14; $s++) {
+for ($s = 0; $s -le 20; $s++) {
   $name = 'score_{0:d2}' -f $s
   $path = Join-Path $outDir ($name + '.png')
   $bmp = New-ScoreCard $s

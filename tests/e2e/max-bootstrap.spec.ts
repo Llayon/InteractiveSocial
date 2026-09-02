@@ -60,7 +60,7 @@ test.describe('MAX bootstrap regression (P0 fix)', () => {
     expect(dbg.startParam).toBe('quiz_music90s')
     await page.getByTestId('start-cta').click()
     await expect(page.getByTestId('quiz-screen')).toBeVisible()
-    await expect(page.getByTestId('progress')).toHaveText('01 / 14')
+    await expect(page.getByTestId('progress')).toHaveText('01 / 18')
   })
 
   test('E. default bot Mini App launch (no start_param) → Interior (default)', async ({ page }) => {

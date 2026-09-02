@@ -60,20 +60,35 @@ const SOURCES = [
   // mapping to the canonical band score card.
   ...[
     ['score_00', 'm90_rookie'],
-    ['score_04', 'm90_familiar'],
-    ['score_07', 'm90_cassette'],
+    ['score_05', 'm90_familiar'],
+    ['score_08', 'm90_cassette'],
     ['score_11', 'm90_disco'],
     ['score_14', 'm90_legend'],
+    ['score_17', 'm90_era17'],
+    ['score_18', 'm90_era18'],
   ].map(([src, key]) => ({
     name: key,
     sourceFile: `score-cards/${src}.png`,
     bucket: 'results',
     aspect: '4/5',
   })),
-  // Music90s exact-score cards: same pipeline, names = score_00..score_14.
+  // Guess90s band hero: same score_XX reuse (representative scores).
+  ...[
+    ['score_00', 'g90_rookie'],
+    ['score_08', 'g90_familiar'],
+    ['score_12', 'g90_cassette'],
+    ['score_16', 'g90_disco'],
+    ['score_20', 'g90_legend'],
+  ].map(([src, key]) => ({
+    name: key,
+    sourceFile: `score-cards/${src}.png`,
+    bucket: 'results',
+    aspect: '4/5',
+  })),
+  // Exact-score cards: same pipeline, names = score_00..score_20.
   // Source masters come from assets-source/score-cards/score_XX.png (produced
-  // by scripts/generate-score-cards.ps1).
-  ...Array.from({ length: 15 }, (_, i) => ({
+  // by scripts/generate-score-cards.ps1). Music90s uses 0..18, guess90s 0..20.
+  ...Array.from({ length: 21 }, (_, i) => ({
     name: `score_${String(i).padStart(2, '0')}`,
     sourceFile: `score-cards/score_${String(i).padStart(2, '0')}.png`,
     bucket: 'results',

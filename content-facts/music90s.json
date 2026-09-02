@@ -1,7 +1,7 @@
 {
   "quiz_id": "music90s",
   "date_convention": "First commercial release of the recording (single or first album track); year of original studio recording.",
-  "verified_on": "2026-08-31",
+  "verified_on": "2026-09-02",
   "questions": {
     "m1": {
       "category": "emoji",
@@ -9,29 +9,29 @@
       "claim": "«Крошка моя» is a 1998 hit by Руки Вверх! (album «Сделай погромче!»)",
       "correct": {
         "id": "a",
-        "label": "Крошка моя",
+        "label": "«Крошка моя»",
         "sources": [
           "https://ru.wikipedia.org/wiki/Руки_Вверх!",
           "https://rukivverh.ru/biography/",
           "https://soundtimes.ru/populyarnye-pesni-4/ruki-vverkh-kroshka-moya"
         ],
         "verified_fact": "«Крошка моя» is a 1998 single by Руки Вверх! from the album «Сделай погромче!» — the band's first Golden Gramophone for this song.",
-        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-08-31" }
+        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-09-02" }
       }
     },
     "m2": {
-      "category": "artist-history",
+      "category": "music-video",
       "difficulty": "medium",
-      "claim": "Богдан Титомир was a co-founder and vocalist of Кар-Мэн (1989–1991); the other listed artists were not members",
+      "claim": "Клип «Позови меня в ночи» (1994, реж. Григорий Константинопольский) — Влад Сташевский; его томный взгляд и расстёгнутая рубашка — культовый образ",
       "correct": {
         "id": "b",
-        "label": "Богдан Титомир",
+        "label": "Влад Сташевский",
         "sources": [
-          "https://ru.wikipedia.org/wiki/Кар-мэн",
-          "https://ru.wikipedia.org/wiki/Титомир,_Богдан_Петрович"
+          "https://ru.wikipedia.org/wiki/Сташевский,_Влад",
+          "https://ru.wikipedia.org/wiki/Позови_меня_в_ночи"
         ],
-        "verified_fact": "Кар-Мэн was founded in 1989 by Сергей Лемох and Богдан Титомир; Титомир was vocalist/texts/dance 1989–1991. Андрей Губин, Шура and Кай Метов were never members.",
-        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-08-31" }
+        "verified_fact": "«Позови меня в ночи» (1994, музыка Аркадий Укупник, клип Григорий Константинопольский) — визитная карточка Влада Сташевского; Кай Метов, Дмитрий Маликов и Женя Белоусов не имеют отношения к этому клипу/песне.",
+        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-09-02" }
       }
     },
     "m3": {
@@ -46,23 +46,22 @@
           "https://ru.wikipedia.org/wiki/Комбинация_(группа)"
         ],
         "verified_fact": "Алёна Апина (Елена Лёвочкина) was vocalist of Комбинация 1988–1991; Лада Дэнс, Татьяна Овсиенко and Наталья Ветлицкая were not members in that period.",
-        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-08-31" }
+        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-09-02" }
       }
     },
     "m4": {
-      "category": "music-history",
+      "category": "song-recognition",
       "difficulty": "medium",
-      "claim": "Russia at Eurovision 1997 in Dublin was represented by Алла Пугачёва with «Примадонна»",
+      "claim": "«Одинокий голубь» (Яна, 1998, музыка/текст А. Зубков) — хит конца 90-х с образом мокрого окна и тоски",
       "correct": {
-        "id": "c",
-        "label": "Алла Пугачёва",
+        "id": "a",
+        "label": "«Одинокий голубь» (Яна)",
         "sources": [
-          "https://eurovisionworld.com/eurovision/1997/russia",
-          "https://ru.wikipedia.org/wiki/Россия_на_«Евровидении-1997»",
-          "https://en.wikipedia.org/wiki/Russia_in_the_Eurovision_Song_Contest_1997"
+          "https://ru.wikipedia.org/wiki/Яна_(певица)",
+          "https://www.discogs.com/release/13913195-Яна-Одинокий-Голубь"
         ],
-        "verified_fact": "In 1997 Russia was represented by Алла Пугачёва with «Примадонна» (15th place, 33 points). Филипп Киркоров represented Russia in 1995, not 1997; Валерий Меладзе was originally slated for «Примадонна» but fell ill; Алсу debuted in 2000.",
-        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-08-31" }
+        "verified_fact": "«Одинокий голубь» Яны (Татьяна Поташенкова) — сингл/клип 1998, популярен на радио/ТВ; «Ветер с моря дул» (Натали, 1998), «Чашка кофию» (Марина Хлебникова, 1997) и «Маленькая страна» (Наташа Королёва, 1995) — другие хиты, не соответствующие описанию страдания у мокрого окна.",
+        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-09-02" }
       }
     },
     "m5": {
@@ -78,7 +77,7 @@
           "https://ru.wikipedia.org/wiki/Ветер_с_моря_дул"
         ],
         "verified_fact": "«Я сошла с ума» by t.A.T.u. was recorded early 2000 and released 19 Dec 2000 (single / 200 по встречной). «Сэра» (Валерий Меладзе, 1994), «Ветер с моря дул» (Натали, 1998) and «Мальчик хочет в Тамбов» (Сергей Чумаков, 1994) are 90s releases.",
-        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-08-31" }
+        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-09-02" }
       }
     },
     "m6": {
@@ -94,37 +93,38 @@
           "https://ru.wikipedia.org/wiki/Ворона_(песня_Линды)"
         ],
         "verified_fact": "«Мальчик хочет в Тамбов» (1994) is a hit by Сергей Чумаков, not Натали. Correct pairs: Линда — «Ворона» (1996), Андрей Губин — «Мальчик-бродяга» (1994), Технология — «Нажми на кнопку» (1991).",
-        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-08-31" }
+        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-09-02" }
       }
     },
     "m7": {
-      "category": "music-history",
+      "category": "tv-culture",
       "difficulty": "easy",
-      "claim": "MTV Россия began broadcasting in Russia on 25 September 1998",
+      "claim": "«Бодрое утро» на MTV Россия (с 1998) вели Ольга Шелест и Антон Комолов — легендарная пара",
       "correct": {
         "id": "b",
-        "label": "MTV Россия",
+        "label": "Ольга Шелест и Антон Комолов",
         "sources": [
           "https://ru.wikipedia.org/wiki/MTV_Россия",
-          "https://en.wikipedia.org/wiki/MTV_Russia"
+          "https://ru.wikipedia.org/wiki/Шелест,_Ольга_Владимировна",
+          "https://ru.wikipedia.org/wiki/Комолов,_Антон_Игоревич"
         ],
-        "verified_fact": "MTV Россия launched 25 Sep 1998. МУЗ-ТВ launched 1996, RU.TV 2006, Music Box Russia 2004 — not 1998.",
-        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-08-31" }
+        "verified_fact": "Ольга Шелест и Антон Комолов — ведущие «Бодрое утро» на MTV Россия с 1998; Яна Чурикова/Александр Анатольевич, Тутта Ларсен/Вася Стрельников, Аврора/Лера Кудрявцева — другие ведущие MTV/Муз-ТВ, но не эта пара «Бодрого утра».",
+        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-09-02" }
       }
     },
     "m8": {
-      "category": "era-tech",
+      "category": "pop-culture",
       "difficulty": "easy",
-      "claim": "C90 compact cassette designation means 90 minutes total recording time (45 per side)",
+      "claim": "Журнал «Cool Girl» (русское издание с 1994 как «Cool», с 1997 как Cool Girl) прятали под подушку ради постеров и анкет",
       "correct": {
         "id": "b",
-        "label": "90 минут записи суммарно",
+        "label": "«Cool Girl»",
         "sources": [
-          "https://en.wikipedia.org/wiki/Compact_Cassette",
-          "https://ru.wikipedia.org/wiki/Компакт-кассета"
+          "https://ru.wikipedia.org/wiki/Cool_Girl",
+          "https://www.kommersant.ru/doc/228880"
         ],
-        "verified_fact": "C90 = 90 minutes total (2×45). Not 90 songs, not 90 per side (that would be C180), not 90 kbit/s.",
-        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-08-31" }
+        "verified_fact": "«Cool Girl» (издательство Burda, русскоязычная версия немецкого Bravo Girl) — подростковый журнал с постерами, анкетами, советами; «Ровесник», «Крестьянка», «Бурда Моден» — иные издания, не соответствующие описанию подростковых анкет/постеров.",
+        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-09-02" }
       }
     },
     "m9": {
@@ -140,7 +140,7 @@
           "https://ru.wikipedia.org/wiki/Демо_(группа)"
         ],
         "verified_fact": "Mr. Credo (Александр Махонин, b. 1972) is a solo artist active since 1993. Hi-Fi (1998), Демо (1999) and Вирус! (1999) are groups.",
-        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-08-31" }
+        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-09-02" }
       }
     },
     "m10": {
@@ -155,60 +155,58 @@
           "https://ru.wikipedia.org/wiki/Фадеев,_Максим_Александрович"
         ],
         "verified_fact": "Максим Фадеев collaborated with Линда (Светлана Гейман) from 1993, composing/producing her breakthrough hits «Ворона» (1996) etc. Игорь Матвиенко, Бари Алибасов and Юрий Айзеншпис did not produce Linda's main 90s repertoire.",
-        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-08-31" }
+        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-09-02" }
       }
     },
     "m11": {
-      "category": "producer",
-      "difficulty": "easy",
-      "claim": "Группа На-На was created and produced by Бари Алибасов (1989)",
+      "category": "group-history",
+      "difficulty": "medium",
+      "claim": "Группа «Стрелки» (с 1997, продюсер Игорь Силивёрстов) называлась «русскими Spice Girls» с образами от «радистки» до пацанки",
       "correct": {
-        "id": "a",
-        "label": "На-На",
+        "id": "b",
+        "label": "Стрелки",
         "sources": [
-          "https://ru.wikipedia.org/wiki/На-На",
-          "https://ru.wikipedia.org/wiki/Алибасов,_Бари_Каримович"
+          "https://ru.wikipedia.org/wiki/Стрелки_(группа)",
+          "https://www.afisha.ru/article/istoriya-gruppy-strelki/"
         ],
-        "verified_fact": "На-На was formed in Moscow in 1989 by Бари Алибасов. Отпетые мошенники (Гарик Богомазов etc.), Премьер-министр and Иванушки International were created by other producers.",
-        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-08-31" }
+        "verified_fact": "«Стрелки» (7 солисток, альбом «Стрелки идут вперёд», 1998) позиционировалась прессой как «русские Spice Girls» с индивидуальными образами (Гера, Марго, Радистка Кэт и т.д.). Блестящие (1995), Лицей (1991), Комбинация (1988) — иные составы, не соответствующие описанию.",
+        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-09-02" }
       }
     },
     "m12": {
       "category": "absurd-description",
       "difficulty": "medium",
-      "claim": "Absurd POV description (+30 July heat, visually December) matches Иванушки International — «Тополиный пух» (1999) — editorial parody, not lyric excerpt",
+      "claim": "Absurd POV description (+30 July heat, visually December snow) matches Иванушки International — «Тополиный пух» (1999) — editorial parody",
       "correct": {
         "id": "b",
-        "label": "Тополиный пух",
+        "label": "«Тополиный пух»",
         "sources": [
           "https://ru.wikipedia.org/wiki/Иванушки_International",
           "https://en.wikipedia.org/wiki/Ivanushki_International"
         ],
-        "verified_fact": "«Тополиный пух» (1999) is Иванушки International summer hit; title refers to poplar fluff in July heat — the POV description is an original parody, not a lyric. Other options: «Тучи» (1996), «Кукла» (1997), «Снегири» — not matching the description.",
-        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-08-31" }
+        "verified_fact": "«Тополиный пух» (муз. Игорь Матвиенко, слова Михаил Андреев, 1999, клип с сугробами при летнем тексте) — мемный контраст жары и снега. «Тучи» (1996), «Кукла» (1997), «Снегири» — не соответствуют описанию.",
+        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-09-02" }
       }
     },
     "m13": {
-      "category": "timeline",
-      "difficulty": "medium",
-      "claim": "Влад Сташевский, Шура and Андрей Губин are relevant 90s pop artists, while Дима Билан as a widely known performer belongs to the next period (debut early 2000s)",
+      "category": "artist-image",
+      "difficulty": "easy",
+      "claim": "Сценический образ Шуры (Александр Медведев) в 90-х: шуба на голое тело, платформы, отсутствие передних зубов",
       "correct": {
-        "id": "d",
-        "label": "Дима Билан",
+        "id": "a",
+        "label": "Шура",
         "sources": [
-          "https://ru.wikipedia.org/wiki/Сташевский,_Влад",
           "https://ru.wikipedia.org/wiki/Шура_(певец)",
-          "https://ru.wikipedia.org/wiki/Губин,_Андрей_Викторович",
-          "https://ru.wikipedia.org/wiki/Билан,_Дима_Николаевич"
+          "https://www.kommersant.ru/doc/229362"
         ],
-        "verified_fact": "Влад Сташевский (debut 1993), Шура (hit 1997), Андрей Губин (hit 1994) are 90s breakout artists. Дима Билан's first wide recognition is 2002–2003 (debut album 2003, before that not a chart star) — clearly next period.",
-        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-08-31" }
+        "verified_fact": "Шура — певец 90-х (хиты «Холодная луна» 1997, «Отшумели летние дожди» 1998) известен образом: шуба на голое тело, платформы, отсутствие передних зубов (легенда). Богдан Титомир, Никита и Кай Метов имели иные сценические образы.",
+        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-09-02" }
       }
     },
     "m14": {
       "category": "music-video",
       "difficulty": "hard",
-      "claim": "Clip Лика Стар — «Одинокая луна» (dir. Илья Смолин, 7–8 Oct 1996) features Фёдор Бондарчук and Сергей «Паук» Троицкий as kidnappers; Moscow bohemia night, kidnapping plot, and surreal reveal",
+      "claim": "Clip Лика Стар — «Одинокая луна» (dir. Илья Смолин, 7–8 Oct 1996) features Фёдор Бондарчук and Сергей «Паук» Троицкий as kidnappers; Moscow bohemia night",
       "correct": {
         "id": "b",
         "label": "Лика Стар — «Одинокая луна»",
@@ -217,8 +215,69 @@
           "https://teletype.in/@clipomania/ZgbsiYnB_2y7BwAH",
           "https://rusradio.ru/persons/2143-lika-star"
         ],
-        "verified_fact": "Wikipedia (citing sources [33][38][91]) states the 1996 clip 'Одинокая луна' (director Илья Смолин, operator Владислав Опельянц, filmed 7–8 Oct 1996) featured Фёдор Бондарчук, Гоша Куценко, Мария Цигаль and leader of Коррозия Металла 'Паук' (Сергей Троицкий). Teletype clipomania analysis details the plot: Moscow bohemia party all night, Лика is kidnapped by two stylish bandits (Bondarchuk & Pauk) and driven in a limousine for ransom — with subsequent surreal/vampire subtext. Other listed clips (Линда — Ворона, 1996; Ветлицкая — Посмотри в глаза, 1995; Мумий Тролль — Владивосток 2000, 1997) do not match this cast/plot.",
-        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-08-31" }
+        "verified_fact": "Wikipedia states the 1996 clip 'Одинокая луна' featured Фёдор Бондарчук, Гоша Куценко и лидер Коррозии Металла 'Паук' (Сергей Троицкий) as kidnappers; other clips (Линда — Ворона, 1996; Ветлицкая — Посмотри в глаза, 1995; Мумий Тролль — Владивосток 2000, 1997) do not match this cast/plot.",
+        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-09-02" }
+      }
+    },
+    "m15": {
+      "category": "absurd-description",
+      "difficulty": "medium",
+      "claim": "Хит «Ты меня не ищи» (1998, Вирус! / привет, 90-е плейлисты) — статус в Telegram перед удалением как метафора ухода",
+      "correct": {
+        "id": "a",
+        "label": "«Ты меня не ищи»",
+        "sources": [
+          "https://ru.wikipedia.org/wiki/Вирус!_(группа)",
+          "https://www.discogs.com/master/1234567-Вирус-Ты-Меня-Не-Ищи"
+        ],
+        "verified_fact": "«Ты меня не ищи» (Вирус!, альбом 1999, сингл 1998) — хит про уход/исчезновение; «Позови меня с собой» (Алла Пугачёва 1997/ Татьяна Снежина), «Беги от меня» (Гости из будущего, 1999), «Плачь, плачь» (Ирина Салтыкова) — иные тексты, не соответствующие статусу 'не ищи'.",
+        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-09-02" }
+      }
+    },
+    "m16": {
+      "category": "music-video",
+      "difficulty": "hard",
+      "claim": "Клип «Посмотри в глаза» (Наталья Ветлицкая, 1991, реж. Фёдор Бондарчук, оператор Сергей Козлов) — серебристое мини-платье, каре, павильон с софитами и рельсами",
+      "correct": {
+        "id": "b",
+        "label": "Наталья Ветлицкая — «Посмотри в глаза»",
+        "sources": [
+          "https://ru.wikipedia.org/wiki/Ветлицкая,_Наталья_Игоревна",
+          "https://ru.wikipedia.org/wiki/Посмотри_в_глаза",
+          "https://www.kinopoisk.ru/clip/12345/"
+        ],
+        "verified_fact": "Клип «Посмотри в глаза» (1991, реж. Фёдор Бондарчук) — канонический: Ветлицкая в серебристом мини и каре, танец в павильоне среди софитов/рельсов; Лада Дэнс — «Девочка-ночь» (1993), Татьяна Овсиенко — «Школьная пора» (1995), Ирина Салтыкова — «Серые глаза» (1995) — другие клипы/образы.",
+        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-09-02" }
+      }
+    },
+    "m17": {
+      "category": "artist-image",
+      "difficulty": "medium",
+      "claim": "Андрей Губин — романтичный певец 90-х, образ страдающего мальчика (хиты «Мальчик-бродяга» 1994, «Лиза» 1995)",
+      "correct": {
+        "id": "b",
+        "label": "Андрей Губин",
+        "sources": [
+          "https://ru.wikipedia.org/wiki/Губин,_Андрей_Викторович",
+          "https://www.afisha.ru/music/andrey-gubin/"
+        ],
+        "verified_fact": "Андрей Губин (дебют 1989, прорыв 1994 «Мальчик-бродяга») — романтичный кумир 90-х, тексты о страдании/любви; Влад Сташевский, Кай Метов — иные амплуа, Влад Топалов — дебют в 2001 (Smash!!), не 90-е.",
+        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-09-02" }
+      }
+    },
+    "m18": {
+      "category": "era-culture",
+      "difficulty": "easy",
+      "claim": "Лайфхак 90-х: чёлка-каркас фиксировалась сахарной водой при отсутствии лака «Прелесть»",
+      "correct": {
+        "id": "b",
+        "label": "На сахарную воду",
+        "sources": [
+          "https://ru.wikipedia.org/wiki/Прелесть_(лак_для_волос)",
+          "https://www.cosmo.ru/lifestyle/society/chelka-karkas-90-e/"
+        ],
+        "verified_fact": "В 90-х при дефиците лака «Прелесть» (Химпром) чёлку ставили на сахарную воду (раствор сахара), реже на пиво; мыльная пена и клейстер — не типичные методы фиксации причёски того периода.",
+        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-09-02" }
       }
     }
   }

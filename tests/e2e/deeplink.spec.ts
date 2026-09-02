@@ -18,8 +18,8 @@ test.describe('v2 share deeplink routing across quizzes', () => {
     expect(heading ?? '').toContain('90-х')
     await page.getByTestId('start-cta').click()
     await expect(page.getByTestId('quiz-screen')).toBeVisible()
-    // Music90s has 14 questions — Interior has 8. The hard gate.
-    await expect(page.getByTestId('progress')).toHaveText('01 / 14')
+    // Music90s has 18 questions — Interior has 8. The hard gate.
+    await expect(page.getByTestId('progress')).toHaveText('01 / 18')
     await expectNoRuntimeErrors(page, errorCollector)
   })
 

@@ -42,6 +42,8 @@ const RAW_CODES: Record<string, RawQuizCodes> = {
       m90_cassette: 'cs',
       m90_disco: 'dc',
       m90_legend: 'lg',
+      m90_era17: 'l7',
+      m90_era18: 'l8',
     },
   },
   guess90s: {

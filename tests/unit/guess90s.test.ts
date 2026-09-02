@@ -152,9 +152,9 @@ describe('existing quizzes remain intact', () => {
     expect(interiorCharacterQuiz.scoring.kind).toBe('archetype')
     expect(interiorCharacterQuiz.id).toBe('interior-character')
   })
-  it('music90s unchanged (14 questions, text quiz, correct-count)', async () => {
+  it('music90s now has 18 questions, text quiz, correct-count, no audio', async () => {
     const { music90sQuiz } = await import('@/content/quizzes/music90s/quiz')
-    expect(music90sQuiz.questions).toHaveLength(14)
+    expect(music90sQuiz.questions).toHaveLength(18)
     expect(music90sQuiz.scoring.kind).toBe('correct-count')
     for (const q of music90sQuiz.questions) {
       expect(q.content).toBeUndefined()

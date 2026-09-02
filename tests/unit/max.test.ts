@@ -210,13 +210,15 @@ describe('SHARE SECURITY (MAX prepare/deliver guards)', () => {
   it('23. score/result-band mismatch rejected', async () => {
     const { resolveBandResultId } = await import('@/features/quiz/scoring')
     const { music90sQuiz } = await import('@/content/quizzes/music90s/quiz')
-    // 7 maps to m90_cassette (7-9), not to m90_legend (13-14)
+    // 7 maps to m90_familiar (5-7), not to m90_legend (14-16)
     const ok = resolveBandResultId(music90sQuiz, 7)
-    expect(ok).toBe('m90_cassette')
+    expect(ok).toBe('m90_familiar')
     expect(ok).not.toBe('m90_legend')
     // Server would reject prepare with resultId m90_legend + score 7 — we assert mismatch detection
-    expect(resolveBandResultId(music90sQuiz, 13)).toBe('m90_legend')
-    expect(resolveBandResultId(music90sQuiz, 12)).toBe('m90_disco')
+    expect(resolveBandResultId(music90sQuiz, 15)).toBe('m90_legend')
+    expect(resolveBandResultId(music90sQuiz, 13)).toBe('m90_disco')
+    expect(resolveBandResultId(music90sQuiz, 17)).toBe('m90_era17')
+    expect(resolveBandResultId(music90sQuiz, 18)).toBe('m90_era18')
   })
 
   it('24. invalid result ID rejected (global registry)', async () => {
@@ -401,10 +403,15 @@ describe('QUIZ REGRESSION', () => {
   it('37. Music correct-count bands correct', async () => {
     const { music90sQuiz } = await import('@/content/quizzes/music90s/quiz')
     const { resolveBandResultId } = await import('@/features/quiz/scoring')
-    // bands per project: 0-2 rookie, 3-5 familiar, 6-8? wait after extend 0-14; verify known mappings
-    // from music90s quiz definition: 0-2 rk, 3-5 fm, 6-9 cs, 10-11 dc, 12-14 lg (per code)
+    // bands per new spec: 0-4 rk, 5-7 fm, 8-10 cs, 11-13 dc, 14-16 lg, 17 l7, 18 l8
     expect(resolveBandResultId(music90sQuiz, 0)).toBe('m90_rookie')
+    expect(resolveBandResultId(music90sQuiz, 4)).toBe('m90_rookie')
+    expect(resolveBandResultId(music90sQuiz, 5)).toBe('m90_familiar')
+    expect(resolveBandResultId(music90sQuiz, 7)).toBe('m90_familiar')
     expect(resolveBandResultId(music90sQuiz, 14)).toBe('m90_legend')
+    expect(resolveBandResultId(music90sQuiz, 16)).toBe('m90_legend')
+    expect(resolveBandResultId(music90sQuiz, 17)).toBe('m90_era17')
+    expect(resolveBandResultId(music90sQuiz, 18)).toBe('m90_era18')
   })
   it('38. share card asset resolved server-side (score card)', async () => {
     const { resolveShareCardAsset, scoreCardAsset } = await import('@/features/quiz/scoring')

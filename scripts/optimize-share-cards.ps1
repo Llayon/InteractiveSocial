@@ -83,7 +83,7 @@ foreach ($entry in $mapping.GetEnumerator()) {
 }
 
 if (Test-Path $scoreSourceDir) {
-  for ($s = 0; $s -le 14; $s++) {
+  for ($s = 0; $s -le 20; $s++) {
     $name = 'score_{0:d2}' -f $s
     $src = Join-Path $scoreSourceDir ($name + '.png')
     if (-not (Test-Path $src)) { Write-Warning "missing score master: $name.png"; continue }

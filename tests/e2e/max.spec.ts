@@ -1,18 +1,18 @@
 import { expect, test, expectNoRuntimeErrors } from './fixtures'
 
-async function answerMusic14(page: import('@playwright/test').Page) {
-  for (let i = 0; i < 14; i++) {
+async function answerMusic18(page: import('@playwright/test').Page) {
+  for (let i = 0; i < 18; i++) {
     await page.getByTestId('answer-option').first().click()
   }
 }
 
 test.describe('MAX mock journey', () => {
-  test('landing → music14 → result → share (MAX mock)', async ({ page, errorCollector }) => {
+  test('landing → music18 → result → share (MAX mock)', async ({ page, errorCollector }) => {
     await page.goto('/?mock=1&platform=max&startapp=quiz_music90s')
     await expect(page.getByTestId('start-cta')).toBeVisible()
     await page.getByTestId('start-cta').click()
     await expect(page.getByTestId('quiz-screen')).toBeVisible()
-    await answerMusic14(page)
+    await answerMusic18(page)
     await expect(page.getByTestId('result-screen')).toBeVisible({ timeout: 5000 })
     await expect(page.getByTestId('share-button')).toBeVisible()
     // Share via MAX transport (mocked /api/max/share/prepare → max_mid)
