@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 
 import { getAnalytics } from '@/analytics/analytics'
+import { deriveEntrySource, isChallengeAttributedParam } from '@/analytics/events'
 import { resolveQuizFromLaunch } from '@/content/quizzes/resolveQuiz'
 import { Landing } from '@/features/landing/Landing'
 import { Quiz } from '@/features/quiz/Quiz'
@@ -65,19 +66,62 @@ export function App({ telegram, adapter }: AppProps) {
   )
   const [attempt, setAttempt] = useState(0)
 
-  // Landing is visible → quiz view event (once per attempt).
+  // Landing is visible → quiz view + funnel landing view (once per attempt, idempotent).
   useEffect(() => {
     if (screen === 'landing') {
-      analytics.trackOnce(`quiz_view:${attempt}`, 'quiz_view', { quiz_id: quiz.id })
+      const platform = platformAdapter?.platform ?? 'browser'
+      const startParam = platformAdapter?.getStartParam() ?? undefined
+      const entrySource = deriveEntrySource(startParam ?? null)
+      const basePayload = {
+        quiz_id: quiz.id,
+        platform,
+        question_count: quiz.questions.length,
+        entry_source: entrySource,
+        ...(startParam ? { start_param: startParam } : {}),
+      }
+      analytics.trackOnce(`quiz_view:${attempt}:${quiz.id}`, 'quiz_view', basePayload)
+      analytics.trackOnce(`quiz_landing_view:${attempt}:${quiz.id}`, 'quiz_landing_view', basePayload)
+      // Challenge attribution: entrant opened via shared link
+      if (isChallengeAttributedParam(startParam ?? null)) {
+        analytics.trackOnce(`challenge_attributed_open:${quiz.id}:${startParam}`, 'challenge_attributed_open', {
+          quiz_id: quiz.id,
+          platform,
+          entry_source: entrySource,
+          ...(startParam ? { start_param: startParam } : {}),
+        })
+      }
     }
-  }, [screen, attempt, analytics, quiz.id])
+  }, [screen, attempt, analytics, quiz.id, quiz.questions.length, platformAdapter])
+
+  // Ensure landing always opens at scrollTop 0 — no retained offset, no Telegram chrome clipping
+  useEffect(() => {
+    if (screen === 'landing') {
+      try {
+        if ('scrollRestoration' in history) history.scrollRestoration = 'manual'
+      } catch {}
+      const id = requestAnimationFrame(() => {
+        window.scrollTo(0, 0)
+        document.documentElement.scrollTop = 0
+        document.body.scrollTop = 0
+      })
+      return () => cancelAnimationFrame(id)
+    }
+  }, [screen, attempt])
 
   const handleStart = useCallback(() => {
     dispatch({ type: 'start' })
     setScreen(screenAfterQuizStart())
     platformAdapter?.haptic('light')
-    analytics.trackOnce(`quiz_start:${attempt}`, 'quiz_start', { quiz_id: quiz.id })
-  }, [analytics, attempt, quiz.id, platformAdapter])
+    const platform = platformAdapter?.platform ?? 'browser'
+    const startParam = platformAdapter?.getStartParam() ?? undefined
+    analytics.trackOnce(`quiz_start:${attempt}:${quiz.id}`, 'quiz_start', {
+      quiz_id: quiz.id,
+      platform,
+      question_count: quiz.questions.length,
+      entry_source: deriveEntrySource(startParam ?? null),
+      ...(startParam ? { start_param: startParam } : {}),
+    })
+  }, [analytics, attempt, quiz.id, quiz.questions.length, platformAdapter])
 
   const lastTrackedAnswer = useRef<string>('')
   const replayedQuestions = useRef<Set<string>>(new Set())
@@ -151,12 +195,22 @@ export function App({ telegram, adapter }: AppProps) {
     setScreen(screenForCompletedQuiz())
     window.scrollTo(0, 0)
 
-    analytics.trackOnce(`result_view:${attempt}`, 'result_view', {
+    const platform = platformAdapter?.platform ?? 'browser'
+    const startParam = platformAdapter?.getStartParam() ?? undefined
+    analytics.trackOnce(`result_view:${attempt}:${quiz.id}:${outcome.resultId}`, 'result_view', {
       quiz_id: quiz.id,
       result_id: outcome.resultId,
+      platform,
+      ...(score !== undefined ? { score } : {}),
+      question_count: quiz.questions.length,
+      entry_source: deriveEntrySource(startParam ?? null),
     })
-    analytics.trackOnce(`quiz_complete:${attempt}`, 'quiz_complete', {
+    analytics.trackOnce(`quiz_complete:${attempt}:${quiz.id}`, 'quiz_complete', {
       quiz_id: quiz.id,
+      platform,
+      question_count: quiz.questions.length,
+      entry_source: deriveEntrySource(startParam ?? null),
+      ...(startParam ? { start_param: startParam } : {}),
       ...quizCompleteTelemetry(quiz, state.answers),
     })
 
@@ -186,39 +240,53 @@ export function App({ telegram, adapter }: AppProps) {
     setAttempt((a) => a + 1)
     setScreen(initialScreen())
     window.scrollTo(0, 0)
-    analytics.track('restart', { quiz_id: quiz.id })
-  }, [analytics, quiz.id])
+    try {
+      analytics.track('restart', { quiz_id: quiz.id, platform: platformAdapter?.platform ?? 'browser' })
+    } catch {
+      /* swallow */
+    }
+  }, [analytics, quiz.id, platformAdapter])
+
+  const quizThemeAttr = { 'data-quiz': quiz.id } as const
 
   switch (screen) {
     case 'quiz':
       return (
-        <Quiz
-          quiz={quiz}
-          phase={state.phase}
-          currentIndex={state.currentIndex}
-          answers={state.answers}
-          onAnswer={handleAnswer}
-          onBack={handleBack}
-          onNext={handleNext}
-          onSkip={handleSkip}
-          onAudioReplay={handleAudioReplay}
-          onRevealFinished={() => dispatch({ type: 'reveal-finished' })}
-        />
+        <div {...quizThemeAttr}>
+          <Quiz
+            quiz={quiz}
+            phase={state.phase}
+            currentIndex={state.currentIndex}
+            answers={state.answers}
+            onAnswer={handleAnswer}
+            onBack={handleBack}
+            onNext={handleNext}
+            onSkip={handleSkip}
+            onAudioReplay={handleAudioReplay}
+            onRevealFinished={() => dispatch({ type: 'reveal-finished' })}
+          />
+        </div>
       )
     case 'result': {
       const outcome = resolveOutcome(quiz, state.answers)
       return (
-        <ResultScreen
-          quiz={quiz}
-          outcome={outcome}
-          telegram={platformAdapter as unknown as import('@/platform/telegram').TelegramAdapter}
-          adapter={platformAdapter}
-          onRestart={handleRestart}
-        />
+        <div {...quizThemeAttr}>
+          <ResultScreen
+            quiz={quiz}
+            outcome={outcome}
+            telegram={platformAdapter as unknown as import('@/platform/telegram').TelegramAdapter}
+            adapter={platformAdapter}
+            onRestart={handleRestart}
+          />
+        </div>
       )
     }
     case 'landing':
     default:
-      return <Landing quiz={quiz} onStart={handleStart} />
+      return (
+        <div {...quizThemeAttr}>
+          <Landing quiz={quiz} onStart={handleStart} />
+        </div>
+      )
   }
 }

@@ -3,7 +3,11 @@ import { resolveAttribution } from '../_lib/attribution.js'
 import { resolveQuizRequest } from '../_lib/quizRequest.js'
 import { validateInitData } from '../_lib/initData.js'
 import { RESULT_ID_REGEX } from '../../src/features/quiz/schema.js'
-import { resolveBandResultId, resolveShareCardAsset } from '../../src/features/quiz/scoring.js'
+import {
+  resolveBandResultId,
+  resolveShareCardAsset,
+  shareCardImageUrl,
+} from '../../src/features/quiz/scoring.js'
 
 interface TelegramApiResponse {
   ok?: boolean
@@ -144,7 +148,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
 
   // Card identity is quiz-scoped: correct-count resolves the exact-score card.
   const cardAsset = resolveShareCardAsset(quiz, result, score)
-  const imageUrl = `${baseUrl}/share-cards/${cardAsset}.jpg`
+  const imageUrl = shareCardImageUrl(quiz, cardAsset, baseUrl)
   // Play-again deep links carry the quiz identity, not attribution — the
   // quiz resolver routes `quiz_<id>` launches without any user binding.
   const deepLink = `https://t.me/${botUsername}/${appShortName}?startapp=quiz_${quiz.id}`

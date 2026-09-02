@@ -4,11 +4,17 @@ import type { SelectedAnswer } from '@/features/quiz/schema'
 export type AnalyticsEvent =
   | 'app_open'
   | 'quiz_view'
+  | 'quiz_landing_view'
   | 'quiz_start'
   | 'question_answered'
   | 'quiz_complete'
   | 'result_view'
   | 'share_click'
+  | 'challenge_click'
+  | 'channel_promo_impression'
+  | 'channel_click'
+  | 'quiz_restart_click'
+  | 'challenge_attributed_open'
   | 'share_success'
   | 'share_failed'
   | 'share_prepare_failed'
@@ -35,6 +41,9 @@ export interface AnalyticsContext {
   start_param?: string
   source?: string
   platform?: string
+  entry_source?: string
+  score?: number
+  question_count?: number
 }
 
 export interface QuestionAnsweredPayload extends AnalyticsContext {
@@ -54,8 +63,32 @@ export type { SelectedAnswer }
  */
 export function deriveSource(startParam?: string | null): string | undefined {
   if (!startParam) return undefined
+  if (startParam.startsWith('s2_')) return 'challenge'
   if (startParam.startsWith('share_')) return 'share'
+  if (startParam.startsWith('quiz_')) return 'quiz_launch'
   if (startParam === 'channel' || startParam.startsWith('channel')) return 'channel'
   if (startParam.startsWith('post')) return 'post'
   return 'other'
+}
+
+/**
+ * Whether a start param is an attributed challenge deeplink (v2 or legacy).
+ * Used to decide challenge_attributed_open.
+ */
+export function isChallengeAttributedParam(startParam?: string | null): boolean {
+  if (!startParam) return false
+  if (/^s2_[a-z0-9]{1,12}_[a-z0-9]{1,12}_\d{1,15}$/.test(startParam)) return true
+  if (/^share_[a-z][a-z0-9_]{0,63}(?:[.-]\d{1,15})?$/.test(startParam)) return true
+  return false
+}
+
+export function deriveEntrySource(startParam?: string | null): string | undefined {
+  if (!startParam) return 'direct'
+  if (/^s2_[a-z0-9]{1,12}_[a-z0-9]{1,12}_\d{1,15}$/.test(startParam)) return 'challenge'
+  if (/^share_[a-z][a-z0-9_]{0,63}(?:[.-]\d{1,15})?$/.test(startParam)) return 'legacy_share'
+  if (startParam.startsWith('quiz_')) return 'quiz_launch'
+  if (startParam === 'channel' || startParam.startsWith('channel')) return 'channel'
+  if (startParam.startsWith('post')) return 'post'
+  if (deriveSource(startParam) === undefined) return 'direct'
+  return deriveSource(startParam) ?? 'unknown'
 }

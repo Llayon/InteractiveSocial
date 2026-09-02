@@ -58,9 +58,44 @@ export function QuizQuestion({
 
   const isAudioPreview = question.content?.kind === 'audio-preview'
 
+  // Presentational split for emoji rebus: generic, not quiz-id branched.
+  // Any question title containing a double-newline with emoji block is treated as:
+  //   line 1 = question text
+  //   line 2 = rebus (nowrap, no orphan)
+  // This covers m1 "Какой хит зашифрован?\n\n💌 ➡️ 📭 😔 ❤️" without hardcoding quiz id.
+  const rebused = (() => {
+    const raw = question.title
+    const parts = raw.split('\n\n')
+    if (parts.length >= 2) {
+      const tail = parts.slice(1).join('\n\n').trim()
+      // Heuristic: tail contains emoji / arrow and is short (<= 40 chars)
+      const hasEmoji =
+        tail.includes('💌') ||
+        tail.includes('📭') ||
+        tail.includes('😔') ||
+        tail.includes('❤') ||
+        tail.includes('➡') ||
+        tail.includes('→') ||
+        /[^\x00-\x7F]/.test(tail)
+      if (hasEmoji && tail.length <= 40) {
+        return { head: parts[0].trim(), rebus: tail }
+      }
+    }
+    return null
+  })()
+
   return (
     <div className="question" data-testid="quiz-question" data-layout={question.layout} data-content-kind={question.content?.kind ?? 'default'}>
-      <h2 className="question__title">{question.title}</h2>
+      {rebused ? (
+        <>
+          <h2 className="question__title">{rebused.head}</h2>
+          <div className="m90-rebus" data-testid="m90-rebus" aria-hidden="true">
+            {rebused.rebus}
+          </div>
+        </>
+      ) : (
+        <h2 className="question__title">{question.title}</h2>
+      )}
 
       {isAudioPreview && question.content?.kind === 'audio-preview' && quizId && (
         <AudioPreviewPlayer

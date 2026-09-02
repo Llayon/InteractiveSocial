@@ -120,6 +120,20 @@ function New-ScoreCard {
   $g.FillPath($brushWine, $path)
   $ctaRect = New-Object System.Drawing.RectangleF($pill.X, $pill.Y, $pillW, $pillH)
   $g.DrawString($T_THROW, $fCta, (New-Object System.Drawing.SolidBrush($inkSoft)), $ctaRect, $center)
+  # Music90s (total 18) gets author attribution footer — small editorial credit, secondary to score/title
+  if ($totalStr -eq '18') {
+    $footerTitle = Cyr @(0x411, 0x44E, 0x440, 0x43E) + ' ' + Cyr @(0x438, 0x441, 0x442, 0x43E, 0x440, 0x438, 0x439)  # Бюро историй
+    $footerHandle = '@takeiteasybefore'
+    $fFooterTitle = New-Object System.Drawing.Font('Segoe UI', 24, [System.Drawing.FontStyle]::Regular)
+    $fFooterHandle = New-Object System.Drawing.Font('Segoe UI', 18, [System.Drawing.FontStyle]::Regular)
+    $brushTitleFooter = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(90, 80, 72))
+    $brushHandleFooter = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(140, 130, 120))
+    $titleRectFooter = New-Object System.Drawing.RectangleF(0, 1218, $W, 30)
+    $handleRectFooter = New-Object System.Drawing.RectangleF(0, 1246, $W, 24)
+    $g.DrawString($footerTitle, $fFooterTitle, $brushTitleFooter, $titleRectFooter, $center)
+    $g.DrawString($footerHandle, $fFooterHandle, $brushHandleFooter, $handleRectFooter, $center)
+    $fFooterTitle.Dispose(); $fFooterHandle.Dispose(); $brushTitleFooter.Dispose(); $brushHandleFooter.Dispose()
+  }
   $g.Dispose()
   return $bmp
 }

@@ -5,7 +5,11 @@ import { resolveQuizRequest } from '../../_lib/quizRequest.js'
 import { validateMaxInitData } from '../../_lib/maxInitData.js'
 import { maxSendMessage } from '../../_lib/maxApi.js'
 import { RESULT_ID_REGEX } from '../../../src/features/quiz/schema.js'
-import { resolveBandResultId, resolveShareCardAsset } from '../../../src/features/quiz/scoring.js'
+import {
+  resolveBandResultId,
+  resolveShareCardAsset,
+  shareCardImageUrl,
+} from '../../../src/features/quiz/scoring.js'
 
 // Serverless dedup — platform namespaced: max:<userId>:<quizId>:<resultId>
 // Separate from tg: keys to avoid cross-platform collision.
@@ -120,7 +124,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   }
 
   const cardAsset = resolveShareCardAsset(quiz, result, score)
-  const imageUrl = `${baseUrl}/share-cards/${cardAsset}.jpg`
+  const imageUrl = shareCardImageUrl(quiz, cardAsset, baseUrl)
   const deepLink = buildMaxDeepLink(maxBotUsername, `quiz_${quiz.id}`)
 
   // 1. Self card — namespaced dedup

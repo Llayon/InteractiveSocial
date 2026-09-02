@@ -1,10 +1,12 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { App } from './app/App'
+import { ShareCardPreview } from './app/ShareCardPreview'
 import { bootstrap } from './app/bootstrap'
 import { createPlatformAdapter } from './platform/factory'
 import '@/design/tokens.css'
 import '@/design/styles.css'
+import '@/design/music90s.css'
 
 function pushStage(s: string) {
   try {
@@ -14,6 +16,19 @@ function pushStage(s: string) {
 }
 
 pushStage('MAIN_MODULE_STARTED')
+
+const isShareCardPreview =
+  typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('shareCardPreview')
+
+if (isShareCardPreview) {
+  pushStage('SHARE_CARD_PREVIEW')
+  const container = document.getElementById('root')
+  if (!container) throw new Error('Root container #root is missing')
+  document.body.style.margin = '0'
+  document.body.style.background = '#f5efe7'
+  const root = createRoot(container)
+  root.render(<ShareCardPreview />)
+} else {
 pushStage('PLATFORM_DETECTION_STARTED')
 const platformAdapter = createPlatformAdapter()
 pushStage('PLATFORM_DETECTED:' + platformAdapter.platform)
@@ -87,3 +102,4 @@ setTimeout(() => {
     pushStage('CSS_CHECK_2 root rect ' + (rect2 ? `${Math.round(rect2.width)}x${Math.round(rect2.height)}` : 'no-root') + ' bodyLen=' + document.body.innerText.length)
   } catch {}
 }, 1000)
+} // end non-preview

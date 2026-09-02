@@ -36,6 +36,16 @@ export function ShareButton({
 
   const handleClick = useCallback(async () => {
     if (!platformAdapter) return
+    try {
+      getAnalytics().track('challenge_click', {
+        quiz_id: quizId,
+        result_id: resultId,
+        platform: platformAdapter.platform,
+        ...(score !== undefined ? { score } : {}),
+      })
+    } catch {
+      /* analytics must never block share */
+    }
     setStatus('sharing')
     // Use platform-aware transport; fallback to legacy Telegram share for BC if needed
     const transport = getShareTransport(platformAdapter)

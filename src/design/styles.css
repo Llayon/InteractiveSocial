@@ -106,6 +106,15 @@
   padding: 6px 14px;
 }
 
+.landing__attribution {
+  margin: 2px 0 0;
+  font-size: 0.82rem;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+  font-style: normal;
+  text-align: center;
+}
+
 .landing__cta {
   width: 100%;
 }
@@ -468,9 +477,18 @@
 }
 
 .result__channel {
-  margin: -6px auto 0;
+  margin: 0 auto;
   text-decoration: none;
   font-size: 0.85rem;
+}
+
+.result__promo-note {
+  margin: 0;
+  padding: 0 var(--space-m);
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: var(--ink);
+  text-align: center;
 }
 
 .share {

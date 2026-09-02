@@ -259,9 +259,29 @@ export function Quiz({
   const revealCorrectAnswerId =
     feedback && !feedback.correct ? (question.correctAnswerId ?? undefined) : undefined
 
+  const isMusic90s = quiz.id === 'music90s'
+  const rubricLabels: Record<string, string> = {
+    emoji: 'ребус',
+    'music-video': 'клип',
+    'artist-history': 'история',
+    timeline: 'таймлайн',
+    mismatch: 'найди ошибку',
+    'tv-culture': 'MTV',
+    'pop-culture': 'журналы',
+    artist: 'артист',
+    producer: 'продюсер',
+    'group-history': 'группы',
+    'absurd-description': 'мем',
+    'artist-image': 'образ',
+    'era-culture': 'школьная дискотека',
+    'song-recognition': 'узнай хит',
+  }
+  const rubric = isMusic90s ? (question.category ? (rubricLabels[question.category] ?? question.category) : undefined) : undefined
+
   return (
     <section className="screen quiz" data-testid="quiz-screen">
       <QuizProgress currentIndex={currentIndex} total={total} />
+      {rubric && <span className="m90-rubric" data-testid="m90-rubric">{rubric}</span>}
 
       <QuizQuestion
         question={question}
