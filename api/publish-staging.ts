@@ -36,7 +36,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Optional secret check — if PUBLISH_SECRET is set, require it
   const expectedSecret = process.env.PUBLISH_SECRET
   if (expectedSecret) {
-    const provided = (req.query.secret as string) || (req.body as any)?.secret
+    const provided = (req.query.secret as string) || (req.body as unknown as { secret?: string })?.secret
     if (provided !== expectedSecret) {
       res.status(401).json({ ok: false, error: 'unauthorized' })
       return
@@ -114,10 +114,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(payload),
     })
-    const json = await resp.json().catch(() => null) as any
+    const json = (await resp.json().catch(() => null)) as unknown as { ok?: boolean; description?: string; result?: { message_id?: number } } | null
     console.info(`[publish-staging] sendPhoto URL status=${resp.status} ok=${json?.ok} desc=${json?.description} msgId=${json?.result?.message_id}`)
     if (json?.ok) {
-      res.status(200).json({ ok: true, channel: STAGING_CHANNEL, message_id: json.result.message_id, method: 'url', imageUrl, caption: CAPTION, button: BUTTON_URL })
+      res.status(200).json({ ok: true, channel: STAGING_CHANNEL, message_id: json?.result?.message_id, method: 'url', imageUrl, caption: CAPTION, button: BUTTON_URL })
     } else {
       res.status(502).json({ ok: false, error: 'telegram_failure', details: json, status: resp.status })
     }
@@ -136,12 +136,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const resp = await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
     method: 'POST',
-    body: form as any,
+    body: form as unknown as BodyInit,
   })
-  const json = await resp.json().catch(() => null) as any
-  console.info(`[publish-staging] sendPhoto multipart status=${resp.status} ok=${json?.ok} desc=${json?.description} msgId=${json?.result?.message_id} path=${imagePathUsed}`)
+  const json = (await resp.json().catch(() => null)) as unknown as { ok?: boolean; description?: string; result?: { message_id?: number } } | null
+    console.info(`[publish-staging] sendPhoto multipart status=${resp.status} ok=${json?.ok} desc=${json?.description} msgId=${json?.result?.message_id} path=${imagePathUsed}`)
   if (json?.ok) {
-    res.status(200).json({ ok: true, channel: STAGING_CHANNEL, message_id: json.result.message_id, method: 'multipart', imagePath: imagePathUsed, caption: CAPTION, button: BUTTON_URL })
+    res.status(200).json({ ok: true, channel: STAGING_CHANNEL, message_id: json?.result?.message_id, method: 'multipart', imagePath: imagePathUsed, caption: CAPTION, button: BUTTON_URL })
   } else {
     res.status(502).json({ ok: false, error: 'telegram_failure', details: json, status: resp.status })
   }

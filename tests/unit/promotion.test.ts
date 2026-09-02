@@ -13,7 +13,7 @@ import type { MiniAppAdapter } from '@/platform/types'
 function mockAdapter(platform: 'telegram' | 'max' | 'browser' | 'mock'): MiniAppAdapter {
   return {
     platform,
-    mode: platform as any,
+    mode: platform as unknown as MiniAppAdapter['mode'],
     ready: vi.fn(),
     expand: vi.fn(),
     getStartParam: vi.fn(() => null),
