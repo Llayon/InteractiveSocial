@@ -281,6 +281,19 @@ export const music90sQuiz: Quiz = {
   shareCtaIntro: 'Пусть попробуют побить твой счёт ↓',
   shareCta: 'Бросить вызов',
   restartCta: 'Пройти ещё раз',
+  channelPromotion: {
+    authorName: 'Бюро историй',
+    landingAttribution: 'тест от Бюро историй',
+    resultIntro: 'Я в канале иногда собираю похожие штуки и просто делюсь историями. Заглядывай.',
+    resultCta: 'Зайти в Бюро историй →',
+    shareFooter: {
+      title: 'Бюро историй',
+      handle: '@takeiteasybefore',
+    },
+    destinations: {
+      telegram: { url: 'https://t.me/takeiteasybefore' },
+    },
+  },
   copy: {
     eyebrow: 'музыкальный тест',
     shareHeadline: 'Ты точно помнишь музыку 90-х? Проверь себя:',

@@ -1,3 +1,5 @@
+import { useEffect } from 'react'
+
 import type { Quiz } from '@/features/quiz/schema'
 
 export interface LandingProps {
@@ -7,7 +9,30 @@ export interface LandingProps {
 
 /** Editorial landing screen — the entry point of the OPEN → START loop. */
 export function Landing({ quiz, onStart }: LandingProps) {
+  // Regression: ensure landing always opens at scrollTop 0 (no retained offset,
+  // no Telegram chrome clipping). Blur any autofocus that could pull viewport.
+  useEffect(() => {
+    // Use manual restoration if available — prevents browser back/refresh
+    // from restoring a mid-page offset.
+    try {
+      if ('scrollRestoration' in history) {
+        history.scrollRestoration = 'manual'
+      }
+    } catch {}
+    window.scrollTo(0, 0)
+    document.documentElement.scrollTop = 0
+    document.body.scrollTop = 0
+    if (document.activeElement instanceof HTMLElement) {
+      // Avoid stealing focus from CTA, but prevent off-screen focus pull
+      const tag = document.activeElement.tagName.toLowerCase()
+      if (tag !== 'button' && tag !== 'a') document.activeElement.blur()
+    }
+    // Ensure any async layout (images/font) doesn't leave us scrolled
+    const id = requestAnimationFrame(() => window.scrollTo(0, 0))
+    return () => cancelAnimationFrame(id)
+  }, [])
   const isMusic90s = quiz.id === 'music90s'
+  const attribution = quiz.channelPromotion?.landingAttribution
 
   return (
     <section className="screen landing" aria-labelledby="landing-title">
@@ -16,6 +41,12 @@ export function Landing({ quiz, onStart }: LandingProps) {
         {quiz.title}
       </h1>
       <p className="landing__subtitle">{quiz.subtitle}</p>
+
+      {attribution && (
+        <p className="landing__attribution" data-testid="landing-attribution">
+          {attribution}
+        </p>
+      )}
 
       {isMusic90s && (
         <div className="m90-hero-collage" aria-hidden="true" data-testid="m90-hero-collage">

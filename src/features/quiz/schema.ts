@@ -209,6 +209,29 @@ export const revealConfigSchema = z.object({
   steps: z.array(z.string()).min(1),
   stepDurationMs: z.number().int().positive(),
 })
+
+/* ------------------------------------------------------------------ *
+ * Channel promotion — optional generic author/channel funnel config
+ * ------------------------------------------------------------------ */
+
+export const channelPromotionSchema = z.object({
+  authorName: z.string().min(1),
+  landingAttribution: z.string().min(1).optional(),
+  resultIntro: z.string().min(1).optional(),
+  resultCta: z.string().min(1).optional(),
+  shareFooter: z
+    .object({
+      title: z.string().min(1),
+      handle: z.string().min(1).optional(),
+    })
+    .optional(),
+  destinations: z.object({
+    telegram: z.object({ url: z.string().url() }).optional(),
+    max: z.object({ url: z.string().url() }).optional(),
+  }),
+})
+
+export type ChannelPromotionConfig = z.infer<typeof channelPromotionSchema>
 /* ------------------------------------------------------------------ *
  * Quiz
  * ------------------------------------------------------------------ */
@@ -225,6 +248,7 @@ export const quizSchema = z.object({
   shareCtaIntro: z.string().min(1),
   shareCta: z.string().min(1),
   restartCta: z.string().min(1),
+  channelPromotion: channelPromotionSchema.optional(),
   /**
    * Quiz-aware copy consumed by shared/transport plumbing (landing eyebrow,
    * prepared share caption, delivered own-card line). Only what the second
