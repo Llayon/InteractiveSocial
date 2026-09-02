@@ -287,9 +287,18 @@ export function quizCompleteTelemetry(
 
 /** Quiz-scoped prefix for exact-score assets (no collision between quizzes). */
 function quizScorePrefix(quiz: Quiz): string {
-  if (quiz.id === 'music90s') return 'm90'
-  if (quiz.id === 'guess90s') return 'g90'
+  if (quiz.share?.assetPrefix) return quiz.share.assetPrefix
   return quiz.id
+}
+
+export function shareCardAssetVersion(quiz: Quiz): string | undefined {
+  return quiz.share?.assetVersion
+}
+
+export function shareCardBasePath(quiz: Quiz): string {
+  const version = quiz.share?.assetVersion
+  if (version) return `v${version.replace(/^v/, '')}`
+  return ''
 }
 
 /** Two-digit zero-padded quiz-scoped score key, e.g. music90s 8 → "m90_score_08", guess90s 8 → "g90_score_08". */
@@ -313,4 +322,28 @@ export function resolveShareCardAsset(quiz: Quiz, result: Result, score?: number
     return scoreCardAsset(quiz, score)
   }
   return result.shareImage
+}
+
+export function shareCardVersionedAsset(quiz: Quiz, cardAsset: string): string {
+  const version = shareCardBasePath(quiz)
+  return version ? `${version}/${cardAsset}` : cardAsset
+}
+
+export function shareCardImageUrl(quiz: Quiz, cardAsset: string, appBaseUrl: string): string {
+  const versioned = shareCardVersionedAsset(quiz, cardAsset)
+  return `${appBaseUrl.replace(/\/$/, '')}/share-cards/${versioned}.jpg`
+}
+
+export function shareCardThumbUrl(quiz: Quiz, cardAsset: string, appBaseUrl: string): string {
+  const versioned = shareCardVersionedAsset(quiz, cardAsset)
+  return `${appBaseUrl.replace(/\/$/, '')}/share-cards/${versioned}_thumb.jpg`
+}
+
+export function preparedShareId(quiz: Quiz, result: Result, score?: number): string {
+  const version = shareCardBasePath(quiz) || 'v1'
+  if (quiz.scoring.kind === 'correct-count' && typeof score === 'number') {
+    const cardAsset = scoreCardAsset(quiz, score)
+    return `share_${cardAsset}_${version}`
+  }
+  return `share_${result.id}_${version}`
 }

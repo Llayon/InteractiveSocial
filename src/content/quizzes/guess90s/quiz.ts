@@ -80,6 +80,9 @@ export const guess90sQuiz: Quiz = {
   shareCtaIntro: 'Поделись результатом и брось вызов друзьям ↓',
   shareCta: 'Бросить вызов',
   restartCta: 'Пройти ещё раз',
+  share: {
+    assetPrefix: 'g90',
+  },
   copy: {
     eyebrow: 'аудио-тест',
     shareHeadline: 'Угадай хит 90-х с 4 секунд — проверим память:',

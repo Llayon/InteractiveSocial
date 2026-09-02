@@ -294,6 +294,10 @@ export const music90sQuiz: Quiz = {
       telegram: { url: 'https://t.me/takeiteasybefore' },
     },
   },
+  share: {
+    assetPrefix: 'm90',
+    assetVersion: 'v2',
+  },
   copy: {
     eyebrow: 'музыкальный тест',
     shareHeadline: 'Ты точно помнишь музыку 90-х? Проверь себя:',

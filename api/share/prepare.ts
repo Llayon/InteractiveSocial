@@ -7,7 +7,13 @@ import { resolveQuizRequest } from '../_lib/quizRequest.js'
 import { quizCodeFor, resultCodeFor } from '../../src/content/quizzes/codes.js'
 import { validateInitData } from '../_lib/initData.js'
 import { RESULT_ID_REGEX } from '../../src/features/quiz/schema.js'
-import { resolveBandResultId, resolveShareCardAsset } from '../../src/features/quiz/scoring.js'
+import {
+  preparedShareId,
+  resolveBandResultId,
+  resolveShareCardAsset,
+  shareCardImageUrl,
+  shareCardThumbUrl,
+} from '../../src/features/quiz/scoring.js'
 
 function fail(res: VercelResponse, status: number, error: string): void {
   res.status(status).json({ ok: false, error })
@@ -116,13 +122,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     return
   }
 
-  // Promo channel appended as a second button row on every shared message
-  // (configurable, falls back to the Бюро историй channel).
-  const promoChannelUrl =
-    process.env.PROMO_CHANNEL_URL && process.env.PROMO_CHANNEL_URL.trim().length > 0
-      ? process.env.PROMO_CHANNEL_URL.trim()
-      : 'https://t.me/takeiteasybefore'
-
   // Attribution: the sharer's validated id rides in the startapp parameter
   // (v2 wire codes), so /api/results/deliver can notify them when a friend
   // completes the quiz. Codes failing to resolve degrade to the legacy
@@ -144,9 +143,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   // it fails with 400 PHOTO_THUMB_URL_EMPTY (verified in production logs).
   // Correct-count quizzes resolve the EXACT-SCORE card (score_08 …); the
   // asset name is always server-computed, never a client-supplied URL.
+  // Versioned path (e.g. /share-cards/v2/m90_score_10.jpg) busts Telegram cache.
   const cardAsset = resolveShareCardAsset(quiz, result, score)
-  const imageUrl = `${appBaseUrl.replace(/\/$/, '')}/share-cards/${cardAsset}.jpg`
-  const thumbUrl = `${appBaseUrl.replace(/\/$/, '')}/share-cards/${cardAsset}_thumb.jpg`
+  const imageUrl = shareCardImageUrl(quiz, cardAsset, appBaseUrl)
+  const thumbUrl = shareCardThumbUrl(quiz, cardAsset, appBaseUrl)
   const headline = score === undefined ? `${result.title} — ${result.presentation.subtitle}` : score
   const messageText = [
     typeof headline === 'string'
@@ -182,7 +182,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
       // the recipient actually receives; article results send text only
       // and show the thumbnail solely in the inline picker.
       type: 'photo',
-      id: `share_${result.id}`,
+      id: preparedShareId(quiz, result, score),
       title: result.title,
       description: result.presentation.shareQuote,
       photo_url: imageUrl,
@@ -192,10 +192,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
       // Caption carries the message text (1024-char limit is ample here).
       caption: messageText,
       reply_markup: {
-        inline_keyboard: [
-          [{ text: 'Пройти тест', url: deepLink }],
-          [{ text: '✨ Бюро историй', url: promoChannelUrl }],
-        ],
+        inline_keyboard: [[{ text: 'Пройти тест', url: deepLink }]],
       },
     },
   })

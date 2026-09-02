@@ -6,7 +6,12 @@ import { quizCodeFor, resultCodeFor } from '../../../src/content/quizzes/codes.j
 import { validateMaxInitData } from '../../_lib/maxInitData.js'
 import { maxSendMessage } from '../../_lib/maxApi.js'
 import { RESULT_ID_REGEX } from '../../../src/features/quiz/schema.js'
-import { resolveBandResultId, resolveShareCardAsset } from '../../../src/features/quiz/scoring.js'
+import {
+  resolveBandResultId,
+  resolveShareCardAsset,
+  shareCardImageUrl,
+  shareCardThumbUrl,
+} from '../../../src/features/quiz/scoring.js'
 
 function fail(res: VercelResponse, status: number, error: string): void {
   res.status(status).json({ ok: false, error })
@@ -106,8 +111,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
 
   const deepLink = buildMaxDeepLink(maxBotUsername, startParam)
   const cardAsset = resolveShareCardAsset(quiz, result, score)
-  const imageUrl = `${appBaseUrl.replace(/\/$/, '')}/share-cards/${cardAsset}.jpg`
-  const thumbUrl = `${appBaseUrl.replace(/\/$/, '')}/share-cards/${cardAsset}_thumb.jpg`
+  const imageUrl = shareCardImageUrl(quiz, cardAsset, appBaseUrl)
+  const thumbUrl = shareCardThumbUrl(quiz, cardAsset, appBaseUrl)
   const headline = score === undefined ? `${result.title} — ${result.presentation.subtitle}` : score
   const messageText = [
     typeof headline === 'string' ? headline : `Я набрала ${score}/${quiz.questions.length} в тесте «${quiz.title}»`,

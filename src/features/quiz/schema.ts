@@ -232,6 +232,13 @@ export const channelPromotionSchema = z.object({
 })
 
 export type ChannelPromotionConfig = z.infer<typeof channelPromotionSchema>
+
+export const quizShareConfigSchema = z.object({
+  assetPrefix: z.string().min(1).regex(/^[a-z0-9]+$/, 'asset prefix must be lowercase alphanumeric'),
+  assetVersion: z.string().min(1).optional(),
+})
+
+export type QuizShareConfig = z.infer<typeof quizShareConfigSchema>
 /* ------------------------------------------------------------------ *
  * Quiz
  * ------------------------------------------------------------------ */
@@ -249,6 +256,7 @@ export const quizSchema = z.object({
   shareCta: z.string().min(1),
   restartCta: z.string().min(1),
   channelPromotion: channelPromotionSchema.optional(),
+  share: quizShareConfigSchema.optional(),
   /**
    * Quiz-aware copy consumed by shared/transport plumbing (landing eyebrow,
    * prepared share caption, delivered own-card line). Only what the second

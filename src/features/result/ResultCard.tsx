@@ -18,17 +18,17 @@ export interface ResultCardProps {
  * Music90s override: collectible magazine-insert hierarchy (title hero, score badge, hook, object).
  */
 
-const M90_HOOKS: Record<string, string> = {
+export const M90_HOOKS: Record<string, string> = {
   m90_rookie: 'И, кажется, быстро вышла.',
   m90_familiar: 'Где-то это всё играло.',
   m90_cassette: 'Кассетная память ещё держится.',
   m90_disco: 'Зачёт автоматом. Дискотека удалась.',
   m90_legend: 'Подшивка Cool дома была?',
   m90_era17: 'Джинсы-клёш с блёстками носила?',
-  m90_era18: 'Всё. Мы сдаёмся.',
+  m90_era18: 'Я с тобой про попсу спорить не буду.',
 }
 
-const M90_HERO_CLASS: Record<string, string> = {
+export const M90_HERO_CLASS: Record<string, string> = {
   m90_rookie: 'm90-result-hero--rookie',
   m90_familiar: 'm90-result-hero--familiar',
   m90_cassette: 'm90-result-hero--cassette',
@@ -38,7 +38,7 @@ const M90_HERO_CLASS: Record<string, string> = {
   m90_era18: 'm90-result-hero--era18',
 }
 
-const M90_OBJECT_SRC: Record<string, string> = {
+export const M90_OBJECT_SRC: Record<string, string> = {
   m90_rookie: '/optimized/music90s/tv.png',
   m90_familiar: '/optimized/music90s/boombox.png',
   m90_cassette: '/optimized/music90s/cassette.png',
@@ -48,7 +48,7 @@ const M90_OBJECT_SRC: Record<string, string> = {
   m90_era18: '/optimized/music90s/crown.png',
 }
 
-const M90_STICKER: Record<string, { label: string; mod?: string }> = {
+export const M90_STICKER: Record<string, { label: string; mod?: string }> = {
   m90_rookie: { label: '0—4' },
   m90_familiar: { label: '5—7' },
   m90_cassette: { label: 'кассета' },
