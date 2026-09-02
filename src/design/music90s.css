@@ -1,0 +1,593 @@
+/* Music90s theme — Russian teen magazine 1998-2001 / Cool Girl / bedroom wall
+   Applied via [data-quiz="music90s"] wrapper. Common shell stays coherent; music90s gets collage identity.
+   Palette: paper #F5EFE7, burgundy #7E2D35, graphite #29241E, dusty pink #D7A0AA, silver #C7C5C2
+   No neon synthwave.
+*/
+
+[data-quiz='music90s'] {
+  --m90-paper: #f5efe7;
+  --m90-burgundy: #7e2d35;
+  --m90-graphite: #29241e;
+  --m90-dusty-pink: #d7a0aa;
+  --m90-silver: #c7c5c2;
+  --m90-lime: #d6e25a;
+  --m90-cyan: #5fd0d8;
+  --m90-line: rgba(126, 45, 53, 0.14);
+  --m90-ink: #29241e;
+}
+
+/* Root paper + subtle grain */
+[data-quiz='music90s'] .screen {
+  position: relative;
+}
+
+[data-quiz='music90s'] {
+  background: #f5efe7;
+}
+
+/* Shared typography shift: display sans for headings, not literary serif */
+[data-quiz='music90s'] .landing__title,
+[data-quiz='music90s'] .question__title,
+[data-quiz='music90s'] .result-card__title {
+  font-family:
+    'Arial Black', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  line-height: 0.98;
+}
+
+[data-quiz='music90s'] .landing__title {
+  font-size: clamp(1.9rem, 8.5vw, 2.45rem);
+  color: #7e2d35;
+  text-wrap: balance;
+}
+
+[data-quiz='music90s'] .landing__eyebrow {
+  display: inline-block;
+  background: #7e2d35;
+  color: #f5efe7;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+  font-weight: 800;
+}
+
+[data-quiz='music90s'] .landing__subtitle {
+  font-weight: 600;
+  color: #29241e;
+}
+
+/* ---------- Landing collage block ---------- */
+.m90-hero-collage {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 14px;
+  background: #fffdf9;
+  border: 1px solid rgba(126, 45, 53, 0.18);
+  border-radius: 16px;
+  box-shadow: 0 2px 10px rgba(41, 36, 30, 0.06);
+  position: relative;
+  overflow: hidden;
+}
+
+.m90-hero-collage::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(rgba(126, 45, 53, 0.04) 1px, transparent 1px);
+  background-size: 14px 14px;
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.m90-hero-object {
+  position: relative;
+  background: #f5efe7;
+  border: 1px solid rgba(41, 36, 30, 0.08);
+  border-radius: 12px;
+  overflow: hidden;
+  aspect-ratio: 1.15;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.m90-hero-object img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  padding: 6px;
+}
+
+.m90-hero-object--cassette {
+  background: #fdf2f4;
+  transform: rotate(-1.2deg);
+}
+
+.m90-hero-object--cd {
+  background: #f0f0f3;
+  transform: rotate(1deg);
+}
+
+.m90-hero-object--tv {
+  background: #eef0f7;
+}
+
+.m90-hero-object--boombox {
+  background: #fff7e0;
+}
+
+/* Tape strips */
+.m90-tape {
+  position: absolute;
+  width: 56px;
+  height: 18px;
+  background: rgba(199, 197, 194, 0.92);
+  opacity: 0.85;
+  border-left: 2px dashed rgba(41, 36, 30, 0.12);
+  border-right: 2px dashed rgba(41, 36, 30, 0.12);
+  pointer-events: none;
+}
+
+.m90-tape--tl {
+  top: -6px;
+  left: 18px;
+  transform: rotate(-18deg);
+}
+
+.m90-tape--tr {
+  top: -6px;
+  right: 18px;
+  transform: rotate(14deg);
+}
+
+.m90-sticker-1999 {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background: #7e2d35;
+  color: #f5efe7;
+  font-family: 'Arial Black', Helvetica, sans-serif;
+  font-weight: 900;
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  padding: 4px 8px;
+  border-radius: 999px;
+  transform: rotate(-6deg);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+.m90-hero-caption {
+  grid-column: 1 / -1;
+  text-align: center;
+  font-size: 0.78rem;
+  color: #8b8175;
+  margin: 2px 0 0;
+  font-style: italic;
+}
+
+/* ---------- Landing copy refinement ---------- */
+[data-quiz='music90s'] .landing__copy {
+  background: #fffdf9;
+  border: 1px solid rgba(126, 45, 53, 0.12);
+  border-radius: 16px;
+}
+
+[data-quiz='music90s'] .landing__meta-item {
+  background: #fffdf9;
+  border-color: rgba(126, 45, 53, 0.18);
+  color: #7e2d35;
+  font-weight: 700;
+}
+
+[data-quiz='music90s'] .landing__cta {
+  background: #7e2d35;
+  color: #fdf9f4;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  border: none;
+  box-shadow: 0 4px 14px rgba(126, 45, 53, 0.28);
+}
+
+[data-quiz='music90s'] .landing__cta:active {
+  transform: scale(0.98);
+}
+
+/* ---------- Quiz screen ---------- */
+[data-quiz='music90s'] .progress__label {
+  color: #7e2d35;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  font-size: 0.78rem;
+}
+
+[data-quiz='music90s'] .progress__track {
+  height: 8px;
+  background: rgba(199, 197, 194, 0.6);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+[data-quiz='music90s'] .progress__fill {
+  background: #7e2d35;
+  border-radius: 999px;
+}
+
+[data-quiz='music90s'] .question__title {
+  color: #29241e;
+  font-size: 1.28rem;
+  text-transform: none;
+  letter-spacing: -0.01em;
+  line-height: 1.22;
+}
+
+/* Category rubric */
+.m90-rubric {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-weight: 800;
+  color: #7e2d35;
+  background: #efe3dd;
+  padding: 4px 10px;
+  border-radius: 999px;
+  margin-bottom: 6px;
+}
+
+[data-quiz='music90s'] .answer-card {
+  border: 1.5px solid rgba(41, 36, 30, 0.12);
+  border-radius: 16px;
+  background: #fffdf9;
+  padding: 14px 16px;
+  min-height: 52px;
+  position: relative;
+  font-weight: 600;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease,
+    transform 0.08s ease,
+    box-shadow 0.15s ease;
+}
+
+[data-quiz='music90s'] .answer-card::before {
+  content: attr(data-answer-id);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: #f5efe7;
+  border: 1px solid rgba(126, 45, 53, 0.18);
+  color: #7e2d35;
+  font-weight: 900;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  margin-bottom: 8px;
+}
+
+[data-quiz='music90s'] .answer-card .answer-card__title {
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+[data-quiz='music90s'] .answer-card.is-selected {
+  border-color: #7e2d35;
+  background: #efe3dd;
+  box-shadow: 0 2px 10px rgba(126, 45, 53, 0.12);
+}
+
+[data-quiz='music90s'] .answer-card.is-selected::before {
+  background: #7e2d35;
+  color: #fdf9f4;
+  border-color: #7e2d35;
+}
+
+[data-quiz='music90s'] .answer-card.is-correct {
+  border-color: #2e7d4f;
+  background: #e8f5e9;
+}
+
+[data-quiz='music90s'] .answer-card.is-wrong {
+  border-color: #c0392b;
+  background: #fdf0ef;
+}
+
+[data-quiz='music90s'] .answer-card__mark {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 0.9rem;
+}
+
+[data-quiz='music90s'] .answer-card.is-correct .answer-card__mark {
+  background: #2e7d4f;
+  color: #fff;
+}
+
+[data-quiz='music90s'] .answer-card.is-wrong .answer-card__mark {
+  background: #c0392b;
+  color: #fff;
+}
+
+/* Quiz nav */
+[data-quiz='music90s'] .quiz__nav .button--ghost {
+  border-color: rgba(126, 45, 53, 0.22);
+  color: #7e2d35;
+  background: #fffdf9;
+  font-weight: 700;
+}
+
+[data-quiz='music90s'] .quiz__nav .button--secondary {
+  background: #29241e;
+  color: #f5efe7;
+  border-color: #29241e;
+  font-weight: 800;
+}
+
+[data-quiz='music90s'] .quiz__nav .button--secondary:disabled {
+  opacity: 0.35;
+}
+
+/* Feedback */
+[data-quiz='music90s'] .question__feedback {
+  background: #fffdf9;
+  border: 1px dashed rgba(126, 45, 53, 0.24);
+  border-radius: 12px;
+  padding: 10px 14px;
+  color: #29241e;
+  font-weight: 600;
+}
+
+/* ---------- Reveal ---------- */
+[data-quiz='music90s'] .reveal {
+  background: #f5efe7;
+}
+
+[data-quiz='music90s'] .reveal__step {
+  font-family: 'Arial Black', Helvetica, sans-serif;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+}
+
+[data-quiz='music90s'] .reveal__step.is-active {
+  color: #7e2d35;
+}
+
+/* ---------- Result card ---------- */
+[data-quiz='music90s'] .result-card {
+  background: #fffdf9;
+  border: 1px solid rgba(126, 45, 53, 0.12);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 8px 28px rgba(41, 36, 30, 0.08);
+  position: relative;
+}
+
+[data-quiz='music90s'] .result-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(rgba(126, 45, 53, 0.045) 1px, transparent 1px);
+  background-size: 16px 16px;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+/* Score badge - secondary, small, top-right */
+.m90-score-badge {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 2;
+  background: rgba(255, 253, 249, 0.96);
+  border: 1px solid rgba(126, 45, 53, 0.16);
+  color: #7e2d35;
+  font-weight: 900;
+  font-size: 0.82rem;
+  letter-spacing: 0.06em;
+  padding: 6px 12px;
+  border-radius: 999px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* Hero area inside result card - object cluster */
+.m90-result-hero {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3.2;
+  background: var(--m90-hero-bg, #f5efe7);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid rgba(126, 45, 53, 0.08);
+}
+
+.m90-result-hero img {
+  width: 82%;
+  height: 82%;
+  object-fit: contain;
+  display: block;
+  filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.12));
+}
+
+.m90-result-hero--rookie {
+  --m90-hero-bg: #e8e9f0;
+}
+
+.m90-result-hero--familiar {
+  --m90-hero-bg: #fff4d6;
+}
+
+.m90-result-hero--cassette {
+  --m90-hero-bg: #fde8ee;
+}
+
+.m90-result-hero--disco {
+  --m90-hero-bg: #eef2f4;
+}
+
+.m90-result-hero--legend {
+  --m90-hero-bg: #fde8ee;
+}
+
+.m90-result-hero--era17 {
+  --m90-hero-bg: #f0ece6;
+}
+
+.m90-result-hero--era18 {
+  --m90-hero-bg: linear-gradient(135deg, #fdf2f4 0%, #f5efe7 40%, #eef2f7 100%);
+}
+
+/* Tapes on result hero */
+.m90-result-hero .m90-tape {
+  width: 48px;
+  height: 16px;
+}
+
+/* Result title - HERO */
+[data-quiz='music90s'] .result-card__title {
+  font-size: clamp(1.55rem, 6.5vw, 1.95rem);
+  color: #7e2d35;
+  text-shadow: none;
+  letter-spacing: -0.03em;
+  line-height: 0.95;
+  text-wrap: balance;
+}
+
+[data-quiz='music90s'] .result-card__subtitle {
+  display: none; /* score moved to badge */
+}
+
+[data-quiz='music90s'] .result-card__hook {
+  font-family: 'Arial Black', Helvetica, sans-serif;
+  font-weight: 900;
+  font-size: 1.02rem;
+  color: #29241e;
+  background: #f5efe7;
+  border: 1px dashed rgba(126, 45, 53, 0.22);
+  border-radius: 12px;
+  padding: 10px 14px;
+  margin: 0 var(--space-m);
+  text-align: center;
+  line-height: 1.35;
+  transform: rotate(-0.4deg);
+}
+
+[data-quiz='music90s'] .result-card__description {
+  font-size: 0.94rem;
+  line-height: 1.55;
+  color: #29241e;
+}
+
+[data-quiz='music90s'] .result-card__description p {
+  color: #29241e;
+}
+
+/* Sticker accent near title */
+.m90-sticker-title {
+  display: inline-block;
+  background: #d7a0aa;
+  color: #7e2d35;
+  font-weight: 900;
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 999px;
+  transform: rotate(-2deg);
+  margin-bottom: 8px;
+  border: 1px solid rgba(126, 45, 53, 0.18);
+}
+
+.m90-sticker-title--lime {
+  background: #d6e25a;
+  color: #29241e;
+}
+
+.m90-sticker-title--cyan {
+  background: #5fd0d8;
+  color: #29241e;
+}
+
+/* Result actions */
+[data-quiz='music90s'] .share__intro {
+  font-weight: 700;
+  color: #7e2d35;
+}
+
+[data-quiz='music90s'] .share__cta {
+  background: #7e2d35;
+  color: #fdf9f4;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  border: none;
+  box-shadow: 0 4px 14px rgba(126, 45, 53, 0.28);
+}
+
+[data-quiz='music90s'] .result__restart {
+  border-color: rgba(126, 45, 53, 0.22);
+  color: #7e2d35;
+  background: #fffdf9;
+  font-weight: 800;
+}
+
+[data-quiz='music90s'] .result__channel {
+  color: #7e2d35;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  border-color: rgba(126, 45, 53, 0.18);
+  background: #fffdf9;
+}
+
+[data-quiz='music90s'] .result__channel:hover {
+  background: #efe3dd;
+}
+
+/* Responsive */
+@media (max-width: 380px) {
+  [data-quiz='music90s'] .landing__title {
+    font-size: 1.75rem;
+  }
+
+  [data-quiz='music90s'] .question__title {
+    font-size: 1.15rem;
+  }
+
+  [data-quiz='music90s'] .result-card__title {
+    font-size: 1.45rem;
+  }
+}
+
+@media (min-width: 720px) {
+  [data-quiz='music90s'] .m90-hero-collage {
+    gap: 10px;
+    padding: 18px;
+  }
+
+  [data-quiz='music90s'] .m90-result-hero {
+    aspect-ratio: 4 / 2.9;
+  }
+}

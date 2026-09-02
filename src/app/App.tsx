@@ -189,36 +189,46 @@ export function App({ telegram, adapter }: AppProps) {
     analytics.track('restart', { quiz_id: quiz.id })
   }, [analytics, quiz.id])
 
+  const quizThemeAttr = { 'data-quiz': quiz.id } as const
+
   switch (screen) {
     case 'quiz':
       return (
-        <Quiz
-          quiz={quiz}
-          phase={state.phase}
-          currentIndex={state.currentIndex}
-          answers={state.answers}
-          onAnswer={handleAnswer}
-          onBack={handleBack}
-          onNext={handleNext}
-          onSkip={handleSkip}
-          onAudioReplay={handleAudioReplay}
-          onRevealFinished={() => dispatch({ type: 'reveal-finished' })}
-        />
+        <div {...quizThemeAttr}>
+          <Quiz
+            quiz={quiz}
+            phase={state.phase}
+            currentIndex={state.currentIndex}
+            answers={state.answers}
+            onAnswer={handleAnswer}
+            onBack={handleBack}
+            onNext={handleNext}
+            onSkip={handleSkip}
+            onAudioReplay={handleAudioReplay}
+            onRevealFinished={() => dispatch({ type: 'reveal-finished' })}
+          />
+        </div>
       )
     case 'result': {
       const outcome = resolveOutcome(quiz, state.answers)
       return (
-        <ResultScreen
-          quiz={quiz}
-          outcome={outcome}
-          telegram={platformAdapter as unknown as import('@/platform/telegram').TelegramAdapter}
-          adapter={platformAdapter}
-          onRestart={handleRestart}
-        />
+        <div {...quizThemeAttr}>
+          <ResultScreen
+            quiz={quiz}
+            outcome={outcome}
+            telegram={platformAdapter as unknown as import('@/platform/telegram').TelegramAdapter}
+            adapter={platformAdapter}
+            onRestart={handleRestart}
+          />
+        </div>
       )
     }
     case 'landing':
     default:
-      return <Landing quiz={quiz} onStart={handleStart} />
+      return (
+        <div {...quizThemeAttr}>
+          <Landing quiz={quiz} onStart={handleStart} />
+        </div>
+      )
   }
 }
