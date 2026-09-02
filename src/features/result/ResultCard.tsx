@@ -55,7 +55,7 @@ const M90_STICKER: Record<string, { label: string; mod?: string }> = {
   m90_disco: { label: 'дискотека', mod: 'm90-sticker-title--cyan' },
   m90_legend: { label: 'главред', mod: 'm90-sticker-title--lime' },
   m90_era17: { label: '17/18' },
-  m90_era18: { label: 'редкая', mod: 'm90-sticker-title--lime' },
+  m90_era18: { label: 'редкая', mod: 'm90-sticker-title--lime m90-sticker-title--rare' },
 }
 
 export function ResultCard({ quiz, result, score, children }: ResultCardProps) {
@@ -78,7 +78,7 @@ export function ResultCard({ quiz, result, score, children }: ResultCardProps) {
         data-result-id={result.id}
         data-presentation={presentation.kind}
       >
-        {/* Collectible hero: score badge + object */}
+        {/* Collectible hero: score badge + object collage */}
         <div className={`m90-result-hero ${heroClass}`} data-testid="result-hero">
           {typeof score === 'number' && (
             <span className="m90-score-badge" data-testid="result-score" aria-label={`Счёт ${score} из ${quiz.questions.length}`}>
@@ -88,6 +88,7 @@ export function ResultCard({ quiz, result, score, children }: ResultCardProps) {
           <img src={objectSrc} alt="" loading="eager" decoding="async" />
           <span className="m90-tape m90-tape--tl" aria-hidden="true" />
           <span className="m90-tape m90-tape--tr" aria-hidden="true" />
+          {result.id === 'm90_era18' && <span className="m90-foil-accent" aria-hidden="true" />}
         </div>
 
         <header className="result-card__header">
