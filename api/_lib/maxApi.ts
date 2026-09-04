@@ -14,21 +14,10 @@
  * NODE_TLS_REJECT_UNAUTHORIZED and never process-wide https.globalAgent.
  */
 
-import { createRequire as _createRequire } from 'node:module'
-
-const _require: (id: string) => unknown = (() => {
-  try {
-    return _createRequire(import.meta.url)
-  } catch {
-    // fallback for Vitest / CommonJS
-    return (id: string) => {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-explicit-any
-      const g = globalThis as unknown as { require?: (id: string) => unknown }
-      if (g.require) return g.require(id)
-      throw new Error(`require not available for ${id}`)
-    }
-  }
-})()
+import fs from 'node:fs'
+import path from 'node:path'
+import https from 'node:https'
+import * as undici from 'undici'
 
 const MAX_API_BASE = 'https://platform-api2.max.ru'
 const DEFAULT_TIMEOUT_MS = 8_000
@@ -62,9 +51,7 @@ try {
     const pemEarly = pemEarlyRaw.includes('\\n') ? pemEarlyRaw.replace(/\\n/g, '\n') : pemEarlyRaw
     try {
       // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const fs = _require('node:fs') as typeof import('node:fs')
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const path = _require('node:path') as typeof import('node:path')
+      // fs/path imported statically
       // Try to write to original path if writable, else /tmp
       const tryPaths = [caPathEarly, '/tmp/russian-trusted-ca.pem']
       for (const p of tryPaths) {
@@ -121,8 +108,6 @@ function getPemCa(): string | null {
   }
   if (caPath) {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const fs = _require('node:fs') as typeof import('node:fs')
       const content = fs.readFileSync(caPath, 'utf-8')
       if (content && content.includes('BEGIN CERTIFICATE')) {
         cachedCa = content
@@ -134,8 +119,6 @@ function getPemCa(): string | null {
   }
   // fallback: try local cert file shipped with repo (for Vercel runtime with includeFiles)
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const fs = _require('node:fs') as typeof import('node:fs')
     const fallbackPaths = [
       '/var/task/certs/russian-trusted-ca.pem',
       '/vercel/path0/certs/russian-trusted-ca.pem',
@@ -164,14 +147,12 @@ function buildScopedFetchOptions(): RequestInit & { dispatcher?: unknown; agent?
   try {
     // Try undici Dispatcher first (Node 20+ fetch uses undici)
     try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const undici = _require('undici') as unknown as { Agent: new (opts: unknown) => unknown }
-      const dispatcher = new undici.Agent({ connect: { ca } })
+      const undiciAgent = undici as unknown as { Agent: new (opts: unknown) => unknown }
+      const dispatcher = new undiciAgent.Agent({ connect: { ca } })
       return { dispatcher } as unknown as RequestInit
     } catch {
       // Fallback to https.Agent
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const https = _require('node:https') as typeof import('node:https')
+      // https imported statically
       const agent = new https.Agent({ ca })
       return { agent } as unknown as RequestInit
     }
@@ -197,10 +178,9 @@ async function fetchWithTimeout(
     const isVitest = Boolean(process.env.VITEST) || Boolean((globalThis as unknown as { __vitest_worker__?: unknown }).__vitest_worker__)
     if (ca && Object.keys(scoped).length > 0 && !isVitest) {
       try {
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const undici = _require('undici') as unknown as { fetch: typeof fetch }
-        if (undici && typeof undici.fetch === 'function') {
-          return await undici.fetch(url, merged as RequestInit)
+        const undiciFetch = undici as unknown as { fetch: typeof fetch }
+        if (undiciFetch && typeof undiciFetch.fetch === 'function') {
+          return await undiciFetch.fetch(url, merged as RequestInit)
         }
       } catch {}
     }

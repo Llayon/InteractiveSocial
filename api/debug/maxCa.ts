@@ -1,18 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { createRequire as _createRequire } from 'node:module'
+import * as undici from 'undici'
 import { fetchWithTimeout } from '../_lib/maxApi.js'
-
-const _require: (id: string) => unknown = (() => {
-  try {
-    return _createRequire(import.meta.url)
-  } catch {
-    return (id: string) => {
-      const g = globalThis as unknown as { require?: (id: string) => unknown }
-      if (g.require) return g.require(id)
-      throw new Error(`require not available for ${id}`)
-    }
-  }
-})()
 
 function getPemInfo(): { len: number; certs: number; hasBegin: boolean; preview: string } {
   const pem = process.env.MAX_EXTRA_CA_PEM
@@ -69,8 +57,7 @@ export default async function handler(_req: VercelRequest, res: VercelResponse):
       NODE_EXTRA_CA_CERTS: process.env.NODE_EXTRA_CA_CERTS ?? 'missing',
       hasUndici: (() => {
         try {
-          _require('undici')
-          return true
+          return Boolean((undici as unknown as { Agent?: unknown }).Agent)
         } catch {
           return false
         }
