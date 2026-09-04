@@ -30,10 +30,10 @@ describe('Share pipeline canonical', () => {
     expect(result.title).toBe('Знаю только припевы')
     const asset = resolveShareCardAsset(music90sQuiz, result, 10)
     expect(asset).toBe('m90_score_10')
-    // versioned path should be v3
-    expect(shareCardVersionedAsset(music90sQuiz, asset)).toBe('v3/m90_score_10')
+    // versioned path should be v4
+    expect(shareCardVersionedAsset(music90sQuiz, asset)).toBe('v4/m90_score_10')
     expect(shareCardImageUrl(music90sQuiz, asset, 'https://example.com')).toBe(
-      'https://example.com/share-cards/v3/m90_score_10.jpg',
+      'https://example.com/share-cards/v4/m90_score_10.jpg',
     )
   })
 
@@ -93,17 +93,17 @@ describe('Share pipeline canonical', () => {
     expect(id8).not.toBe(id9)
     expect(id9).not.toBe(id10)
     expect(id8).not.toBe(id10)
-    expect(id8).toBe('share_m90_score_08_v3')
-    expect(id9).toBe('share_m90_score_09_v3')
-    expect(id10).toBe('share_m90_score_10_v3')
+    expect(id8).toBe('share_m90_score_08_v4')
+    expect(id9).toBe('share_m90_score_09_v4')
+    expect(id10).toBe('share_m90_score_10_v4')
   })
 
   it('card asset version appears in Telegram image URL', () => {
     const result = getResultById(music90sQuiz, 'm90_cassette')!
     const asset = resolveShareCardAsset(music90sQuiz, result, 10)
     const url = shareCardImageUrl(music90sQuiz, asset, 'https://example.com')
-    expect(url).toContain('/v3/')
-    expect(url).toBe('https://example.com/share-cards/v3/m90_score_10.jpg')
+    expect(url).toContain('/v4/')
+    expect(url).toBe('https://example.com/share-cards/v4/m90_score_10.jpg')
   })
 
   it('no fake CTA is part of share-card render model', () => {

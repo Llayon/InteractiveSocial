@@ -53,7 +53,7 @@ export const M90_STICKER: Record<string, { label: string; mod?: string }> = {
   m90_familiar: { label: '5—7' },
   m90_cassette: { label: 'кассета' },
   m90_disco: { label: 'дискотека', mod: 'm90-sticker-title--cyan' },
-  m90_legend: { label: 'главред', mod: 'm90-sticker-title--lime' },
+  m90_legend: { label: 'дискотека', mod: 'm90-sticker-title--lime' },
   m90_era17: { label: '17/18' },
   m90_era18: { label: 'редкая', mod: 'm90-sticker-title--lime m90-sticker-title--rare' },
 }

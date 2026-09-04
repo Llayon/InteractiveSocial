@@ -10,6 +10,7 @@ import { RESULT_ID_REGEX } from '../../../src/features/quiz/schema.js'
 import {
   resolveBandResultId,
   resolveShareCardAsset,
+  resolveShareCardVersion,
   shareCardImageUrl,
   shareCardThumbUrl,
 } from '../../../src/features/quiz/scoring.js'
@@ -132,16 +133,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
       return 'invalid_url'
     }
   })()
-  const version = (() => {
-    try {
-      const p = new URL(imageUrl).pathname
-      if (p.includes('/v3/')) return 'v3'
-      if (p.includes('/v2/')) return 'v2'
-      return 'v1'
-    } catch {
-      return 'unknown'
-    }
-  })()
+  const version = resolveShareCardVersion(quiz, imageUrl)
 
   let imageAttachment: Awaited<ReturnType<typeof createMaxImageAttachment>>
   try {

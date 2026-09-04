@@ -368,7 +368,7 @@ export const music90sQuiz: Quiz = {
   },
   share: {
     assetPrefix: 'm90',
-    assetVersion: 'v3',
+    assetVersion: 'v4',
   },
   copy: {
     eyebrow: 'музыкальный тест',

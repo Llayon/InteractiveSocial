@@ -301,6 +301,31 @@ export function shareCardBasePath(quiz: Quiz): string {
   return ''
 }
 
+/**
+ * Generic version extractor for logging/telemetry. Derives from quiz config
+ * first (preferred: quiz.share.assetVersion), otherwise parses the version
+ * segment from a share-card URL generically: /share-cards/vN/ → vN.
+ * Future versions (v4, v5, …) require no manual branches.
+ */
+export function shareCardVersionFromUrl(imageUrl: string): string {
+  try {
+    const p = new URL(imageUrl).pathname
+    const m = p.match(/\/share-cards\/(v\d+)\//)
+    if (m) return m[1]
+    if (p.includes('/share-cards/')) return 'v1'
+    return 'unknown'
+  } catch {
+    return 'unknown'
+  }
+}
+
+export function resolveShareCardVersion(quiz: Quiz, imageUrl?: string): string {
+  const v = quiz.share?.assetVersion
+  if (v) return v.startsWith('v') ? v : `v${v}`
+  if (imageUrl) return shareCardVersionFromUrl(imageUrl)
+  return 'v1'
+}
+
 /** Two-digit zero-padded quiz-scoped score key, e.g. music90s 8 → "m90_score_08", guess90s 8 → "g90_score_08". */
 export function scoreCardAsset(quiz: Quiz, score: number): string {
   const prefix = quizScorePrefix(quiz)

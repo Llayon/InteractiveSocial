@@ -9,10 +9,17 @@ export interface Music90ShareCardProps {
 }
 
 /**
- * Canonical Music90s share-card renderer — single source of truth for both
- * in-app preview (via Playwright screenshot) and production JPEGs.
- * Uses the same visual tokens as runtime ResultCard (hero class, object, hook)
- * to prevent drift between runtime and Telegram shares.
+ * @deprecated NOT canonical for Music90s external share assets v4+.
+ *
+ * Music90s v4+ external share cards are FINAL approved artwork from
+ * `assets-source/score-cards/*.png` converted via
+ * `scripts/generate-music90-share-cards.mjs` to `public/share-cards/v4/`.
+ * This React component must NOT be used to generate production v4 JPEGs.
+ *
+ * Retained only as an internal preview / deprecated reference. It still uses
+ * the same visual tokens as runtime ResultCard (hero class, object, hook) but
+ * is NO LONGER the source of truth for Telegram/MAX delivery or challenge
+ * shares. Do not screenshot this component for production v4.
  */
 export function Music90ShareCard({ quiz, score }: Music90ShareCardProps) {
   const resultId = resolveBandResultId(quiz, score)

@@ -46,9 +46,10 @@ function assetFromUrl(url: string): string {
 function getVersionFromUrl(url: string): string {
   try {
     const u = new URL(url)
-    if (u.pathname.includes('/v2/')) return 'v2'
-    if (u.pathname.includes('/v3/')) return 'v3'
-    return 'v1'
+    const m = u.pathname.match(/\/share-cards\/(v\d+)\//)
+    if (m) return m[1]
+    if (u.pathname.includes('/share-cards/')) return 'v1'
+    return 'unknown'
   } catch {
     return 'unknown'
   }
