@@ -63,15 +63,20 @@ async function fallbackShare(
       ? `«${result.title}» — ${result.presentation.shareQuote}`
       : `Я набрала ${score}/${total} в тесте «${quizTitle}».\n${result.presentation.shareQuote}`
 
+  // client diagnostic: fallback transport observable
+  try {
+    console.info(`[max-share] transport=fallback_text platform=${platform} quizId=${quizId} resultId=${result.id} score=${score ?? 'n/a'} total=${total ?? 'n/a'}`)
+  } catch {}
+  onAnalytics?.('max_share_fallback_text', { quiz_id: quizId, result_id: result.id, platform, ...(score !== undefined ? { score } : {}), ...(total !== undefined ? { total } : {}) })
+  onAnalytics?.('share_fallback_text', { quiz_id: quizId, result_id: result.id, platform }) // legacy compat
+
   // Prefer native MAX text share if available and platform is max
   if (platform === 'max' && usable) {
     const wa = getMaxWebApp()
-    // Try shareMaxContent with text/link before Web Share API
     if (wa?.shareMaxContent) {
       try {
         wa.shareMaxContent({ text, link: url })
         onAnalytics?.('share_fallback_native', { quiz_id: quizId, result_id: result.id, platform: 'max' })
-        // We treat this as fallback (not native media) — still copy to clipboard as backup if needed
       } catch {
         // fall through
       }
@@ -194,14 +199,21 @@ export async function prepareMaxShareMessage(
       (json as { ok?: unknown }).ok === true
     ) {
       const mid = (json as { mid?: unknown }).mid
-      if (typeof mid === 'string' && mid.length > 0) return { ok: true, mid }
+      if (typeof mid === 'string' && mid.length > 0) {
+        try { console.info(`[max-share] prepare=success mid=present quizId=${quizId} resultId=${resultId}`) } catch {}
+        return { ok: true, mid }
+      }
+      try { console.warn(`[max-share] prepare=failed reason=max_mid_missing quizId=${quizId} resultId=${resultId}`) } catch {}
+      return { ok: false, code: 'max_mid_missing' }
     }
     const code =
       json !== null && typeof json === 'object' && 'error' in json
         ? String((json as { error?: unknown }).error)
         : `http_${response.status}`
+    try { console.warn(`[max-share] prepare=failed code=${code} quizId=${quizId} resultId=${resultId}`) } catch {}
     return { ok: false, code }
   } catch {
+    try { console.warn(`[max-share] prepare=failed code=network_error quizId=${quizId}`) } catch {}
     return { ok: false, code: 'network_error' }
   } finally {
     clearTimeout(t)
@@ -249,8 +261,10 @@ class MaxShareTransport implements ShareTransport {
     const onAnalytics = (event: AnalyticsEvent, payload: Record<string, unknown>) => analytics.track(event, { ...payload, platform: 'max' })
 
     analytics.track('share_click', { quiz_id: quizId, result_id: resultId, platform: 'max', ...(score === undefined ? {} : { score }) })
+    try { console.info(`[max-share] click platform=max quizId=${quizId} resultId=${resultId} score=${score ?? 'n/a'}`) } catch {}
 
     if (adapter.platform === 'browser') {
+      analytics.track('max_prepare_failed', { quiz_id: quizId, result_id: resultId, reason: 'native_unsupported', platform: 'max' })
       const outcome = await fallbackShare(quizId, v2StartParam, quizTitle, total, result, 'max', score, onAnalytics)
       analytics.track('share_failed', { quiz_id: quizId, result_id: resultId, reason: 'native_unsupported', platform: 'max' })
       return outcome
@@ -270,39 +284,52 @@ class MaxShareTransport implements ShareTransport {
     if (!mid) {
       const prepared = await prepareMaxShareMessage(quizId, resultId, adapter.getInitDataRaw(), score)
       if (!prepared.ok) {
+        analytics.track('max_prepare_failed', { quiz_id: quizId, result_id: resultId, reason: prepared.code, platform: 'max' })
         analytics.track('share_prepare_failed', { quiz_id: quizId, result_id: resultId, reason: prepared.code, platform: 'max' })
         analytics.track('share_failed', { quiz_id: quizId, result_id: resultId, reason: `prepare_${prepared.code}`, platform: 'max' })
+        try { console.warn(`[max-share] prepare=failed transport=fallback_text quizId=${quizId} resultId=${resultId} code=${prepared.code}`) } catch {}
         return fallbackShare(quizId, v2StartParam, quizTitle, total, result, 'max', score, onAnalytics)
       }
       mid = prepared.mid
-      // cache for potential retry within gesture window
       this.cachedMid = mid
       this.cachedQuizKey = `${quizId}:${resultId}:${score ?? ''}`
+      analytics.track('max_prepare_success', { quiz_id: quizId, result_id: resultId, platform: 'max', ...(score !== undefined ? { score } : {}) })
+      analytics.track('max_share_mid_ready', { quiz_id: quizId, result_id: resultId, platform: 'max' })
+      try { console.info(`[max-share] prepare=success mid=present quizId=${quizId} resultId=${resultId} transport=prepared_mid`) } catch {}
+    } else {
+      analytics.track('max_prepare_success', { quiz_id: quizId, result_id: resultId, platform: 'max', cached: true } as unknown as Record<string, unknown>)
+      analytics.track('max_share_mid_ready', { quiz_id: quizId, result_id: resultId, platform: 'max', cached: true } as unknown as Record<string, unknown>)
+      try { console.info(`[max-share] prepare=success mid=present cached=true quizId=${quizId} resultId=${resultId} transport=prepared_mid`) } catch {}
     }
 
     if (isMaxMock) {
-      // Deterministic MAX mock: successful prepare ⇒ native (no real picker)
+      analytics.track('max_share_bridge_invoked', { quiz_id: quizId, result_id: resultId, platform: 'max', mock: true } as unknown as Record<string, unknown>)
       analytics.track('share_success', { quiz_id: quizId, result_id: resultId, platform: 'max', ...(score === undefined ? {} : { score }) })
+      try { console.info(`[max-share] bridge_invoked mock=true quizId=${quizId} mid=present transport=prepared_mid`) } catch {}
       return 'native'
     }
 
     const wa = getMaxWebApp()
     if (!wa?.shareMaxContent) {
+      analytics.track('max_share_bridge_invoked', { quiz_id: quizId, result_id: resultId, reason: 'share_unsupported_client', platform: 'max' })
       analytics.track('share_native_failed', { quiz_id: quizId, result_id: resultId, reason: 'share_unsupported_client', platform: 'max' })
       analytics.track('share_failed', { quiz_id: quizId, result_id: resultId, reason: 'share_unsupported_client', platform: 'max' })
+      try { console.warn(`[max-share] bridge_missing transport=fallback_text quizId=${quizId}`) } catch {}
       return fallbackShare(quizId, v2StartParam, quizTitle, total, result, 'max', score, onAnalytics)
     }
 
     try {
       // MAX requires user click — we are inside click handler, so this should succeed.
-      // For tests with mock, the mock WebApp.shareMaxContent is no-op; we treat presence as success.
       // Real client will open recipient picker.
       wa.shareMaxContent({ mid, chatType: 'DIALOG' })
+      analytics.track('max_share_bridge_invoked', { quiz_id: quizId, result_id: resultId, platform: 'max' })
       analytics.track('share_success', { quiz_id: quizId, result_id: resultId, platform: 'max', ...(score === undefined ? {} : { score }) })
+      try { console.info(`[max-share] bridge_invoked mid=present transport=prepared_mid quizId=${quizId} resultId=${resultId}`) } catch {}
       return 'native'
-    } catch {
+    } catch (e) {
       analytics.track('share_native_failed', { quiz_id: quizId, result_id: resultId, reason: 'share_message_failed', platform: 'max' })
       analytics.track('share_failed', { quiz_id: quizId, result_id: resultId, reason: 'share_message_failed', platform: 'max' })
+      try { console.warn(`[max-share] bridge_failed transport=failed quizId=${quizId} error=${e instanceof Error ? e.message.slice(0,60) : String(e).slice(0,60)}`) } catch {}
       return 'failed'
     }
   }

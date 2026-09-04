@@ -37,18 +37,81 @@ export interface MaxApiError {
   status?: number
 }
 
-function buildScopedFetchOptions(): RequestInit & { dispatcher?: unknown; agent?: unknown } {
-  // Scoped CA handling: only if env provides extra CA.
-  // We use undici Agent if available; otherwise fallback to https.Agent for Node fetch.
+// Ensure NODE_EXTRA_CA_CERTS file exists if MAX_EXTRA_CA_PEM is set — fixes Vercel startup warning
+try {
+  const pemEarly = process.env.MAX_EXTRA_CA_PEM
+  const caPathEarly = process.env.NODE_EXTRA_CA_CERTS
+  if (pemEarly && caPathEarly) {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const fs = require('node:fs') as typeof import('node:fs')
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const path = require('node:path') as typeof import('node:path')
+      if (!fs.existsSync(caPathEarly)) {
+        try {
+          fs.mkdirSync(path.dirname(caPathEarly), { recursive: true })
+        } catch {}
+        try {
+          fs.writeFileSync(caPathEarly, pemEarly, 'utf-8')
+        } catch {}
+      }
+    } catch {}
+  }
+} catch {}
+
+let cachedCa: string | null | undefined
+
+function getPemCa(): string | null {
+  if (cachedCa !== undefined) return cachedCa
   const pem = requireEnv('MAX_EXTRA_CA_PEM')
   const caPath = requireEnv('MAX_EXTRA_CA_PATH')
-  if (!pem && !caPath) return {}
+  if (pem) {
+    cachedCa = pem
+    return pem
+  }
+  if (caPath) {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const fs = require('node:fs') as typeof import('node:fs')
+      const content = fs.readFileSync(caPath, 'utf-8')
+      if (content && content.includes('BEGIN CERTIFICATE')) {
+        cachedCa = content
+        return content
+      }
+    } catch {
+      // ignore
+    }
+  }
+  // fallback: try local cert file shipped with repo (for Vercel runtime with includeFiles)
   try {
-    // Lazy import to avoid bundling fs in browser tests (server-only anyway)
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const fs = require('node:fs') as typeof import('node:fs')
-    const ca = pem ?? (caPath ? fs.readFileSync(caPath, 'utf-8') : undefined)
-    if (!ca) return {}
+    const fallbackPaths = [
+      '/var/task/certs/russian-trusted-ca.pem',
+      '/vercel/path0/certs/russian-trusted-ca.pem',
+      'certs/russian-trusted-ca.pem',
+      './certs/russian-trusted-ca.pem',
+    ]
+    for (const p of fallbackPaths) {
+      try {
+        if (fs.existsSync(p)) {
+          const c = fs.readFileSync(p, 'utf-8')
+          if (c.includes('BEGIN CERTIFICATE')) {
+            cachedCa = c
+            return c
+          }
+        }
+      } catch {}
+    }
+  } catch {}
+  cachedCa = null
+  return null
+}
+
+function buildScopedFetchOptions(): RequestInit & { dispatcher?: unknown; agent?: unknown } {
+  const ca = getPemCa()
+  if (!ca) return {}
+  try {
     // Try undici Dispatcher first (Node 20+ fetch uses undici)
     try {
       // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -75,9 +138,23 @@ async function fetchWithTimeout(
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), timeoutMs)
   try {
-    // Merge scoped CA options into fetch init; cast to any because dispatcher/agent aren't standard yet
-    const merged = { ...buildScopedFetchOptions(), ...init, signal: controller.signal } as RequestInit
-    return await fetch(url, merged)
+    const scoped = buildScopedFetchOptions()
+    // Merge scoped CA options into fetch init; dispatcher/agent aren't standard yet
+    const merged = { ...scoped, ...init, signal: controller.signal } as unknown as RequestInit & { dispatcher?: unknown; agent?: unknown }
+    // Prefer undici fetch with dispatcher when CA is present; otherwise global fetch.
+    // In Vitest, use global fetch so vi.stubGlobal('fetch', ...) works.
+    const ca = getPemCa()
+    const isVitest = Boolean(process.env.VITEST) || Boolean((globalThis as unknown as { __vitest_worker__?: unknown }).__vitest_worker__)
+    if (ca && Object.keys(scoped).length > 0 && !isVitest) {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const undici = require('undici') as unknown as { fetch: typeof fetch }
+        if (undici && typeof undici.fetch === 'function') {
+          return await undici.fetch(url, merged as RequestInit)
+        }
+      } catch {}
+    }
+    return await fetch(url, merged as RequestInit)
   } finally {
     clearTimeout(timer)
   }
@@ -87,6 +164,12 @@ function safeLog(operation: string, status: number | string, ok: unknown, extra?
   // Never log token, hash, initData, or full payload — only operation/status/ids
   const suffix = extra ? ` ${extra}` : ''
   console.info(`[max] operation=${operation} status=${status} ok=${String(ok)}${suffix}`)
+}
+
+function safeErrorLog(operation: string, status: number | string, error: unknown, extra?: string): void {
+  const msg = error instanceof Error ? error.message.slice(0, 200) : String(error).slice(0, 200)
+  const suffix = extra ? ` ${extra}` : ''
+  console.warn(`[max] operation=${operation} status=${status} ok=false error=${msg}${suffix}`)
 }
 
 /**
@@ -112,7 +195,7 @@ export async function maxGetMe(
       timeoutMs,
     )
   } catch (error) {
-    safeLog('me', 'network_error', false)
+    safeErrorLog('me', 'network_error', error)
     throw new Error(`maxGetMe network_error: ${error instanceof Error ? error.message : String(error)}`)
   }
   const text = await response.text().catch(() => '')
@@ -192,7 +275,7 @@ export async function maxSendMessage(
   token: string,
   payload: MaxSendMessagePayload,
   opts?: { timeoutMs?: number; quizId?: string; resultId?: string },
-): Promise<{ ok: boolean; mid?: string; status: number; raw?: unknown }> {
+): Promise<{ ok: boolean; mid?: string; status: number; raw?: unknown; errorCode?: string; errorMessage?: string }> {
   const timeoutMs = opts?.timeoutMs ?? DEFAULT_TIMEOUT_MS
   // Official contract: POST /messages?user_id=... or ?chat_id=... with body = NewMessageBody
   // Payload may contain user_id/chat_id for backward compat; move to query.
@@ -217,14 +300,14 @@ export async function maxSendMessage(
       },
       timeoutMs,
     )
-  } catch {
-    safeLog(
+  } catch (error) {
+    safeErrorLog(
       'messages',
       'network_error',
-      false,
+      error,
       `quizId=${opts?.quizId ?? 'n/a'} resultId=${opts?.resultId ?? 'n/a'}`,
     )
-    return { ok: false, status: 0 }
+    return { ok: false, status: 0, errorCode: 'network_error', errorMessage: error instanceof Error ? error.message.slice(0, 200) : String(error).slice(0, 200) }
   }
   const text = await response.text().catch(() => '')
   let json: unknown = null
@@ -235,18 +318,149 @@ export async function maxSendMessage(
   }
   const parsed = parseMaxMessageResponse(json)
   const ok = response.ok && parsed.ok
-  safeLog(
-    'messages',
-    response.status,
-    ok,
-    `quizId=${opts?.quizId ?? 'n/a'} resultId=${opts?.resultId ?? 'n/a'} mid=${parsed.mid ? 'present' : 'none'}`,
-  )
-  return { ok, mid: parsed.mid, status: response.status, raw: json }
+  // Extract safe error code/message from MAX response for diagnostics (redacted)
+  let errorCode: string | undefined
+  let errorMessage: string | undefined
+  if (!ok && json && typeof json === 'object') {
+    const j = json as Record<string, unknown>
+    if (typeof j.code === 'string') errorCode = j.code.slice(0, 80)
+    if (typeof j.message === 'string') errorMessage = j.message.slice(0, 200)
+    // Some MAX errors use description field
+    if (!errorMessage && typeof (j as { description?: unknown }).description === 'string') {
+      errorMessage = String((j as { description?: unknown }).description).slice(0, 200)
+    }
+  }
+  if (!ok) {
+    const extra = `quizId=${opts?.quizId ?? 'n/a'} resultId=${opts?.resultId ?? 'n/a'} mid=${parsed.mid ? 'present' : 'none'} code=${errorCode ?? 'n/a'} msg=${errorMessage ?? text.slice(0, 150)}`
+    safeLog('messages', response.status, ok, extra)
+  } else {
+    safeLog(
+      'messages',
+      response.status,
+      ok,
+      `quizId=${opts?.quizId ?? 'n/a'} resultId=${opts?.resultId ?? 'n/a'} mid=${parsed.mid ? 'present' : 'none'}`,
+    )
+  }
+  return { ok, mid: parsed.mid, status: response.status, raw: json, errorCode, errorMessage }
 }
 
 /**
- * Upload image for attachment (if MAX requires upload token flow).
- * Placeholder for future: POST /uploads with Authorization.
- * Currently we try direct image URL in sendMessage; if MAX rejects, caller may fallback to upload.
+ * Upload image for attachment via official token flow.
+ * Step 1: POST /uploads?type=image -> { url }
+ * Step 2: POST {url} with multipart data -> { token }
+ * Token is then used in attachments.payload.token
  */
+export interface MaxUploadUrlResponse {
+  url: string
+  token?: string
+}
+
+export async function maxGetUploadUrl(
+  token: string,
+  type: 'image' | 'video' | 'audio' | 'file' = 'image',
+  opts?: { timeoutMs?: number },
+): Promise<{ ok: boolean; url?: string; status: number; raw?: unknown; errorCode?: string; errorMessage?: string }> {
+  const timeoutMs = opts?.timeoutMs ?? DEFAULT_TIMEOUT_MS
+  const url = `${MAX_API_BASE}/uploads?type=${encodeURIComponent(type)}`
+  let response: Response
+  try {
+    response = await fetchWithTimeout(
+      url,
+      {
+        method: 'POST',
+        headers: { Authorization: token },
+      },
+      timeoutMs,
+    )
+  } catch (error) {
+    safeErrorLog('uploads', 'network_error', error, `type=${type}`)
+    return { ok: false, status: 0, errorCode: 'network_error', errorMessage: error instanceof Error ? error.message.slice(0, 200) : String(error).slice(0, 200) }
+  }
+  const text = await response.text().catch(() => '')
+  let json: unknown = null
+  try {
+    json = text ? JSON.parse(text) : null
+  } catch {
+    json = null
+  }
+  if (!response.ok || !json || typeof json !== 'object') {
+    let code: string | undefined
+    let msg: string | undefined
+    if (json && typeof json === 'object') {
+      const j = json as Record<string, unknown>
+      if (typeof j.code === 'string') code = j.code.slice(0, 80)
+      if (typeof j.message === 'string') msg = j.message.slice(0, 200)
+    }
+    safeLog('uploads', response.status, false, `type=${type} code=${code ?? 'n/a'} msg=${msg ?? text.slice(0, 120)}`)
+    return { ok: false, status: response.status, raw: json ?? text, errorCode: code, errorMessage: msg ?? text.slice(0, 200) }
+  }
+  const j = json as Record<string, unknown>
+  const uploadUrl = typeof j.url === 'string' ? j.url : undefined
+  if (!uploadUrl) {
+    safeLog('uploads', response.status, false, `type=${type} missing url`)
+    return { ok: false, status: response.status, raw: json }
+  }
+  safeLog('uploads', response.status, true, `type=${type} url_host=${(() => { try { return new URL(uploadUrl).host } catch { return 'invalid' } })()}`)
+  return { ok: true, url: uploadUrl, status: response.status, raw: json }
+}
+
+export async function maxUploadFile(
+  uploadUrl: string,
+  token: string,
+  bytes: Uint8Array | Buffer,
+  filename: string,
+  contentType = 'image/jpeg',
+  opts?: { timeoutMs?: number },
+): Promise<{ ok: boolean; token?: string; status: number; raw?: unknown; errorCode?: string; errorMessage?: string }> {
+  const timeoutMs = opts?.timeoutMs ?? 15_000
+  // Build multipart form
+  const form = new FormData()
+  const blob = new Blob([bytes as unknown as BlobPart], { type: contentType })
+  form.append('data', blob, filename)
+  let response: Response
+  try {
+    response = await fetchWithTimeout(
+      uploadUrl,
+      {
+        method: 'POST',
+        headers: { Authorization: token },
+        body: form as unknown as BodyInit,
+      },
+      timeoutMs,
+    )
+  } catch (error) {
+    safeErrorLog('upload', 'network_error', error, `file=${filename}`)
+    return { ok: false, status: 0, errorCode: 'network_error', errorMessage: error instanceof Error ? error.message.slice(0, 200) : String(error).slice(0, 200) }
+  }
+  const text = await response.text().catch(() => '')
+  let json: unknown = null
+  try {
+    json = text ? JSON.parse(text) : null
+  } catch {
+    json = null
+  }
+  if (!response.ok || !json || typeof json !== 'object') {
+    let code: string | undefined
+    let msg: string | undefined
+    if (json && typeof json === 'object') {
+      const j = json as Record<string, unknown>
+      if (typeof j.code === 'string') code = j.code.slice(0, 80)
+      if (typeof j.message === 'string') msg = j.message.slice(0, 200)
+    }
+    safeLog('upload', response.status, false, `file=${filename} code=${code ?? 'n/a'} msg=${msg ?? text.slice(0, 120)}`)
+    return { ok: false, status: response.status, raw: json ?? text, errorCode: code, errorMessage: msg ?? text.slice(0, 200) }
+  }
+  const j = json as Record<string, unknown>
+  const fileToken = typeof j.token === 'string' ? j.token : undefined
+  if (!fileToken) {
+    safeLog('upload', response.status, false, `file=${filename} missing token`)
+    return { ok: false, status: response.status, raw: json }
+  }
+  safeLog('upload', response.status, true, `file=${filename} token_present`)
+  return { ok: true, token: fileToken, status: response.status, raw: json }
+}
+
+// Re-export fetchWithTimeout and CA helpers for media preflight reuse
+export { fetchWithTimeout, getPemCa }
+
 export const MAX_API_BASE_URL = MAX_API_BASE

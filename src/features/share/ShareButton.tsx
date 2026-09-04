@@ -13,6 +13,10 @@ export interface ShareButtonProps {
   shareCtaIntro: string
   /** Exact score for correct-count quizzes (drives the score-card asset). */
   score?: number
+  /** Total questions — forwarded to ShareTransport for correct fallback copy */
+  total?: number
+  /** Quiz title — forwarded to ShareTransport for correct fallback copy */
+  quizTitle?: string
   result: Result
   telegram?: TelegramAdapter
   adapter?: MiniAppAdapter
@@ -27,6 +31,8 @@ export function ShareButton({
   shareCta,
   shareCtaIntro,
   score,
+  total,
+  quizTitle,
   result,
   telegram,
   adapter,
@@ -56,6 +62,8 @@ export function ShareButton({
       resultId,
       result,
       score,
+      total,
+      quizTitle,
     })
     // For Telegram legacy path, also keep shareResult behavior for tests that mock TelegramAdapter directly
     // If transport is Telegram and adapter was originally TelegramAdapter, behavior is equivalent.
@@ -63,7 +71,7 @@ export function ShareButton({
     // but adapter is mocked Telegram — both converge to same analytics.
     // To keep legacy share.ts working when called directly in tests, we don't remove it.
     setStatus(outcome)
-  }, [platformAdapter, quizId, resultId, score, result])
+  }, [platformAdapter, quizId, resultId, score, total, quizTitle, result])
 
   // User-visible labels must distinguish native (real prepared photo
   // card on the recipient's side) from fallback (Telegram deeplink /

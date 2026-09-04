@@ -4,6 +4,7 @@ import { buildMaxDeepLink } from '../../_lib/deeplink.js'
 import { resolveQuizRequest } from '../../_lib/quizRequest.js'
 import { validateMaxInitData } from '../../_lib/maxInitData.js'
 import { maxSendMessage } from '../../_lib/maxApi.js'
+import { buildMaxAttachments, createMaxImageAttachment } from '../../_lib/maxMedia.js'
 import { RESULT_ID_REGEX } from '../../../src/features/quiz/schema.js'
 import {
   resolveBandResultId,
@@ -26,21 +27,63 @@ async function sendMaxPhoto(
   imageUrl: string,
   caption: string,
   deepLink: string,
+  cardAsset: string,
   opts?: { quizId?: string; resultId?: string },
-): Promise<boolean> {
+): Promise<{ ok: boolean; via?: string; errorCode?: string }> {
+  // Unified media: create attachment via token or URL with preflight
+  let imageAttachment: Awaited<ReturnType<typeof createMaxImageAttachment>> | null = null
+  try {
+    imageAttachment = await createMaxImageAttachment({ token, imageUrl, assetKey: cardAsset })
+  } catch (e) {
+    console.warn(`[max-media] deliver_create_failed asset=${cardAsset} error=${e instanceof Error ? e.message.slice(0, 80) : String(e).slice(0, 80)}`)
+  }
+  const host = (() => {
+    try {
+      return new URL(imageUrl).host
+    } catch {
+      return 'invalid_url'
+    }
+  })()
+  const attachments = imageAttachment?.attachment
+    ? buildMaxAttachments(imageAttachment.attachment, deepLink)
+    : [
+        {
+          type: 'inline_keyboard',
+          payload: { buttons: [[{ type: 'link', text: 'Пройти тест', url: deepLink }]] },
+        },
+      ]
   const payload: Record<string, unknown> = {
     user_id: chatId,
     text: `${caption}\n\n${deepLink}`,
-    attachments: [
-      { type: 'image', payload: { url: imageUrl } },
-      { type: 'inline_keyboard', payload: { buttons: [[{ type: 'link', text: 'Пройти тест', url: deepLink }]] } },
-    ],
+    attachments,
   }
-  const r = await maxSendMessage(token, payload as never, {
+  let r = await maxSendMessage(token, payload as never, {
     quizId: opts?.quizId,
     resultId: opts?.resultId,
   })
-  return Boolean(r.ok)
+  // Controlled retry: if token attachment failed due to attachment error, retry with URL
+  const isAttachmentError =
+    !r.ok &&
+    ((r.errorCode && /attachment/i.test(r.errorCode)) ||
+      (r.errorMessage && /attachment|image|payload/i.test(r.errorMessage)) ||
+      r.status === 400)
+  if (isAttachmentError && imageAttachment?.via === 'token') {
+    console.info(`[max-media] deliver_retry_with_url asset=${cardAsset} host=${host} chatId=${chatId}`)
+    const fallbackPayload: Record<string, unknown> = {
+      user_id: chatId,
+      text: `${caption}\n\n${deepLink}`,
+      attachments: [
+        { type: 'image', payload: { url: imageUrl } },
+        { type: 'inline_keyboard', payload: { buttons: [[{ type: 'link', text: 'Пройти тест', url: deepLink }]] } },
+      ],
+    }
+    r = await maxSendMessage(token, fallbackPayload as never, {
+      quizId: opts?.quizId,
+      resultId: opts?.resultId,
+    })
+    return { ok: Boolean(r.ok), via: 'url-retry', errorCode: r.errorCode }
+  }
+  return { ok: Boolean(r.ok), via: imageAttachment?.via, errorCode: r.errorCode }
 }
 
 /**
@@ -127,26 +170,51 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   const imageUrl = shareCardImageUrl(quiz, cardAsset, baseUrl)
   const deepLink = buildMaxDeepLink(maxBotUsername, `quiz_${quiz.id}`)
 
-  // 1. Self card — namespaced dedup
+  // 1. Self card — namespaced dedup (structured truth)
   const selfKey = `max:${userId}:${quiz.id}:${result.id}`
   let deliveredSelf = false
+  let selfVia: string | undefined
+  let selfError: string | undefined
   if (!delivered.has(selfKey)) {
     const headline =
       score === undefined ? `${result.title} — ${result.presentation.subtitle}` : `Твой счёт: ${score} из ${quiz.questions.length}`
     const caption = [headline, '', `«${result.presentation.shareQuote}»`, '', quiz.copy.deliverOwnLine].join('\n')
-    const ok = await sendMaxPhoto(token, userId, imageUrl, caption, deepLink, {
+    const host = (() => {
+      try {
+        return new URL(imageUrl).host
+      } catch {
+        return 'invalid_url'
+      }
+    })()
+    const version = (() => {
+      try {
+        return new URL(imageUrl).pathname.includes('/v2/') ? 'v2' : 'v1'
+      } catch {
+        return 'unknown'
+      }
+    })()
+    const resultSend = await sendMaxPhoto(token, userId, imageUrl, caption, deepLink, cardAsset, {
       quizId: quiz.id,
       resultId: result.id,
     })
-    deliveredSelf = Boolean(ok)
+    deliveredSelf = Boolean(resultSend.ok)
+    selfVia = resultSend.via
+    selfError = resultSend.errorCode
     if (deliveredSelf) delivered.add(selfKey)
-    console.info(`[max-deliver] self user=${userId} quiz=${quiz.id} result=${result.id} ok=${deliveredSelf}`)
+    if (deliveredSelf) {
+      console.info(`[max-deliver] target=self user=${userId} quiz=${quiz.id} result=${result.id} asset=${cardAsset} host=${host} version=${version} media=${selfVia ?? 'none'} ok=true deliveredSelf=true`)
+    } else {
+      console.warn(`[max-deliver] target=self user=${userId} quiz=${quiz.id} result=${result.id} asset=${cardAsset} host=${host} version=${version} media=${selfVia ?? 'none'} ok=false reason=${selfError ?? 'n/a'} deliveredSelf=false`)
+    }
   } else {
     deliveredSelf = true
+    console.info(`[max-deliver] target=self user=${userId} quiz=${quiz.id} result=${result.id} ok=true deliveredSelf=true dedup=hit`)
   }
 
   // 2. Sharer notification — platform-scoped (never via Telegram API)
   let deliveredSharer = false
+  let sharerVia: string | undefined
+  let sharerError: string | undefined
   const attribution = resolveAttribution(startParam)
   let sharerUserId = attribution?.sharerUserId ?? null
 
@@ -163,13 +231,36 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
       '',
       'Хочешь узнать свой?',
     ].join('\n')
-    const ok = await sendMaxPhoto(token, sharerUserId, imageUrl, sharerCaption, deepLink, {
+    const host = (() => {
+      try {
+        return new URL(imageUrl).host
+      } catch {
+        return 'invalid_url'
+      }
+    })()
+    const version = (() => {
+      try {
+        return new URL(imageUrl).pathname.includes('/v2/') ? 'v2' : 'v1'
+      } catch {
+        return 'unknown'
+      }
+    })()
+    const resultSend = await sendMaxPhoto(token, sharerUserId, imageUrl, sharerCaption, deepLink, cardAsset, {
       quizId: quiz.id,
       resultId: result.id,
     })
-    deliveredSharer = Boolean(ok)
+    deliveredSharer = Boolean(resultSend.ok)
+    sharerVia = resultSend.via
+    sharerError = resultSend.errorCode
     if (deliveredSharer) delivered.add(`sharer:${selfKey}`)
-    console.info(`[max-deliver] sharer ${sharerUserId} notified=${deliveredSharer} by=${userId}`)
+    if (deliveredSharer) {
+      console.info(`[max-deliver] target=sharer user=${sharerUserId} quiz=${quiz.id} result=${result.id} asset=${cardAsset} host=${host} version=${version} media=${sharerVia ?? 'none'} ok=true deliveredSharer=true by=${userId}`)
+    } else {
+      console.warn(`[max-deliver] target=sharer user=${sharerUserId} quiz=${quiz.id} result=${result.id} asset=${cardAsset} host=${host} version=${version} media=${sharerVia ?? 'none'} ok=false reason=${sharerError ?? 'n/a'} deliveredSharer=false by=${userId}`)
+    }
+  } else if (sharerUserId !== null && sharerUserId !== userId) {
+    // dedup hit
+    console.info(`[max-deliver] target=sharer user=${sharerUserId} ok=true dedup=hit`)
   }
 
   res.status(200).json({ ok: true, deliveredSelf, deliveredSharer })
