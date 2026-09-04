@@ -104,8 +104,8 @@ describe('Telegram prepared photo payload — Music90s caption recovery', () => 
     expect(String(resultPayload.photo_url)).toContain('/share-cards/v4/m90_score_09.jpg')
     expect(String(resultPayload.thumbnail_url)).toContain('/share-cards/v4/m90_score_09_thumb.jpg')
 
-    // show_caption_above_media must be true — forces caption above media
-    expect(resultPayload.show_caption_above_media).toBe(true)
+    // show_caption_above_media=false requests caption BELOW image: [IMAGE]→[TEXT]→[BUTTON]
+    expect(resultPayload.show_caption_above_media).toBe(false)
 
     // inline keyboard single button Пройти тест
     const markup = resultPayload.reply_markup as { inline_keyboard: Array<Array<{ text: string; url: string }>> }
@@ -137,7 +137,7 @@ describe('Telegram prepared photo payload — Music90s caption recovery', () => 
     expect(captionLog).toContain('score=9')
     expect(captionLog).toContain('captionLength=' + (expectedCaption9.length))
     expect(captionLog).toContain('captionPresent=true')
-    expect(captionLog).toContain('showCaptionAboveMedia=true')
+    expect(captionLog).toContain('showCaptionAboveMedia=false')
     expect(captionLog).toContain('asset=m90_score_09')
     expect(captionLog).toContain('version=v4')
     // must not leak token or raw data
@@ -180,7 +180,7 @@ describe('Telegram prepared photo payload — Music90s caption recovery', () => 
 
     expect(resultPayload.type).toBe('photo')
     expect(String(resultPayload.photo_url)).toContain('/share-cards/v4/m90_score_18.jpg')
-    expect(resultPayload.show_caption_above_media).toBe(true)
+    expect(resultPayload.show_caption_above_media).toBe(false)
 
     const expectedCaption18 =
       'Я набрала 18/18 в тесте «Ты точно помнишь музыку 90-х?»\n\n«18 из 18! Выбила секретную карточку: главред журнала Cool ✨ Попробуй повторить, если сможешь.»\n\nТы точно помнишь музыку 90-х? Проверь себя:'
@@ -241,7 +241,7 @@ describe('Telegram prepared photo payload — Music90s caption recovery', () => 
       // each payload still has photo contract
       expect(resultPayload.type).toBe('photo')
       expect(String(resultPayload.photo_url)).toContain(`/share-cards/v4/m90_score_${String(score).padStart(2, '0')}.jpg`)
-      expect(resultPayload.show_caption_above_media).toBe(true)
+      expect(resultPayload.show_caption_above_media).toBe(false)
       const markup = resultPayload.reply_markup as { inline_keyboard: unknown }
       expect(markup).toBeDefined()
     }
@@ -251,7 +251,7 @@ describe('Telegram prepared photo payload — Music90s caption recovery', () => 
     const file = fs.readFileSync(path.join(process.cwd(), 'api', 'share', 'prepare.ts'), 'utf-8')
     expect(file).not.toContain('input_message_content')
     expect(file).toContain('show_caption_above_media')
-    expect(file).toContain("show_caption_above_media: true")
+    expect(file).toContain('show_caption_above_media: false')
   })
 
   it('v4 artwork guardrail still in effect', () => {

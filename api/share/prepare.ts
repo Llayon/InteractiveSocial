@@ -174,11 +174,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   //   • allow_user_chats / allow_group_chats / allow_channel_chats
   //     control where the user can route the message
   // Diagnostics: safe, no secrets/PII — proves caption reaches Telegram
+  // Compatibility pass: testing caption BELOW image (false) so artwork is first visual hit.
+  // If real device hides caption with false, must revert to true (visible wins over position).
   const versionTag = shareCardBasePath(quiz) || 'v1'
   console.info(
     `[share-caption] quizId=${quiz.id} resultId=${result.id} score=${score ?? 'none'} ` +
       `captionLength=${messageText.length} captionPresent=${messageText.length > 0} ` +
-      `showCaptionAboveMedia=true asset=${cardAsset} version=${versionTag}`,
+      `showCaptionAboveMedia=false asset=${cardAsset} version=${versionTag}`,
   )
 
   const payload = JSON.stringify({
@@ -199,12 +201,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
       photo_height: 1350,
       thumbnail_url: thumbUrl,
       // Caption carries the message text (1024-char limit is ample here).
-      // show_caption_above_media forces Telegram clients to render the
-      // caption as a header above the photo instead of below (which some
-      // clients collapse in prepared messages). Required for Music90s
-      // Бросить вызов share — recipient must see TEXT + PHOTO + BUTTON.
+      // show_caption_above_media=false requests caption BELOW the photo so the
+      // share-card artwork is the first visual hit: [IMAGE] → [TEXT] → [BUTTON].
+      // Previous pass used true ([TEXT]→[IMAGE]→[BUTTON]) because without this field
+      // some Telegram clients hid the caption entirely. If false again hides it,
+      // revert to true — visible caption wins over position.
       caption: messageText,
-      show_caption_above_media: true,
+      show_caption_above_media: false,
       reply_markup: {
         inline_keyboard: [[{ text: 'Пройти тест', url: deepLink }]],
       },
