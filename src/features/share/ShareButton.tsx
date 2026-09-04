@@ -20,6 +20,9 @@ export interface ShareButtonProps {
   result: Result
   telegram?: TelegramAdapter
   adapter?: MiniAppAdapter
+  completionId?: string
+  maxMid?: string | null
+  maxPending?: boolean
 }
 
 const LABEL_IDLE = 'idle'
@@ -36,12 +39,21 @@ export function ShareButton({
   result,
   telegram,
   adapter,
+  completionId,
+  maxMid,
+  maxPending,
 }: ShareButtonProps) {
   const platformAdapter = (adapter ?? telegram) as MiniAppAdapter | undefined
   const [status, setStatus] = useState<'idle' | 'sharing' | ShareOutcome>(LABEL_IDLE)
 
+  const isMax = platformAdapter?.platform === 'max'
+  // For MAX, button readiness depends on having a shareable mid
+  const maxNotReady = Boolean(isMax && (maxPending || !maxMid))
+
   const handleClick = useCallback(async () => {
     if (!platformAdapter) return
+    // MAX: if not ready, ignore click (button should be disabled anyway)
+    if (isMax && maxNotReady) return
     try {
       getAnalytics().track('challenge_click', {
         quiz_id: quizId,
@@ -64,14 +76,21 @@ export function ShareButton({
       score,
       total,
       quizTitle,
+      completionId,
     })
     // For Telegram legacy path, also keep shareResult behavior for tests that mock TelegramAdapter directly
     // If transport is Telegram and adapter was originally TelegramAdapter, behavior is equivalent.
     // We also support fallback to legacy shareResult for telegram mode when transport would use shareMessage
     // but adapter is mocked Telegram — both converge to same analytics.
     // To keep legacy share.ts working when called directly in tests, we don't remove it.
+    // MAX: do NOT show "Отправлено ✓" — picker opened ≠ confirmed delivery.
+    if (isMax && outcome === 'native') {
+      // For MAX, treat native as picker opened, return to idle so button stays "Бросить вызов"
+      setStatus('idle')
+      return
+    }
     setStatus(outcome)
-  }, [platformAdapter, quizId, resultId, score, total, quizTitle, result])
+  }, [platformAdapter, quizId, resultId, score, total, quizTitle, result, completionId, isMax, maxNotReady])
 
   // User-visible labels must distinguish native (real prepared photo
   // card on the recipient's side) from fallback (Telegram deeplink /
@@ -79,16 +98,19 @@ export function ShareButton({
   // the native share sheet never opened). Without this distinction a
   // silently-failing native share would be reported as "Готово" and the
   // regression would be invisible.
-  const label =
-    status === 'sharing'
-      ? 'Отправляем…'
-      : status === 'native'
-        ? 'Отправлено ✓'
-        : status === 'fallback'
-          ? 'Скопировано — отправьте получателю'
-          : status === 'failed'
-            ? 'Не получилось — попробовать ещё раз'
-            : shareCta
+  const label = (() => {
+    if (isMax && maxNotReady) return 'Готовим карточку…'
+    if (status === 'sharing') return 'Отправляем…'
+    if (status === 'native') {
+      if (isMax) return shareCta // MAX must never show "Отправлено ✓"
+      return 'Отправлено ✓'
+    }
+    if (status === 'fallback') return 'Скопировано — отправьте получателю'
+    if (status === 'failed') return 'Не получилось — попробовать ещё раз'
+    return shareCta
+  })()
+
+  const disabled = status === 'sharing' || maxNotReady
 
   return (
     <div className="share">
@@ -98,7 +120,7 @@ export function ShareButton({
         className="button button--primary share__cta"
         data-testid="share-button"
         onClick={handleClick}
-        disabled={status === 'sharing'}
+        disabled={disabled}
       >
         {label}
       </button>

@@ -19,6 +19,7 @@ import { ResultScreen } from '@/features/result/Result'
 import { deliverCompletedResult, deliverCompletedResultForPlatform } from '@/features/share/deliver'
 import type { MiniAppAdapter } from '@/platform/types'
 import type { TelegramAdapter } from '@/platform/telegram'
+import { maxShareTransport } from '@/platform/share/ShareTransport'
 import { initialScreen, screenAfterQuizStart, screenForCompletedQuiz, type Screen } from './routes'
 
 export interface AppProps {
@@ -32,6 +33,16 @@ function pushStage(s: string) {
     ;(window as unknown as { __pushStage?: (s:string)=>void }).__pushStage?.(s)
   } catch {}
 }
+
+function generateCompletionId(): string {
+  try {
+    const c = (globalThis as unknown as { crypto?: { randomUUID?: () => string } }).crypto
+    if (c && typeof c.randomUUID === 'function') return c.randomUUID()
+  } catch {}
+  // fallback for environments without crypto.randomUUID (e.g. older jsdom)
+  return `cid_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`
+}
+
 export function App({ telegram, adapter }: AppProps) {
   const platformAdapter = (adapter ?? telegram) as MiniAppAdapter | undefined
   // Expose for E2E bootstrap tests (not for production logic)
@@ -65,6 +76,10 @@ export function App({ telegram, adapter }: AppProps) {
     idleQuizState,
   )
   const [attempt, setAttempt] = useState(0)
+  // Completion/attempt id for MAX idempotency — stable per attempt, new on restart
+  const [completionId, setCompletionId] = useState<string>(() => generateCompletionId())
+  const [maxSelfMid, setMaxSelfMid] = useState<string | null>(null)
+  const [maxDeliverPending, setMaxDeliverPending] = useState(false)
 
   // Landing is visible → quiz view + funnel landing view (once per attempt, idempotent).
   useEffect(() => {
@@ -184,7 +199,7 @@ export function App({ telegram, adapter }: AppProps) {
   const revealFinishedRef = useRef<string>('')
   useEffect(() => {
     if (state.phase !== 'completed') return
-    const key = `${attempt}`
+    const key = `${attempt}:${completionId}`
     if (revealFinishedRef.current === key) return
     revealFinishedRef.current = key
 
@@ -214,11 +229,9 @@ export function App({ telegram, adapter }: AppProps) {
       ...quizCompleteTelemetry(quiz, state.answers),
     })
 
-    // Fire-and-forget: inside messenger, ask the backend to send the user
-    // their own result card and (if launched via a friend's share link)
-    // notify the sharer. Must never block or break the reveal UX.
-    // Platform-scoped: MAX uses /api/max/results/deliver, Telegram uses /api/results/deliver.
-    // Mock never triggers real deliver (E2E would 404), but real MAX/Telegram do.
+    // Completion delivery — platform-scoped.
+    // For MAX: start asynchronously but CAPTURE result (selfMid) for sharing. Do NOT block result screen.
+    // Telegram remains fire-and-forget (with optional completionId for attempt-aware dedup, zero visible change).
     if (
       platformAdapter &&
       (platformAdapter.platform === 'telegram' || platformAdapter.platform === 'max') &&
@@ -227,17 +240,62 @@ export function App({ telegram, adapter }: AppProps) {
       const raw = platformAdapter.getInitDataRaw()
       if (raw) {
         if (platformAdapter.platform === 'max') {
-          void deliverCompletedResultForPlatform('max', quiz.id, outcome.resultId, raw, score)
+          const cid = completionId
+          // eslint-disable-next-line -- completion delivery state sync inside effect
+          setMaxDeliverPending(true)
+          setMaxSelfMid(null)
+          // Clear any stale transport cache from previous attempt is done on restart; ensure not stale for current attempt
+          void (async () => {
+            try {
+              const res = await deliverCompletedResultForPlatform('max', quiz.id, outcome.resultId, raw, score, cid)
+              if (res.ok && res.deliveredSelf && res.selfMid) {
+                setMaxSelfMid(res.selfMid)
+                maxShareTransport.setPreparedMid({ quizId: quiz.id, resultId: outcome.resultId, score, mid: res.selfMid, completionId: cid })
+                analytics.track('max_result_delivery_success', { quiz_id: quiz.id, result_id: outcome.resultId, platform: 'max', ...(score !== undefined ? { score } : {}) })
+                analytics.track('max_share_mid_ready', { quiz_id: quiz.id, result_id: outcome.resultId, platform: 'max' })
+                setMaxDeliverPending(false)
+              } else {
+                const reason = res.ok ? 'no_mid' : (res as { code: string }).code
+                analytics.track('max_result_delivery_failed', { quiz_id: quiz.id, result_id: outcome.resultId, platform: 'max', reason } as unknown as Record<string, unknown>)
+                // Fallback: background preparation only when automatic delivery didn't provide usable mid
+                try {
+                  const fallbackMid = await maxShareTransport.prePrepare(quiz.id, outcome.resultId, raw, score, cid)
+                  if (fallbackMid) {
+                    setMaxSelfMid(fallbackMid)
+                    analytics.track('max_share_mid_ready', { quiz_id: quiz.id, result_id: outcome.resultId, platform: 'max', fallback: true } as unknown as Record<string, unknown>)
+                    // setPreparedMid already done inside prePrepare
+                  }
+                } catch {}
+                setMaxDeliverPending(false)
+              }
+            } catch {
+              analytics.track('max_result_delivery_failed', { quiz_id: quiz.id, result_id: outcome.resultId, platform: 'max', reason: 'exception' } as unknown as Record<string, unknown>)
+              // still attempt fallback
+              try {
+                const fallbackMid = await maxShareTransport.prePrepare(quiz.id, outcome.resultId, raw, score, cid)
+                if (fallbackMid) setMaxSelfMid(fallbackMid)
+              } catch {}
+              setMaxDeliverPending(false)
+            }
+          })()
         } else {
-          void deliverCompletedResult(quiz.id, outcome.resultId, raw, score)
+          // Telegram: include completionId for attempt-aware dedup with zero visible change, still fire-and-forget
+          void deliverCompletedResult(quiz.id, outcome.resultId, raw, score, completionId)
         }
       }
     }
-  }, [state.phase, state.answers, analytics, attempt, quiz, platformAdapter])
+  }, [state.phase, state.answers, analytics, attempt, completionId, quiz, platformAdapter])
 
   const handleRestart = useCallback(() => {
     dispatch({ type: 'restart' })
     setAttempt((a) => a + 1)
+    const newCid = generateCompletionId()
+    setCompletionId(newCid)
+    setMaxSelfMid(null)
+    setMaxDeliverPending(false)
+    try {
+      maxShareTransport.clearCache()
+    } catch {}
     setScreen(initialScreen())
     window.scrollTo(0, 0)
     try {
@@ -277,6 +335,9 @@ export function App({ telegram, adapter }: AppProps) {
             telegram={platformAdapter as unknown as import('@/platform/telegram').TelegramAdapter}
             adapter={platformAdapter}
             onRestart={handleRestart}
+            completionId={completionId}
+            maxMid={maxSelfMid}
+            maxPending={maxDeliverPending}
           />
         </div>
       )

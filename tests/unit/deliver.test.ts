@@ -89,7 +89,7 @@ describe('deliverCompletedResult client', () => {
 
   it('posts quizId, resultId and initDataRaw to the deliver endpoint', async () => {
     const fetchMock = vi.fn(async () =>
-      new Response(JSON.stringify({ ok: true, deliveredSelf: true, deliveredSharer: false }), {
+      new Response(JSON.stringify({ ok: true, deliveredSelf: true, deliveredSharer: false, selfMid: null }), {
         status: 200,
       }),
     )
@@ -97,7 +97,7 @@ describe('deliverCompletedResult client', () => {
 
     const outcome = await deliverCompletedResult('interior-character', 'quiet', 'init-data-raw')
 
-    expect(outcome).toEqual({ ok: true, deliveredSelf: true, deliveredSharer: false })
+    expect(outcome).toEqual({ ok: true, deliveredSelf: true, deliveredSharer: false, selfMid: null })
     expect(fetchMock).toHaveBeenCalledWith(
       '/api/results/deliver',
       expect.objectContaining({

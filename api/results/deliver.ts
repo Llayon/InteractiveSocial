@@ -90,12 +90,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   const baseUrl = appBaseUrl.replace(/\/$/, '')
 
   const body = req.body as
-    | { quizId?: unknown; resultId?: unknown; score?: unknown; initDataRaw?: unknown }
+    | { quizId?: unknown; resultId?: unknown; score?: unknown; initDataRaw?: unknown; completionId?: unknown }
     | undefined
   const quizId = typeof body?.quizId === 'string' && body.quizId ? body.quizId : undefined
   const resultId = typeof body?.resultId === 'string' ? body.resultId : ''
   const initDataRaw = typeof body?.initDataRaw === 'string' ? body.initDataRaw : ''
   const rawScore = typeof body?.score === 'number' ? body.score : undefined
+  const rawCompletionId = typeof body?.completionId === 'string' ? body.completionId.trim() : undefined
+  const completionId =
+    rawCompletionId && rawCompletionId.length >= 8 && rawCompletionId.length <= 128 && /^[A-Za-z0-9_-]{8,128}$/.test(rawCompletionId)
+      ? rawCompletionId
+      : undefined
 
   // Canonical result-id grammar (namespaced ids are legal; legacy [a-z]+ too).
   if (!RESULT_ID_REGEX.test(resultId)) {
@@ -156,9 +161,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   const playAgainRow = [{ text: 'Пройти тест', url: deepLink }]
 
   // 1. The completer's own card into their chat with the bot.
-  // Dedup key includes quiz identity: userId + quizId + resultId (never just
-  // userId + resultId — two quizzes may legitimately share a result id shape).
-  const selfKey = `${userId}:${quiz.id}:${result.id}`
+  // Dedup key includes quiz identity; attempt-aware when completionId present.
+  // Legacy clients without completionId still use userId:quizId:resultId.
+  const selfKey = completionId ? `${userId}:${quiz.id}:${completionId}` : `${userId}:${quiz.id}:${result.id}`
   let deliveredSelf = false
   if (!delivered.has(selfKey)) {
     const headline =

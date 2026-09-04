@@ -90,7 +90,7 @@ export const test = base.extend<{ errorCollector: ErrorCollector }>({
       route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ ok: true, deliveredSelf: true, deliveredSharer: false }),
+        body: JSON.stringify({ ok: true, deliveredSelf: true, deliveredSharer: false, selfMid: 'max_mid_e2e_deliver' }),
       }),
     )
     // MAX bridge script — avoid 404 in offline E2E (also mocked via no static tag, but keep for safety)

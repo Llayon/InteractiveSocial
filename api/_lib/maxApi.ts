@@ -50,7 +50,6 @@ try {
   if (pemEarlyRaw && caPathEarly) {
     const pemEarly = pemEarlyRaw.includes('\\n') ? pemEarlyRaw.replace(/\\n/g, '\n') : pemEarlyRaw
     try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
       // fs/path imported statically
       // Try to write to original path if writable, else /tmp
       const tryPaths = [caPathEarly, '/tmp/russian-trusted-ca.pem']

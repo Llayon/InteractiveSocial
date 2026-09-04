@@ -16,10 +16,15 @@ export interface ResultScreenProps {
   telegram?: TelegramAdapter
   adapter?: MiniAppAdapter
   onRestart: () => void
+  /** Attempt-aware idempotency key for MAX */
+  completionId?: string
+  /** MAX selfMid cached from automatic delivery (null while pending) */
+  maxMid?: string | null
+  maxPending?: boolean
 }
 
 /** Result screen: editorial reveal + share loop + author promo + restart. */
-export function ResultScreen({ quiz, outcome, telegram, adapter, onRestart }: ResultScreenProps) {
+export function ResultScreen({ quiz, outcome, telegram, adapter, onRestart, completionId, maxMid, maxPending }: ResultScreenProps) {
   const result = getResultById(quiz, outcome.resultId)
   if (!result) {
     throw new Error(`Cannot render unknown result "${outcome.resultId}"`)
@@ -96,6 +101,9 @@ export function ResultScreen({ quiz, outcome, telegram, adapter, onRestart }: Re
           result={result}
           telegram={telegram as TelegramAdapter}
           adapter={platformAdapter}
+          completionId={completionId}
+          maxMid={maxMid}
+          maxPending={maxPending}
         />
         {showPromo && promo && channelUrl && (
           <>

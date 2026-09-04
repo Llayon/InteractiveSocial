@@ -18,6 +18,7 @@ export interface ShareTransport {
     score?: number
     total?: number
     quizTitle?: string
+    completionId?: string
   }): Promise<ShareOutcome>
 }
 
@@ -115,6 +116,7 @@ class TelegramShareTransport implements ShareTransport {
     score?: number
     total?: number
     quizTitle?: string
+    completionId?: string
   }): Promise<ShareOutcome> {
     const { adapter, analytics, quizId, resultId, result, score, total, quizTitle } = options
     const v2StartParam = (() => {
@@ -221,23 +223,91 @@ export async function prepareMaxShareMessage(
 }
 
 class MaxShareTransport implements ShareTransport {
-  // Cache for strategy B (pre-prepared mid)
+  // Cache for strategy B (pre-prepared mid) — now completion-aware
   private cachedMid: string | null = null
   private cachedQuizKey: string | null = null
+  private cachedCompletionId: string | null = null
 
-  /** Strategy B: pre-prepare in background (call on result screen mount) */
+  private buildKey(quizId: string, resultId: string, score: number | undefined, completionId: string | undefined): string {
+    return `${quizId}:${resultId}:${score ?? ''}:${completionId ?? ''}`
+  }
+
+  private buildQuizKey(quizId: string, resultId: string, score: number | undefined): string {
+    return `${quizId}:${resultId}:${score ?? ''}`
+  }
+
+  /** Set prepared mid from automatic result delivery (no extra bot message). */
+  setPreparedMid(args: { quizId: string; resultId: string; score?: number; mid: string; completionId?: string }): void {
+    const key = this.buildKey(args.quizId, args.resultId, args.score, args.completionId)
+    // For cache lookup, store both full key and quiz key
+    this.cachedMid = args.mid
+    this.cachedQuizKey = this.buildQuizKey(args.quizId, args.resultId, args.score)
+    this.cachedCompletionId = args.completionId ?? null
+    // Store full key as primary for validation; also keep for quick check via completionId
+    // We also store a map-like check: if completionId present, full key must match
+    try { console.info(`[max-share] setPreparedMid quizId=${args.quizId} resultId=${args.resultId} score=${args.score ?? 'n/a'} completionId=${args.completionId ?? 'none'} mid=present`) } catch {}
+    // We keep the full key in cachedQuizKey extended? Use private field to store full
+    ;(this as unknown as { _fullKey?: string })._fullKey = key
+  }
+
+  /** Check if we have a cached mid for given quiz/result/score/completionId */
+  hasPreparedMid(quizId: string, resultId: string, score: number | undefined, completionId?: string): boolean {
+    if (!this.cachedMid) return false
+    const quizKey = this.buildQuizKey(quizId, resultId, score)
+    if (this.cachedQuizKey !== quizKey) return false
+    // If completionId is provided, require it matches cached completionId (when cache was set with completionId)
+    if (completionId && this.cachedCompletionId && this.cachedCompletionId !== completionId) return false
+    // If cache has completionId but caller doesn't provide one, we still allow? For safety, if cachedCompletionId exists and caller provides undefined, we treat as mismatch only when caller provides different
+    // For strictness per spec: restarted attempts cannot reuse stale mids -> if caller provides new completionId different from cached, we must not reuse
+    // If caller provides completionId and cachedCompletionId is null (legacy prePrepare without id), we allow reuse for old flow? But prefer to require match when both present
+    if (completionId && this.cachedCompletionId === null) {
+      // cached was from prePrepare without completionId; still allow reuse but log
+    }
+    // If caller provides completionId and cached has it, must match. If caller provides no completionId but cached has one, we still consider stale? For normal flow, caller will provide completionId, so fine.
+    const fullKey = this.buildKey(quizId, resultId, score, completionId)
+    const cachedFull = (this as unknown as { _fullKey?: string })._fullKey
+    if (completionId && cachedFull && cachedFull !== fullKey) {
+      // completionId mismatch -> stale
+      return false
+    }
+    return true
+  }
+
+  getCachedMid(quizId: string, resultId: string, score: number | undefined, completionId?: string): string | null {
+    return this.hasPreparedMid(quizId, resultId, score, completionId) ? this.cachedMid : null
+  }
+
+  clearCache(): void {
+    this.cachedMid = null
+    this.cachedQuizKey = null
+    this.cachedCompletionId = null
+    ;(this as unknown as { _fullKey?: string })._fullKey = undefined
+  }
+
+  /** Strategy B: pre-prepare in background (call on result screen mount) — completion-aware */
   async prePrepare(
     quizId: string,
     resultId: string,
     initDataRaw: string,
     score?: number,
+    completionId?: string,
   ): Promise<string | null> {
-    const key = `${quizId}:${resultId}:${score ?? ''}`
-    if (this.cachedQuizKey === key && this.cachedMid) return this.cachedMid
+    const key = this.buildQuizKey(quizId, resultId, score)
+    const fullKey = this.buildKey(quizId, resultId, score, completionId)
+    const cachedFull = (this as unknown as { _fullKey?: string })._fullKey
+    if (this.cachedMid && this.cachedQuizKey === key && cachedFull === fullKey) return this.cachedMid
+    // if cachedQuizKey matches but completionId differs, we must not reuse
+    if (this.cachedMid && this.cachedQuizKey === key && completionId && this.cachedCompletionId !== completionId) {
+      // stale cache — will refetch
+    } else if (this.cachedMid && this.cachedQuizKey === key && !completionId) {
+      return this.cachedMid
+    }
     const res = await prepareMaxShareMessage(quizId, resultId, initDataRaw, score)
     if (res.ok) {
       this.cachedMid = res.mid
       this.cachedQuizKey = key
+      this.cachedCompletionId = completionId ?? null
+      ;(this as unknown as { _fullKey?: string })._fullKey = fullKey
       return res.mid
     }
     return null
@@ -252,8 +322,9 @@ class MaxShareTransport implements ShareTransport {
     score?: number
     total?: number
     quizTitle?: string
+    completionId?: string
   }): Promise<ShareOutcome> {
-    const { adapter, analytics, quizId, resultId, result, score, total, quizTitle } = options
+    const { adapter, analytics, quizId, resultId, result, score, total, quizTitle, completionId } = options
     const v2StartParam = (() => {
       const raw = adapter.getStartParam?.() ?? null
       return typeof raw === 'string' && /^s2_[a-z0-9]{1,12}_[a-z0-9]{1,12}_\d{1,15}$/.test(raw) ? raw : null
@@ -261,7 +332,7 @@ class MaxShareTransport implements ShareTransport {
     const onAnalytics = (event: AnalyticsEvent, payload: Record<string, unknown>) => analytics.track(event, { ...payload, platform: 'max' })
 
     analytics.track('share_click', { quiz_id: quizId, result_id: resultId, platform: 'max', ...(score === undefined ? {} : { score }) })
-    try { console.info(`[max-share] click platform=max quizId=${quizId} resultId=${resultId} score=${score ?? 'n/a'}`) } catch {}
+    try { console.info(`[max-share] click platform=max quizId=${quizId} resultId=${resultId} score=${score ?? 'n/a'} completionId=${completionId ?? 'none'}`) } catch {}
 
     if (adapter.platform === 'browser') {
       analytics.track('max_prepare_failed', { quiz_id: quizId, result_id: resultId, reason: 'native_unsupported', platform: 'max' })
@@ -278,10 +349,23 @@ class MaxShareTransport implements ShareTransport {
       new URLSearchParams(window.location.search).has('mock') &&
       new URLSearchParams(window.location.search).get('platform') === 'max'
 
-    // Strategy A: click -> fetch prepare -> shareMaxContent
-    // If we have cachedMid (strategy B succeeded earlier), use it immediately to stay within gesture.
-    let mid: string | null = this.cachedMid && this.cachedQuizKey === `${quizId}:${resultId}:${score ?? ''}` ? this.cachedMid : null
-    if (!mid) {
+    // Synchronous first-tap path: if we have cachedMid for this exact attempt/score, use it immediately
+    // No network await between click and Bridge invocation.
+    let mid: string | null = null
+    if (this.hasPreparedMid(quizId, resultId, score, completionId)) {
+      mid = this.cachedMid
+    } else if (this.cachedMid && this.cachedQuizKey === this.buildQuizKey(quizId, resultId, score) && !completionId) {
+      // fallback for legacy callers without completionId
+      mid = this.cachedMid
+    }
+    if (mid) {
+      analytics.track('max_prepare_success', { quiz_id: quizId, result_id: resultId, platform: 'max', cached: true } as unknown as Record<string, unknown>)
+      analytics.track('max_share_mid_ready', { quiz_id: quizId, result_id: resultId, platform: 'max', cached: true } as unknown as Record<string, unknown>)
+      try { console.info(`[max-share] prepare=success mid=present cached=true quizId=${quizId} resultId=${resultId} transport=prepared_mid completionId=${completionId ?? 'none'}`) } catch {}
+    } else {
+      // No cached mid — this is fallback path. In normal success path this should NOT happen.
+      // We still attempt prepare, but this will create an additional bot message and breaks no-duplicate guarantee.
+      // Only do this when automatic delivery failed to provide mid.
       const prepared = await prepareMaxShareMessage(quizId, resultId, adapter.getInitDataRaw(), score)
       if (!prepared.ok) {
         analytics.track('max_prepare_failed', { quiz_id: quizId, result_id: resultId, reason: prepared.code, platform: 'max' })
@@ -292,19 +376,17 @@ class MaxShareTransport implements ShareTransport {
       }
       mid = prepared.mid
       this.cachedMid = mid
-      this.cachedQuizKey = `${quizId}:${resultId}:${score ?? ''}`
+      this.cachedQuizKey = this.buildQuizKey(quizId, resultId, score)
+      this.cachedCompletionId = completionId ?? null
+      ;(this as unknown as { _fullKey?: string })._fullKey = this.buildKey(quizId, resultId, score, completionId)
       analytics.track('max_prepare_success', { quiz_id: quizId, result_id: resultId, platform: 'max', ...(score !== undefined ? { score } : {}) })
       analytics.track('max_share_mid_ready', { quiz_id: quizId, result_id: resultId, platform: 'max' })
-      try { console.info(`[max-share] prepare=success mid=present quizId=${quizId} resultId=${resultId} transport=prepared_mid`) } catch {}
-    } else {
-      analytics.track('max_prepare_success', { quiz_id: quizId, result_id: resultId, platform: 'max', cached: true } as unknown as Record<string, unknown>)
-      analytics.track('max_share_mid_ready', { quiz_id: quizId, result_id: resultId, platform: 'max', cached: true } as unknown as Record<string, unknown>)
-      try { console.info(`[max-share] prepare=success mid=present cached=true quizId=${quizId} resultId=${resultId} transport=prepared_mid`) } catch {}
+      try { console.info(`[max-share] prepare=success mid=present quizId=${quizId} resultId=${resultId} transport=prepared_mid completionId=${completionId ?? 'none'}`) } catch {}
     }
 
     if (isMaxMock) {
       analytics.track('max_share_bridge_invoked', { quiz_id: quizId, result_id: resultId, platform: 'max', mock: true } as unknown as Record<string, unknown>)
-      analytics.track('share_success', { quiz_id: quizId, result_id: resultId, platform: 'max', ...(score === undefined ? {} : { score }) })
+      analytics.track('max_share_picker_opened', { quiz_id: quizId, result_id: resultId, platform: 'max', mock: true } as unknown as Record<string, unknown>)
       try { console.info(`[max-share] bridge_invoked mock=true quizId=${quizId} mid=present transport=prepared_mid`) } catch {}
       return 'native'
     }
@@ -319,11 +401,11 @@ class MaxShareTransport implements ShareTransport {
     }
 
     try {
-      // MAX requires user click — we are inside click handler, so this should succeed.
-      // Real client will open recipient picker.
-      wa.shareMaxContent({ mid, chatType: 'DIALOG' })
+      // MAX requires user click — we are inside click handler, so this should succeed synchronously.
+      // No fetch was awaited above when cachedMid existed, so gesture is preserved.
+      wa.shareMaxContent({ mid: mid as string, chatType: 'DIALOG' })
       analytics.track('max_share_bridge_invoked', { quiz_id: quizId, result_id: resultId, platform: 'max' })
-      analytics.track('share_success', { quiz_id: quizId, result_id: resultId, platform: 'max', ...(score === undefined ? {} : { score }) })
+      analytics.track('max_share_picker_opened', { quiz_id: quizId, result_id: resultId, platform: 'max', ...(score !== undefined ? { score } : {}) })
       try { console.info(`[max-share] bridge_invoked mid=present transport=prepared_mid quizId=${quizId} resultId=${resultId}`) } catch {}
       return 'native'
     } catch (e) {
@@ -345,6 +427,7 @@ class BrowserShareTransport implements ShareTransport {
     score?: number
     total?: number
     quizTitle?: string
+    completionId?: string
   }): Promise<ShareOutcome> {
     const { adapter, analytics, quizId, resultId, result, score, total, quizTitle } = options
     const v2StartParam = (() => {

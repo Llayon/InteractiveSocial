@@ -13,9 +13,12 @@ import {
   shareCardImageUrl,
 } from '../../../src/features/quiz/scoring.js'
 
-// Serverless dedup — platform namespaced: max:<userId>:<quizId>:<resultId>
-// Separate from tg: keys to avoid cross-platform collision.
-const delivered = new Set<string>()
+// Serverless dedup — platform namespaced + attempt-aware.
+// Key when completionId present: max:<userId>:<quizId>:<completionId>
+// Fallback (legacy clients without completionId): max:<userId>:<quizId>:<resultId>
+// We store the successful mid per key for idempotent reuse.
+const deliveredSelfCache = new Map<string, string>()
+const deliveredSharerSet = new Set<string>()
 
 function requireEnv(name: string): string | null {
   const v = process.env[name]
@@ -30,7 +33,7 @@ async function sendMaxPhoto(
   deepLink: string,
   cardAsset: string,
   opts?: { quizId?: string; resultId?: string },
-): Promise<{ ok: boolean; via?: string; errorCode?: string }> {
+): Promise<{ ok: boolean; mid?: string; via?: string; errorCode?: string }> {
   // Unified media: create attachment via token or URL with preflight
   let imageAttachment: Awaited<ReturnType<typeof createMaxImageAttachment>> | null = null
   try {
@@ -82,15 +85,17 @@ async function sendMaxPhoto(
       quizId: opts?.quizId,
       resultId: opts?.resultId,
     })
-    return { ok: Boolean(r.ok), via: 'url-retry', errorCode: r.errorCode }
+    const hasMid = typeof r.mid === 'string' && r.mid.length > 0
+    return { ok: Boolean(r.ok && hasMid), mid: r.mid, via: 'url-retry', errorCode: hasMid ? r.errorCode : (r.errorCode ?? 'max_mid_missing') }
   }
-  return { ok: Boolean(r.ok), via: imageAttachment?.via, errorCode: r.errorCode }
+  const hasMid = typeof r.mid === 'string' && r.mid.length > 0
+  return { ok: Boolean(r.ok && hasMid), mid: r.mid, via: imageAttachment?.via, errorCode: hasMid ? r.errorCode : (r.errorCode ?? 'max_mid_missing') }
 }
 
 /**
  * POST /api/max/results/deliver
  *
- * Body: { quizId, resultId, score?, initDataRaw }
+ * Body: { quizId, resultId, score?, initDataRaw, completionId? }
  *
  * Mirrors Telegram deliver but for MAX transport.
  * 1. validate MAX initData → userId
@@ -98,7 +103,9 @@ async function sendMaxPhoto(
  * 3. send own card
  * 4. inspect startParam from signed payload → attribution
  * 5. if same-quiz attribution → notify sharer (platform-scoped, no cross-post to Telegram)
- * 6. namespaced dedup
+ * 6. attempt-aware idempotency via completionId
+ *
+ * Response: { ok:true, deliveredSelf, deliveredSharer, selfMid: string|null }
  */
 export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
   if (req.method !== 'POST') {
@@ -116,12 +123,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   const baseUrl = appBaseUrl.replace(/\/$/, '')
 
   const body = req.body as
-    | { quizId?: unknown; resultId?: unknown; score?: unknown; initDataRaw?: unknown }
+    | { quizId?: unknown; resultId?: unknown; score?: unknown; initDataRaw?: unknown; completionId?: unknown }
     | undefined
   const quizId = typeof body?.quizId === 'string' && body.quizId ? body.quizId : undefined
   const resultId = typeof body?.resultId === 'string' ? body.resultId : ''
   const initDataRaw = typeof body?.initDataRaw === 'string' ? body.initDataRaw : ''
   const rawScore = typeof body?.score === 'number' ? body.score : undefined
+  const rawCompletionId = typeof body?.completionId === 'string' ? body.completionId.trim() : undefined
+  // completionId is for idempotency only, never for auth. Validate loosely as UUID or 8-128 alnum/_/-
+  const completionId =
+    rawCompletionId && rawCompletionId.length >= 8 && rawCompletionId.length <= 128 && /^[A-Za-z0-9_-]{8,128}$/.test(rawCompletionId)
+      ? rawCompletionId
+      : rawCompletionId && /^[0-9a-fA-F-]{36}$/.test(rawCompletionId) // also allow hyphenated UUID (already covered but explicit)
+        ? rawCompletionId
+        : undefined
 
   if (!RESULT_ID_REGEX.test(resultId)) {
     res.status(400).json({ ok: false, error: 'invalid_request' })
@@ -171,12 +186,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   const imageUrl = shareCardImageUrl(quiz, cardAsset, baseUrl)
   const deepLink = buildMaxDeepLink(maxBotUsername, `quiz_${quiz.id}`)
 
-  // 1. Self card — namespaced dedup (structured truth)
-  const selfKey = `max:${userId}:${quiz.id}:${result.id}`
+  // 1. Self card — attempt-aware idempotency
+  const selfKey = completionId ? `max:${userId}:${quiz.id}:${completionId}` : `max:${userId}:${quiz.id}:${result.id}`
   let deliveredSelf = false
+  let selfMid: string | null = null
   let selfVia: string | undefined
   let selfError: string | undefined
-  if (!delivered.has(selfKey)) {
+  if (deliveredSelfCache.has(selfKey)) {
+    const cachedMid = deliveredSelfCache.get(selfKey) ?? null
+    if (cachedMid) {
+      deliveredSelf = true
+      selfMid = cachedMid
+      console.info(`[max-deliver] target=self user=${userId} quiz=${quiz.id} result=${result.id} ok=true deliveredSelf=true dedup=hit mid=present completionId=${completionId ?? 'none'}`)
+    } else {
+      deliveredSelf = false
+      console.info(`[max-deliver] target=self user=${userId} quiz=${quiz.id} result=${result.id} ok=true deliveredSelf=false dedup=hit-no-mid`)
+    }
+  } else {
     const headline =
       score === undefined ? `${result.title} — ${result.presentation.subtitle}` : `Твой счёт: ${score} из ${quiz.questions.length}`
     const caption = [headline, '', `«${result.presentation.shareQuote}»`, '', quiz.copy.deliverOwnLine].join('\n')
@@ -192,24 +218,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
       quizId: quiz.id,
       resultId: result.id,
     })
-    deliveredSelf = Boolean(resultSend.ok)
+    deliveredSelf = Boolean(resultSend.ok && resultSend.mid)
+    selfMid = resultSend.mid ?? null
     selfVia = resultSend.via
     selfError = resultSend.errorCode
-    if (deliveredSelf) delivered.add(selfKey)
+    if (deliveredSelf && selfMid) deliveredSelfCache.set(selfKey, selfMid)
     if (deliveredSelf) {
-      console.info(`[max-deliver] target=self user=${userId} quiz=${quiz.id} result=${result.id} asset=${cardAsset} host=${host} version=${version} media=${selfVia ?? 'none'} ok=true deliveredSelf=true`)
+      console.info(`[max-deliver] target=self user=${userId} quiz=${quiz.id} result=${result.id} asset=${cardAsset} host=${host} version=${version} media=${selfVia ?? 'none'} ok=true deliveredSelf=true mid=present completionId=${completionId ?? 'none'}`)
     } else {
-      console.warn(`[max-deliver] target=self user=${userId} quiz=${quiz.id} result=${result.id} asset=${cardAsset} host=${host} version=${version} media=${selfVia ?? 'none'} ok=false reason=${selfError ?? 'n/a'} deliveredSelf=false`)
+      console.warn(`[max-deliver] target=self user=${userId} quiz=${quiz.id} result=${result.id} asset=${cardAsset} host=${host} version=${version} media=${selfVia ?? 'none'} ok=false reason=${selfError ?? 'n/a'} deliveredSelf=false mid=none completionId=${completionId ?? 'none'}`)
     }
-  } else {
-    deliveredSelf = true
-    console.info(`[max-deliver] target=self user=${userId} quiz=${quiz.id} result=${result.id} ok=true deliveredSelf=true dedup=hit`)
   }
 
   // 2. Sharer notification — platform-scoped (never via Telegram API)
   let deliveredSharer = false
-  let sharerVia: string | undefined
-  let sharerError: string | undefined
   const attribution = resolveAttribution(startParam)
   let sharerUserId = attribution?.sharerUserId ?? null
 
@@ -217,7 +239,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     console.warn(`[max-deliver] attribution quiz mismatch: link=${attribution.quizId} completed=${quiz.id}; suppressed`)
     sharerUserId = null
   }
-  if (sharerUserId !== null && sharerUserId !== userId && !delivered.has(`sharer:${selfKey}`)) {
+  const sharerKey = `sharer:${selfKey}`
+  if (sharerUserId !== null && sharerUserId !== userId && !deliveredSharerSet.has(sharerKey)) {
     const who = firstName || 'Твой друг'
     const sharerCaption = [
       `${who} прошёл(а) тест по твоей открытке! 🎉`,
@@ -238,19 +261,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
       quizId: quiz.id,
       resultId: result.id,
     })
-    deliveredSharer = Boolean(resultSend.ok)
-    sharerVia = resultSend.via
-    sharerError = resultSend.errorCode
-    if (deliveredSharer) delivered.add(`sharer:${selfKey}`)
+    deliveredSharer = Boolean(resultSend.ok && resultSend.mid)
+    if (deliveredSharer) deliveredSharerSet.add(sharerKey)
     if (deliveredSharer) {
-      console.info(`[max-deliver] target=sharer user=${sharerUserId} quiz=${quiz.id} result=${result.id} asset=${cardAsset} host=${host} version=${version} media=${sharerVia ?? 'none'} ok=true deliveredSharer=true by=${userId}`)
+      console.info(`[max-deliver] target=sharer user=${sharerUserId} quiz=${quiz.id} result=${result.id} asset=${cardAsset} host=${host} version=${version} media=${resultSend.via ?? 'none'} ok=true deliveredSharer=true by=${userId} completionId=${completionId ?? 'none'}`)
     } else {
-      console.warn(`[max-deliver] target=sharer user=${sharerUserId} quiz=${quiz.id} result=${result.id} asset=${cardAsset} host=${host} version=${version} media=${sharerVia ?? 'none'} ok=false reason=${sharerError ?? 'n/a'} deliveredSharer=false by=${userId}`)
+      console.warn(`[max-deliver] target=sharer user=${sharerUserId} quiz=${quiz.id} result=${result.id} asset=${cardAsset} host=${host} version=${version} media=${resultSend.via ?? 'none'} ok=false reason=${resultSend.errorCode ?? 'n/a'} deliveredSharer=false by=${userId}`)
     }
   } else if (sharerUserId !== null && sharerUserId !== userId) {
     // dedup hit
-    console.info(`[max-deliver] target=sharer user=${sharerUserId} ok=true dedup=hit`)
+    console.info(`[max-deliver] target=sharer user=${sharerUserId} ok=true dedup=hit completionId=${completionId ?? 'none'}`)
+    // if we already delivered sharer for this completion, consider deliveredSharer true via dedup? But we don't have cached flag.
+    // For idempotent duplicates, report as true if previously delivered
+    if (deliveredSharerSet.has(sharerKey)) {
+      deliveredSharer = true
+    }
   }
 
-  res.status(200).json({ ok: true, deliveredSelf, deliveredSharer })
+  res.status(200).json({ ok: true, deliveredSelf, deliveredSharer, selfMid })
 }
