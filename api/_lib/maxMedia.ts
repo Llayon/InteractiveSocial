@@ -9,7 +9,21 @@
  * - structured logs [max-media] for forensic diagnostics
  */
 
+import { createRequire as _createRequire } from 'node:module'
 import { fetchWithTimeout, maxGetUploadUrl, maxUploadFile } from './maxApi.js'
+
+const _require: (id: string) => unknown = (() => {
+  try {
+    return _createRequire(import.meta.url)
+  } catch {
+    return (id: string) => {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-explicit-any
+      const g = globalThis as unknown as { require?: (id: string) => unknown }
+      if (g.require) return g.require(id)
+      throw new Error(`require not available for ${id}`)
+    }
+  }
+})()
 
 const PREFLIGHT_TIMEOUT_MS = 5_000
 const IMAGE_FETCH_TIMEOUT_MS = 8_000
@@ -132,9 +146,9 @@ async function fetchImageBytes(imageUrl: string): Promise<{ bytes: Buffer; conte
   // 1. Try local FS: map /share-cards/v2/m90_score_10.jpg -> public/share-cards/v2/m90_score_10.jpg
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const fs = require('node:fs') as typeof import('node:fs')
+    const fs = _require('node:fs') as typeof import('node:fs')
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const path = require('node:path') as typeof import('node:path')
+    const path = _require('node:path') as typeof import('node:path')
     const u = new URL(imageUrl)
     // u.pathname = /share-cards/v2/m90_score_10.jpg
     const relative = u.pathname.replace(/^\//, '')
