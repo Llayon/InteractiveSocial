@@ -11,6 +11,7 @@ import {
   preparedShareId,
   resolveBandResultId,
   resolveShareCardAsset,
+  shareCardBasePath,
   shareCardImageUrl,
   shareCardThumbUrl,
 } from '../../src/features/quiz/scoring.js'
@@ -172,6 +173,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   //   • user_id is the validated initData user (never a client field)
   //   • allow_user_chats / allow_group_chats / allow_channel_chats
   //     control where the user can route the message
+  // Diagnostics: safe, no secrets/PII — proves caption reaches Telegram
+  const versionTag = shareCardBasePath(quiz) || 'v1'
+  console.info(
+    `[share-caption] quizId=${quiz.id} resultId=${result.id} score=${score ?? 'none'} ` +
+      `captionLength=${messageText.length} captionPresent=${messageText.length > 0} ` +
+      `showCaptionAboveMedia=true asset=${cardAsset} version=${versionTag}`,
+  )
+
   const payload = JSON.stringify({
     user_id: userId,
     allow_user_chats: true,
@@ -190,7 +199,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
       photo_height: 1350,
       thumbnail_url: thumbUrl,
       // Caption carries the message text (1024-char limit is ample here).
+      // show_caption_above_media forces Telegram clients to render the
+      // caption as a header above the photo instead of below (which some
+      // clients collapse in prepared messages). Required for Music90s
+      // Бросить вызов share — recipient must see TEXT + PHOTO + BUTTON.
       caption: messageText,
+      show_caption_above_media: true,
       reply_markup: {
         inline_keyboard: [[{ text: 'Пройти тест', url: deepLink }]],
       },
