@@ -38,21 +38,34 @@ export interface MaxApiError {
 }
 
 // Ensure NODE_EXTRA_CA_CERTS file exists if MAX_EXTRA_CA_PEM is set — fixes Vercel startup warning
+// Note: /var/task is read-only in Vercel, so write to /tmp and update env to point there if needed
 try {
-  const pemEarly = process.env.MAX_EXTRA_CA_PEM
+  const pemEarlyRaw = process.env.MAX_EXTRA_CA_PEM
   const caPathEarly = process.env.NODE_EXTRA_CA_CERTS
-  if (pemEarly && caPathEarly) {
+  if (pemEarlyRaw && caPathEarly) {
+    const pemEarly = pemEarlyRaw.includes('\\n') ? pemEarlyRaw.replace(/\\n/g, '\n') : pemEarlyRaw
     try {
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       const fs = require('node:fs') as typeof import('node:fs')
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       const path = require('node:path') as typeof import('node:path')
-      if (!fs.existsSync(caPathEarly)) {
+      // Try to write to original path if writable, else /tmp
+      const tryPaths = [caPathEarly, '/tmp/russian-trusted-ca.pem']
+      for (const p of tryPaths) {
         try {
-          fs.mkdirSync(path.dirname(caPathEarly), { recursive: true })
-        } catch {}
-        try {
-          fs.writeFileSync(caPathEarly, pemEarly, 'utf-8')
+          if (!fs.existsSync(p)) {
+            try {
+              fs.mkdirSync(path.dirname(p), { recursive: true })
+            } catch {}
+            fs.writeFileSync(p, pemEarly, 'utf-8')
+            // If we wrote to /tmp, update env so Node's tls can pick it up on next connection if it checks env again
+            if (p !== caPathEarly) {
+              try {
+                process.env.NODE_EXTRA_CA_CERTS = p
+              } catch {}
+            }
+            break
+          }
         } catch {}
       }
     } catch {}
@@ -61,13 +74,34 @@ try {
 
 let cachedCa: string | null | undefined
 
+function normalizePem(pem: string): string {
+  // Vercel env may store PEM with literal \n or base64; normalize to real PEM
+  let out = pem
+  if (out.includes('\\n')) out = out.replace(/\\n/g, '\n')
+  // If still no BEGIN but looks like base64, try decode
+  if (!out.includes('BEGIN CERTIFICATE') && /^[A-Za-z0-9+/=\s]+$/.test(out.trim()) && out.trim().length > 1000) {
+    try {
+      const decoded = Buffer.from(out.trim(), 'base64').toString('utf-8')
+      if (decoded.includes('BEGIN CERTIFICATE')) out = decoded
+    } catch {}
+  }
+  return out
+}
+
 function getPemCa(): string | null {
   if (cachedCa !== undefined) return cachedCa
-  const pem = requireEnv('MAX_EXTRA_CA_PEM')
+  const pemRaw = requireEnv('MAX_EXTRA_CA_PEM')
   const caPath = requireEnv('MAX_EXTRA_CA_PATH')
-  if (pem) {
-    cachedCa = pem
-    return pem
+  if (pemRaw) {
+    const pem = normalizePem(pemRaw)
+    if (pem.includes('BEGIN CERTIFICATE')) {
+      cachedCa = pem
+      console.info(`[max] CA loaded from MAX_EXTRA_CA_PEM len=${pem.length} certs=${(pem.match(/BEGIN CERTIFICATE/g) || []).length}`)
+      return pem
+    }
+    console.warn(`[max] CA from env invalid, no BEGIN CERTIFICATE, len=${pemRaw.length}`)
+    cachedCa = pemRaw
+    return pemRaw
   }
   if (caPath) {
     try {
@@ -167,7 +201,13 @@ function safeLog(operation: string, status: number | string, ok: unknown, extra?
 }
 
 function safeErrorLog(operation: string, status: number | string, error: unknown, extra?: string): void {
-  const msg = error instanceof Error ? error.message.slice(0, 200) : String(error).slice(0, 200)
+  let msg = error instanceof Error ? error.message.slice(0, 200) : String(error).slice(0, 200)
+  // Include cause if present (Node fetch wraps TLS errors in cause)
+  const cause = (error as unknown as { cause?: unknown })?.cause
+  if (cause) {
+    const causeMsg = cause instanceof Error ? cause.message.slice(0, 150) : String(cause).slice(0, 150)
+    msg = `${msg} cause=${causeMsg}`
+  }
   const suffix = extra ? ` ${extra}` : ''
   console.warn(`[max] operation=${operation} status=${status} ok=false error=${msg}${suffix}`)
 }
