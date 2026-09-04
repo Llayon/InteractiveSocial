@@ -91,6 +91,8 @@ export function ResultScreen({ quiz, outcome, telegram, adapter, onRestart }: Re
           shareCta={quiz.shareCta}
           shareCtaIntro={quiz.shareCtaIntro}
           score={score}
+          total={quiz.questions.length}
+          quizTitle={quiz.title}
           result={result}
           telegram={telegram as TelegramAdapter}
           adapter={platformAdapter}
