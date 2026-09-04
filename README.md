@@ -1,154 +1,198 @@
-# Interactive Social — Telegram Mini App MVP
+# Interactive Social — Telegram / MAX Mini App
 
-Telegram Mini App с personality-тестом **«Какой у тебя интерьерный характер?»**:
-landing → 8 вопросов → детерминированный scoring → editorial result →
-native Telegram share → restart.
+Universal Mini App platform for interactive social quizzes running in Telegram, MAX and browser fallback.
 
-Стек: Vite · React 19 · TypeScript · pnpm · Zod · @tma.js/sdk(-react) ·
-Vitest · React Testing Library · Playwright · ESLint · Prettier ·
-Vercel (+ Functions для защищённых Bot API вызовов).
+Current production quizzes include the interior personality quiz, the Music90s nostalgia quiz and Guess90s. The shared runtime owns routing, scoring, result delivery, share transport and analytics; quiz-specific behavior belongs in declarative quiz config rather than `if (quiz.id === ...)` branches.
 
-## Локальная разработка
+Stack: Vite · React 19 · TypeScript · pnpm · Zod · @tma.js/sdk(-react) · Vitest · React Testing Library · Playwright · ESLint · Prettier · Vercel Functions.
+
+## Local development
 
 ```bash
 pnpm install
-pnpm dev            # http://localhost:5173 — работает в браузере БЕЗ Telegram
+pnpm dev
 ```
 
-В dev-режиме приложение использует явный **Telegram mock** (детерминированный,
-никакой фейковой личности в production). Параметры:
+Useful mock/query modes:
 
 ```text
-?mock=1                     форсировать mock в любом билде (staging/демо)
-?startapp=share_quiet       симулировать start parameter (атрибуция)
-?tgWebAppStartParam=...     то же самое, нативное имя параметра
-?share=fail                 mock share завершается неудачей (тест fallback)
+?mock=1                         deterministic mock
+?mock=1&platform=max            MAX mock
+?quiz=music90s                  direct browser quiz routing
+?startapp=s2_m90_cs_123456      challenge attribution fixture
 ```
 
-Состояния платформы (см. `src/platform/telegram`):
-
-| Режим      | Когда | Поведение |
-|------------|-------|-----------|
-| `telegram` | production внутри Mini App | реальный WebApp bridge |
-| `mock`     | dev / `?mock=1` / Playwright | детерминированный мок |
-| `browser`  | production вне Telegram | web-fallback, без фейковой личности, share через fallback |
-
-## Скрипты
+## Scripts
 
 ```bash
-pnpm lint          # ESLint
-pnpm typecheck     # tsc --noEmit
-pnpm test          # Vitest: unit + integration + exhaustive scoring validation
-pnpm build         # typecheck + production build
-pnpm test:e2e      # Playwright (4 viewport'а: 360/390/430/1280)
-pnpm images:runtime # WebP/JPEG 480/720/960 для рантайма + manifest + budget guard
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm build
+pnpm test:e2e
+pnpm images:runtime
 ```
 
 ## Environment variables
 
-Server-only (Vercel Functions, НИКОГДА не попадают в клиентский бандл):
+Server-only Vercel Function env:
 
 ```text
-TELEGRAM_BOT_TOKEN        токен бота для savePreparedInlineMessage
-TELEGRAM_BOT_USERNAME     username бота (deep link t.me/<bot>/<app>)
-TELEGRAM_APP_SHORT_NAME   short name Mini App в BotFather (по умолчанию app)
-APP_BASE_URL              публичный origin деплоя (для share-картинок)
+TELEGRAM_BOT_TOKEN=
+TELEGRAM_BOT_USERNAME=
+TELEGRAM_APP_SHORT_NAME=app
+APP_BASE_URL=https://tginteractive.vercel.app
+
+MAX_BOT_TOKEN=
+MAX_BOT_USERNAME=se14154487_bot
+MAX_EXTRA_CA_PEM=
+# optional alternative when the file definitely exists at process start:
+MAX_EXTRA_CA_PATH=
 ```
 
-Client-side (public):
+Client-side public env:
 
 ```text
-VITE_ANALYTICS_PROVIDER=console   пока провайдер аналитики не подключён
+VITE_ANALYTICS_PROVIDER=console
+VITE_TELEGRAM_BOT_USERNAME=...
+VITE_TELEGRAM_APP_SHORT_NAME=app
+VITE_MAX_BOT_USERNAME=se14154487_bot
 ```
 
-Пример: `.env.example`.
+See `.env.example` and `docs/max-setup.md` for the complete MAX production runbook.
 
-## Тесты
+## Platform share / delivery
 
-- **Unit**: Zod-схема, content lock (все тексты/веса утверждённого спека),
-  все 5 стадий tie-break, reducer (double-tap guard, back/change/restart),
-  server-side initData validation (valid/tampered/expired/wrong-token fixtures).
-- **Exhaustive**: полный перебор **98 304** комбинаций (4^7 × 6):
-  все resolve детерминированно, 6/6 архетипов достижимы.
-  Отчёт: `gauntlet/reports/content-validation.md`.
-- **Integration**: полный flow через React Testing Library без браузера.
-- **E2E (Playwright)**: journey landing→8→result→share→restart, back/change
-  answer, mock mode, graceful share degradation, responsive quality bar на
-  360×800 / 390×844 / 430×932 / 1280×800, hard gate на console.error /
-  pageerror / unhandled rejection. Реальный Telegram runtime и CDN не нужны.
+Telegram:
 
-## Vercel deployment
+```text
+/api/share/prepare
+→ Telegram prepared inline message
+→ WebApp.shareMessage(id)
 
-1. Import repo в Vercel (framework: Vite, авто-детект).
-2. Function `api/share/prepare` подхватится автоматически (`/api/*`).
-3. Задать env из раздела выше (Production + Preview).
-4. CI (`.github/workflows/ci.yml`) — quality-gate на пуши в `master` и на PR
-   (lint / typecheck / tests / build / E2E). Production деплой — **локальный
-   CLI после зелёного CI**: `vercel deploy --prod --yes` (единственный
-   source of truth, чтобы CLI и Actions не катили друг друга). Миграция
-   деплоя в CI — отложенное решение.
+/api/results/deliver
+→ own result card
+→ optional sharer notification
+```
 
-## Настройка Telegram Bot / Mini App
+MAX:
 
-1. `@BotFather` → `/newbot` → получить `TELEGRAM_BOT_TOKEN`.
-2. `/newapp` (или Bot Settings → Menu Button) → указать URL деплоя и
-   short name → получится deep link `https://t.me/<bot>/<short_name>`.
-3. Заполнить env на Vercel. Готово: Mini App открывается по deep link.
-   Share-сообщения возвращают v2-параметр атрибуции
-   `startapp=s2_<quizCode>_<resultCode>_<uid>`; legacy-формат
-   `share_<resultId>-<uid>` (и исторический точечный) разбирается бессрочно.
+```text
+/api/max/share/prepare
+→ shared MAX media helper
+→ image upload/token
+→ POST /messages
+→ body.mid
+→ WebApp.shareMaxContent({ mid, chatType: 'DIALOG' })
 
-## Архитектура
+/api/max/results/deliver
+→ same MAX media helper
+→ own result card
+→ optional sharer notification
+```
+
+The same media transport must be used for MAX challenge shares and result delivery. A regression affecting both usually points to the common MAX API/TLS/media layer rather than quiz UI or deep links.
+
+### MAX production note
+
+`platform-api2.max.ru` may require the Russian Trusted CA chain in Vercel. The production client uses a scoped `undici.Agent` with `MAX_EXTRA_CA_PEM` / `MAX_EXTRA_CA_PATH` and never disables TLS verification globally.
+
+Do not rely on a `NODE_EXTRA_CA_CERTS` path that is created after Node process startup. This caused a production incident where `/me`, `/uploads` and `/messages` all failed with `unable to get local issuer certificate`; share degraded to plain text/link and bot result delivery returned `deliveredSelf:false`.
+
+Detailed incident notes, diagnostics and recovery steps: `docs/max-setup.md`.
+
+## Share-card assets
+
+Correct-count quizzes use quiz-scoped exact-score assets. Music90s currently uses versioned share-card paths, e.g.:
+
+```text
+/share-cards/v2/m90_score_10.jpg
+```
+
+`APP_BASE_URL` must point at the stable public alias that actually serves those files with `200` and the correct image MIME type.
+
+## Attribution
+
+Challenge deep links use the generic v2 wire format:
+
+```text
+s2_<quizCode>_<resultCode>_<uid>
+```
+
+Telegram and MAX share the same logical attribution format while keeping delivery platform-scoped.
+
+## Architecture
 
 ```text
 src/
-├── app/               App shell, bootstrap, screens
+├── app/
 ├── features/
-│   ├── landing/       вход viral loop
-│   ├── quiz/          schema (Zod), scoring, reducer, UI — data-driven
-│   ├── result/        editorial reveal + result card
-│   └── share/         prepare → native shareMessage → graceful fallback
-├── platform/telegram/ единственное место с Telegram-специфичным кодом
-├── content/quizzes/   утверждённый контент как конфигурация (LOCKED)
-├── analytics/         provider abstraction + дедупликация событий
-├── design/            tokens + editorial стили
+│   ├── landing/
+│   ├── quiz/
+│   ├── result/
+│   └── share/
+├── platform/
+│   ├── telegram/
+│   └── max/
+├── content/quizzes/
+├── analytics/
+├── design/
 └── lib/
-api/share/prepare.ts   Vercel Function: initData validation → prepared message
-api/results/deliver.ts Vercel Function: карточка автору + уведомление шарившему
-api/_lib/              initData / attribution (v2+v1) / quizRequest хелперы
-tests/                 unit / integration / e2e
-gauntlet/              SPEC, QUALITY_BAR, отчёты по задачам G00–G07
+
+api/
+├── share/prepare.ts
+├── results/deliver.ts
+├── max/share/prepare.ts
+├── max/results/deliver.ts
+└── _lib/
+    ├── maxApi.ts
+    └── maxMedia.ts
 ```
 
-## Добавление нового теста
+## Adding a new quiz
 
-1. `src/content/quizzes/<id>/` — `quiz.ts` + `results.ts` (schema-valid).
-2. Регистрация в `content/quizzes/index.ts`.
-3. Wire-коды v2 в `content/quizzes/codes.ts` (quizCode + resultCode на
-   каждый результат; модуль fail-fast на дублях и дырах покрытия).
-4. Всё остальное уже quiz-aware: App резолвит через
-   `resolveQuizFromLaunch` (`?quiz=<id>` в браузере, `quiz_<id>` в
-   startapp), API принимают `quizId` в теле и проверяют принадлежность
-   результата квизу, share/deliver строят v2-ссылки автоматически,
-   аналитика уже несёт `quiz_id`.
-5. Ассеты: исходники в `assets-source/` → `pnpm images:runtime`
-   (рантайм WebP/JPEG + manifest), share-открытки —
-   `scripts/optimize-share-cards.ps1` → `public/share-cards` (JPEG
-   1080×1350, REQUIRED thumbnail).
+1. Add `src/content/quizzes/<id>/quiz.ts` and results/config.
+2. Register it in `content/quizzes/index.ts`.
+3. Add v2 wire codes in `content/quizzes/codes.ts`.
+4. Reuse generic scoring/share/delivery/runtime.
+5. Add/optimize assets and regression coverage.
 
-Движок, UI и share-пайплайн не меняются.
+Avoid quiz-id branching in shared runtime when the behavior can be represented by mechanics or config.
 
-## Известные ограничения
+## Production QA
 
-- Share-открытки — реальные арты 1080×1350 JPEG в `public/share-cards`
-  (перегенерация из `assets-source` через `optimize-share-cards.ps1`);
-  рантайм-изображения — WebP/JPEG 480/720/960 в `public/optimized`
-  (`pnpm images:runtime`, typed manifest, встроенный guard бюджета,
-  network-contract E2E в `tests/e2e/network-scope.spec.ts`).
-- Share-протокол v2 несёт числовой Telegram id шарившего в открытом виде
-  (виден получателю ссылки, не секрет). Opaque attribution-токен требует
-  серверного storage — deferred.
-- `web_app_share_message` / callback `shareMessage(id, cb)` — Bot API 8+;
-  типизация частично через escape-hatch (изолирован в
-  `platform/telegram/real.ts`, callback-first + события как fallback).
-- Аналитика — console-провайдер до подключения реального сервиса.
+Before declaring Telegram/MAX share work complete, verify on real clients rather than relying only on mocks.
+
+Minimum MAX smoke test:
+
+```text
+complete quiz
+→ own bot result card arrives
+
+press Бросить вызов
+→ recipient picker opens
+→ recipient receives visual card, not only text/link
+```
+
+For attribution QA, use two real accounts when practical:
+
+```text
+A shares
+→ B opens challenge
+→ B completes
+→ B receives own result
+→ A receives sharer notification
+```
+
+## Deployment
+
+Vercel deploys from `master`. After changes:
+
+```text
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm build
+```
+
+Then verify the production deployment status and run real platform smoke tests for any share/delivery transport changes.
