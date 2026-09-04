@@ -80,6 +80,12 @@ export const questionContentSchema = z.discriminatedUnion('kind', [audioPreviewC
 
 export type QuestionContent = z.infer<typeof questionContentSchema>
 
+export const questionFeedbackSchema = z.object({
+  correct: z.string().min(1),
+  wrong: z.string().min(1),
+})
+export type QuestionFeedback = z.infer<typeof questionFeedbackSchema>
+
 export const questionSchema = z.object({
   id: z.string().min(1),
   title: z.string().min(1),
@@ -98,6 +104,7 @@ export const questionSchema = z.object({
   correctAnswerId: z.string().optional(),
   image: z.string().optional(),
   content: questionContentSchema.optional(),
+  feedback: questionFeedbackSchema.optional(),
   answers: z.array(answerSchema).min(2),
 })
 

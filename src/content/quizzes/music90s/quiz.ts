@@ -17,6 +17,10 @@ export const questions: Question[] = [
     layout: 'choice',
     title: 'Какой хит зашифрован?\n\n💌 ➡️ 📭 😔 ❤️',
     correctAnswerId: 'a',
+    feedback: {
+      correct: 'В точку!',
+      wrong: 'Эх, мимо.',
+    },
     answers: [
       { id: 'a', title: '«Крошка моя»' },
       { id: 'b', title: '«Алёшка»' },
@@ -31,6 +35,10 @@ export const questions: Question[] = [
     layout: 'choice',
     title: 'Чей томный взгляд и расстёгнутая рубашка в клипе «Позови меня в ночи» сводили с ума девчонок по всей стране?',
     correctAnswerId: 'b',
+    feedback: {
+      correct: 'Зачёт!',
+      wrong: 'Не-а, не то.',
+    },
     answers: [
       { id: 'a', title: 'Кай Метов' },
       { id: 'b', title: 'Влад Сташевский' },
@@ -45,6 +53,10 @@ export const questions: Question[] = [
     layout: 'choice',
     title: 'Кто до сольной карьеры пела в группе «Комбинация»?',
     correctAnswerId: 'b',
+    feedback: {
+      correct: 'В яблочко!',
+      wrong: 'Чуть-чуть не туда.',
+    },
     answers: [
       { id: 'a', title: 'Лада Дэнс' },
       { id: 'b', title: 'Алёна Апина' },
@@ -59,6 +71,10 @@ export const questions: Question[] = [
     layout: 'choice',
     title: 'Какой хит конца 90-х заставлял смотреть в мокрое окно и страдать так, будто жизнь навсегда разбита?',
     correctAnswerId: 'a',
+    feedback: {
+      correct: 'База на месте.',
+      wrong: 'Фальшивая нота.',
+    },
     answers: [
       { id: 'a', title: '«Одинокий голубь» (Яна)' },
       { id: 'b', title: '«Ветер с моря дул» (Натали)' },
@@ -73,6 +89,10 @@ export const questions: Question[] = [
     layout: 'choice',
     title: 'Какой из этих хитов вышел уже в нулевых, а НЕ в 90-х?',
     correctAnswerId: 'd',
+    feedback: {
+      correct: 'Знаешь наизусть!',
+      wrong: 'Срезалась!',
+    },
     answers: [
       { id: 'a', title: '«Сэра»' },
       { id: 'b', title: '«Ветер с моря дул»' },
@@ -87,6 +107,10 @@ export const questions: Question[] = [
     layout: 'choice',
     title: 'В какой паре «исполнитель — песня» спрятана ошибка?',
     correctAnswerId: 'c',
+    feedback: {
+      correct: 'С первой ноты.',
+      wrong: 'Мимо кассы.',
+    },
     answers: [
       { id: 'a', title: 'Линда — «Ворона»' },
       { id: 'b', title: 'Андрей Губин — «Мальчик-бродяга»' },
@@ -101,6 +125,10 @@ export const questions: Question[] = [
     layout: 'choice',
     title: 'Какая легендарная пара вела «Бодрое утро» на MTV Россия, под шутки которых собирались в школу и институт?',
     correctAnswerId: 'b',
+    feedback: {
+      correct: 'Без шансов для ошибки.',
+      wrong: 'Не угадала.',
+    },
     answers: [
       { id: 'a', title: 'Яна Чурикова и Александр Анатольевич' },
       { id: 'b', title: 'Ольга Шелест и Антон Комолов' },
@@ -115,6 +143,10 @@ export const questions: Question[] = [
     layout: 'choice',
     title: 'Какой журнал в конце 90-х прятали под подушку от родителей ради постеров, анкет и честных ответов про мальчиков?',
     correctAnswerId: 'b',
+    feedback: {
+      correct: 'Красиво!',
+      wrong: 'Рядом, но нет.',
+    },
     answers: [
       { id: 'a', title: '«Ровесник»' },
       { id: 'b', title: '«Cool Girl»' },
@@ -129,6 +161,10 @@ export const questions: Question[] = [
     layout: 'choice',
     title: 'Что из этого — сценическое имя одного артиста, а не название группы?',
     correctAnswerId: 'c',
+    feedback: {
+      correct: 'Точно в ритм.',
+      wrong: 'Память подвела.',
+    },
     answers: [
       { id: 'a', title: 'Hi-Fi' },
       { id: 'b', title: 'Демо' },
@@ -143,6 +179,10 @@ export const questions: Question[] = [
     layout: 'choice',
     title: 'Кто придумал мрачный стиль певицы Линды и написал музыку к «Вороне» и «Мало огня»?',
     correctAnswerId: 'b',
+    feedback: {
+      correct: 'Память не подводит!',
+      wrong: 'Слишком сложно?',
+    },
     answers: [
       { id: 'a', title: 'Игорь Матвиенко' },
       { id: 'b', title: 'Максим Фадеев' },
@@ -157,6 +197,10 @@ export const questions: Question[] = [
     layout: 'choice',
     title: 'Какую девичью группу в конце 90-х называли «русскими Spice Girls», где у каждой солистки был свой образ — от «радистки» до пацанки?',
     correctAnswerId: 'b',
+    feedback: {
+      correct: 'Классика.',
+      wrong: 'Не тот трек.',
+    },
     answers: [
       { id: 'a', title: 'Блестящие' },
       { id: 'b', title: 'Стрелки' },
@@ -171,6 +215,10 @@ export const questions: Question[] = [
     layout: 'choice',
     title: 'Какой хит «Иванушек» звучит как мем: «POV: на улице жара +30, а вокруг почему-то сугробы»?',
     correctAnswerId: 'b',
+    feedback: {
+      correct: 'Как по нотам!',
+      wrong: 'Обидно, но мимо.',
+    },
     answers: [
       { id: 'a', title: '«Тучи»' },
       { id: 'b', title: '«Тополиный пух»' },
@@ -185,6 +233,10 @@ export const questions: Question[] = [
     layout: 'choice',
     title: 'Чей сценический образ в 90-х запомнился всем: шуба на голое тело, платформы и полное отсутствие передних зубов?',
     correctAnswerId: 'a',
+    feedback: {
+      correct: 'Легчайшая.',
+      wrong: 'Спутала!',
+    },
     answers: [
       { id: 'a', title: 'Шура' },
       { id: 'b', title: 'Богдан Титомир' },
@@ -199,6 +251,10 @@ export const questions: Question[] = [
     layout: 'choice',
     title: 'В каком клипе 90-х тусуется богема, певицу похищают Бондарчук и Паук, а всё происходящее похоже на русский криминальный фильм?',
     correctAnswerId: 'b',
+    feedback: {
+      correct: 'Ни секунды сомнений!',
+      wrong: 'Увы, не угадала.',
+    },
     answers: [
       { id: 'a', title: 'Линда — «Ворона»' },
       { id: 'b', title: 'Лика Стар — «Одинокая луна»' },
@@ -213,6 +269,10 @@ export const questions: Question[] = [
     layout: 'choice',
     title: 'Какой хит 90-х сегодня подошёл бы на роль статуса в Telegram перед удалением аккаунта?',
     correctAnswerId: 'a',
+    feedback: {
+      correct: 'Золотой фонд.',
+      wrong: 'Мимо нот.',
+    },
     answers: [
       { id: 'a', title: '«Ты меня не ищи»' },
       { id: 'b', title: '«Позови меня с собой»' },
@@ -227,6 +287,10 @@ export const questions: Question[] = [
     layout: 'choice',
     title: 'В каком клипе певица в серебристом мини-платье и с каре танцует в павильоне среди софитов и операторских рельсов?',
     correctAnswerId: 'b',
+    feedback: {
+      correct: 'Чистая победа.',
+      wrong: 'Не попала в такт.',
+    },
     answers: [
       { id: 'a', title: 'Лада Дэнс — «Девочка-ночь»' },
       { id: 'b', title: 'Наталья Ветлицкая — «Посмотри в глаза»' },
@@ -241,6 +305,10 @@ export const questions: Question[] = [
     layout: 'choice',
     title: 'Какой романтичный певец в 90-е убедил девчонок, что мальчикам тоже не стыдно страдать и плакать от любви?',
     correctAnswerId: 'b',
+    feedback: {
+      correct: 'Уровень: профи.',
+      wrong: 'Ай, осечка!',
+    },
     answers: [
       { id: 'a', title: 'Влад Сташевский' },
       { id: 'b', title: 'Андрей Губин' },
@@ -255,6 +323,10 @@ export const questions: Question[] = [
     layout: 'choice',
     title: 'Главный лайфхак школьных дискотек 90-х: на что ставили чёлку-каркас, если под рукой не было лака «Прелесть»?',
     correctAnswerId: 'b',
+    feedback: {
+      correct: 'Абсолют!',
+      wrong: 'Тут не срослось.',
+    },
     answers: [
       { id: 'a', title: 'На пиво' },
       { id: 'b', title: 'На сахарную воду' },
@@ -318,7 +390,7 @@ export const music90sQuiz: Quiz = {
     ],
   },
   presentation: { kind: 'score' },
-  answerBehavior: { mode: 'feedback', durationMs: 900, correctMessage: 'Да. Кассета не подвела.', wrongMessage: 'Где-то заплакал один кассетник.' },
+  answerBehavior: { mode: 'feedback', durationMs: 900, correctMessage: 'Верно.', wrongMessage: 'Не угадала.' },
   reveal: {
     steps: ['Кассеты', 'Диски', 'Твой счёт'],
     stepDurationMs: 250,

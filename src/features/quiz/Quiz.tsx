@@ -278,6 +278,11 @@ export function Quiz({
   }
   const rubric = isMusic90s ? (question.category ? (rubricLabels[question.category] ?? question.category) : undefined) : undefined
 
+  const feedbackCorrectMessage =
+    behavior.mode === 'feedback' ? (question.feedback?.correct ?? behavior.correctMessage) : undefined
+  const feedbackWrongMessage =
+    behavior.mode === 'feedback' ? (question.feedback?.wrong ?? behavior.wrongMessage) : undefined
+
   return (
     <section className="screen quiz" data-testid="quiz-screen">
       <QuizProgress currentIndex={currentIndex} total={total} />
@@ -289,8 +294,8 @@ export function Quiz({
         selectedAnswerId={displayedAnswerId}
         locked={locked}
         revealCorrectAnswerId={revealCorrectAnswerId}
-        feedbackCorrectMessage={behavior.mode === 'feedback' ? behavior.correctMessage : undefined}
-        feedbackWrongMessage={behavior.mode === 'feedback' ? behavior.wrongMessage : undefined}
+        feedbackCorrectMessage={feedbackCorrectMessage}
+        feedbackWrongMessage={feedbackWrongMessage}
         onAnswer={handleAnswer}
         onSkipAudio={handleSkipAudio}
         onAudioReplay={handleAudioReplay}

@@ -413,3 +413,111 @@ describe('Music90s: approved result copy (RESULT COPY remap)', () => {
     ])
   })
 })
+
+describe('Music90s: per-question answer feedback (ANSWER FEEDBACK pass)', () => {
+  const approved: Record<string, { correct: string; wrong: string }> = {
+    m1: { correct: 'В точку!', wrong: 'Эх, мимо.' },
+    m2: { correct: 'Зачёт!', wrong: 'Не-а, не то.' },
+    m3: { correct: 'В яблочко!', wrong: 'Чуть-чуть не туда.' },
+    m4: { correct: 'База на месте.', wrong: 'Фальшивая нота.' },
+    m5: { correct: 'Знаешь наизусть!', wrong: 'Срезалась!' },
+    m6: { correct: 'С первой ноты.', wrong: 'Мимо кассы.' },
+    m7: { correct: 'Без шансов для ошибки.', wrong: 'Не угадала.' },
+    m8: { correct: 'Красиво!', wrong: 'Рядом, но нет.' },
+    m9: { correct: 'Точно в ритм.', wrong: 'Память подвела.' },
+    m10: { correct: 'Память не подводит!', wrong: 'Слишком сложно?' },
+    m11: { correct: 'Классика.', wrong: 'Не тот трек.' },
+    m12: { correct: 'Как по нотам!', wrong: 'Обидно, но мимо.' },
+    m13: { correct: 'Легчайшая.', wrong: 'Спутала!' },
+    m14: { correct: 'Ни секунды сомнений!', wrong: 'Увы, не угадала.' },
+    m15: { correct: 'Золотой фонд.', wrong: 'Мимо нот.' },
+    m16: { correct: 'Чистая победа.', wrong: 'Не попала в такт.' },
+    m17: { correct: 'Уровень: профи.', wrong: 'Ай, осечка!' },
+    m18: { correct: 'Абсолют!', wrong: 'Тут не срослось.' },
+  }
+
+  it('answerBehavior is feedback with duration 900 and neutral fallback', () => {
+    expect(q.answerBehavior.mode).toBe('feedback')
+    if (q.answerBehavior.mode === 'feedback') {
+      expect(q.answerBehavior.durationMs).toBe(900)
+      expect(q.answerBehavior.correctMessage).toBe('Верно.')
+      expect(q.answerBehavior.wrongMessage).toBe('Не угадала.')
+      expect(q.answerBehavior.correctMessage).not.toBe('Да. Кассета не подвела.')
+      expect(q.answerBehavior.wrongMessage).not.toBe('Где-то заплакал один кассетник.')
+    }
+  })
+
+  it('every question defines feedback correct/wrong exactly matching approved copy', () => {
+    expect(q.questions).toHaveLength(18)
+    for (const question of q.questions) {
+      const exp = approved[question.id]
+      expect(exp, `missing approved entry for ${question.id}`).toBeDefined()
+      expect(question.feedback, `${question.id} missing feedback`).toBeDefined()
+      expect(question.feedback!.correct).toBe(exp.correct)
+      expect(question.feedback!.wrong).toBe(exp.wrong)
+    }
+  })
+
+  it('m1 correct → В точку! / wrong → Эх, мимо.', () => {
+    const m1 = q.questions.find((qq) => qq.id === 'm1')!
+    expect(m1.feedback!.correct).toBe('В точку!')
+    expect(m1.feedback!.wrong).toBe('Эх, мимо.')
+  })
+
+  it('m10 correct → Память не подводит! / wrong → Слишком сложно?', () => {
+    const m10 = q.questions.find((qq) => qq.id === 'm10')!
+    expect(m10.feedback!.correct).toBe('Память не подводит!')
+    expect(m10.feedback!.wrong).toBe('Слишком сложно?')
+  })
+
+  it('m18 correct → Абсолют! / wrong → Тут не срослось.', () => {
+    const m18 = q.questions.find((qq) => qq.id === 'm18')!
+    expect(m18.feedback!.correct).toBe('Абсолют!')
+    expect(m18.feedback!.wrong).toBe('Тут не срослось.')
+  })
+
+  it('all 18 mapped yes', () => {
+    const ids = q.questions.map((qq) => qq.id).sort()
+    expect(ids).toEqual(Object.keys(approved).sort())
+    for (const id of ids) {
+      const qq = q.questions.find((x) => x.id === id)!
+      expect(qq.feedback?.correct).toBe(approved[id].correct)
+      expect(qq.feedback?.wrong).toBe(approved[id].wrong)
+    }
+  })
+
+  it('no question displays old generic cassette fallback', () => {
+    const allFeedback = q.questions.flatMap((qq) => [qq.feedback?.correct ?? '', qq.feedback?.wrong ?? '']).join(' | ')
+    expect(allFeedback).not.toContain('Да. Кассета не подвела.')
+    expect(allFeedback).not.toContain('Где-то заплакал один кассетник.')
+    // also ensure quiz-level fallback is neutral
+    if (q.answerBehavior.mode === 'feedback') {
+      expect(q.answerBehavior.correctMessage).not.toContain('Кассета')
+      expect(q.answerBehavior.wrongMessage).not.toContain('кассетник')
+    }
+  })
+
+  it('questions and answer keys unchanged (feedback-only)', () => {
+    // spot check that question text and correctAnswerId still match original spec
+    expect(q.questions[0].title).toContain('Какой хит зашифрован')
+    expect(q.questions[0].correctAnswerId).toBe('a')
+    expect(q.questions[9].correctAnswerId).toBe('b') // m10
+    expect(q.questions[17].correctAnswerId).toBe('b') // m18
+  })
+
+  it('generic feedback resolution: question.feedback ?? quiz fallback', () => {
+    // Simulate Quiz.tsx resolution order
+    const resolveCorrect = (question: typeof q.questions[number]) =>
+      (question.feedback?.correct ?? (q.answerBehavior.mode === 'feedback' ? q.answerBehavior.correctMessage : undefined))
+    const resolveWrong = (question: typeof q.questions[number]) =>
+      (question.feedback?.wrong ?? (q.answerBehavior.mode === 'feedback' ? q.answerBehavior.wrongMessage : undefined))
+    for (const qq of q.questions) {
+      expect(resolveCorrect(qq)).toBe(approved[qq.id].correct)
+      expect(resolveWrong(qq)).toBe(approved[qq.id].wrong)
+    }
+    // fallback case: a question without feedback should use quiz-level
+    const fakeWithoutFeedback = { id: 'fake', feedback: undefined } as unknown as typeof q.questions[number]
+    expect(fakeWithoutFeedback.feedback?.correct ?? (q.answerBehavior.mode === 'feedback' ? q.answerBehavior.correctMessage : undefined)).toBe('Верно.')
+    expect(fakeWithoutFeedback.feedback?.wrong ?? (q.answerBehavior.mode === 'feedback' ? q.answerBehavior.wrongMessage : undefined)).toBe('Не угадала.')
+  })
+})

@@ -329,3 +329,45 @@ describe('answerId identity: per-question (compound key)', () => {
     expect(loadQuiz(correctCountFixture()).questions[1].answers[0].id).toBe('a')
   })
 })
+
+describe('question feedback: optional declarative copy', () => {
+  it('accepts a question without feedback (backward compat)', () => {
+    const quiz = correctCountFixture()
+    expect(() => loadQuiz(quiz)).not.toThrow()
+    // add feedback-less question still valid
+    const withFeedback = structuredClone(quiz) as unknown as { questions: { feedback?: unknown }[] }
+    expect(withFeedback.questions[0].feedback).toBeUndefined()
+    expect(() => loadQuiz(quiz)).not.toThrow()
+  })
+
+  it('accepts a question with valid feedback', () => {
+    const quiz = correctCountFixture() as unknown as { questions: { feedback?: { correct: string; wrong: string } }[] }
+    quiz.questions[0].feedback = { correct: 'В точку!', wrong: 'Эх, мимо.' }
+    expect(() => loadQuiz(quiz)).not.toThrow()
+    expect(quizSchema.safeParse(quiz).success).toBe(true)
+  })
+
+  it('rejects feedback with empty strings', () => {
+    const quiz = correctCountFixture() as unknown as { questions: { feedback?: { correct: string; wrong: string } }[] }
+    quiz.questions[0].feedback = { correct: '', wrong: 'Эх, мимо.' }
+    expect(quizSchema.safeParse(quiz).success).toBe(false)
+    quiz.questions[0].feedback = { correct: 'В точку!', wrong: '' }
+    expect(quizSchema.safeParse(quiz).success).toBe(false)
+  })
+
+  it('rejects feedback missing one side', () => {
+    const quiz = correctCountFixture() as unknown as { questions: { feedback?: unknown }[] }
+    quiz.questions[0].feedback = { correct: 'В точку!' } // missing wrong
+    expect(quizSchema.safeParse(quiz).success).toBe(false)
+  })
+
+  it('old quizzes without question feedback still validate', async () => {
+    const { interiorCharacterQuiz } = await import('@/content/quizzes/interior-character/quiz')
+    const { guess90sQuiz } = await import('@/content/quizzes/guess90s/quiz')
+    expect(() => loadQuiz(interiorCharacterQuiz)).not.toThrow()
+    expect(() => loadQuiz(guess90sQuiz)).not.toThrow()
+    // interior has instant mode, guess90s has quiz-level feedback but no per-question
+    for (const qq of interiorCharacterQuiz.questions) expect(qq.feedback).toBeUndefined()
+    for (const qq of guess90sQuiz.questions) expect(qq.feedback).toBeUndefined()
+  })
+})
