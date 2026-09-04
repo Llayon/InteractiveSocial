@@ -27,13 +27,13 @@ describe('Share pipeline canonical', () => {
     const resultId = resolveBandResultId(music90sQuiz, 10)
     expect(resultId).toBe('m90_cassette')
     const result = getResultById(music90sQuiz, resultId)!
-    expect(result.title).toBe('Кассетная память')
+    expect(result.title).toBe('Знаю только припевы')
     const asset = resolveShareCardAsset(music90sQuiz, result, 10)
     expect(asset).toBe('m90_score_10')
-    // versioned path should be v2
-    expect(shareCardVersionedAsset(music90sQuiz, asset)).toBe('v2/m90_score_10')
+    // versioned path should be v3
+    expect(shareCardVersionedAsset(music90sQuiz, asset)).toBe('v3/m90_score_10')
     expect(shareCardImageUrl(music90sQuiz, asset, 'https://example.com')).toBe(
-      'https://example.com/share-cards/v2/m90_score_10.jpg',
+      'https://example.com/share-cards/v3/m90_score_10.jpg',
     )
   })
 
@@ -93,17 +93,17 @@ describe('Share pipeline canonical', () => {
     expect(id8).not.toBe(id9)
     expect(id9).not.toBe(id10)
     expect(id8).not.toBe(id10)
-    expect(id8).toBe('share_m90_score_08_v2')
-    expect(id9).toBe('share_m90_score_09_v2')
-    expect(id10).toBe('share_m90_score_10_v2')
+    expect(id8).toBe('share_m90_score_08_v3')
+    expect(id9).toBe('share_m90_score_09_v3')
+    expect(id10).toBe('share_m90_score_10_v3')
   })
 
   it('card asset version appears in Telegram image URL', () => {
     const result = getResultById(music90sQuiz, 'm90_cassette')!
     const asset = resolveShareCardAsset(music90sQuiz, result, 10)
     const url = shareCardImageUrl(music90sQuiz, asset, 'https://example.com')
-    expect(url).toContain('/v2/')
-    expect(url).toBe('https://example.com/share-cards/v2/m90_score_10.jpg')
+    expect(url).toContain('/v3/')
+    expect(url).toBe('https://example.com/share-cards/v3/m90_score_10.jpg')
   })
 
   it('no fake CTA is part of share-card render model', () => {
@@ -111,21 +111,21 @@ describe('Share pipeline canonical', () => {
     const text = container.textContent ?? ''
     expect(text).not.toContain('Бросить')
     expect(text).not.toContain('Пройти тест')
-    expect(text).toContain('Кассетная память')
+    expect(text).toContain('Знаю только припевы')
     expect(text).toContain('10 / 18')
     expect(text).toContain('Бюро историй')
     expect(text).toContain('@takeiteasybefore')
   })
 
   it('Music90ShareCard uses current approved hook for 18', () => {
-    expect(M90_HOOKS['m90_era18']).toBe('Я с тобой про попсу спорить не буду.')
+    expect(M90_HOOKS['m90_era18']).toBe('Я с тобой про попсу даже спорить не буду.')
     const { container } = render(React.createElement(Music90ShareCard, { quiz: music90sQuiz, score: 18 }))
-    expect(container.textContent).toContain('Я с тобой про попсу спорить не буду.')
+    expect(container.textContent).toContain('Я с тобой про попсу даже спорить не буду.')
   })
 
   it('uses canonical hook for 10', () => {
     const { container } = render(React.createElement(Music90ShareCard, { quiz: music90sQuiz, score: 10 }))
-    expect(container.textContent).toContain('Кассетная память ещё держится.')
+    expect(container.textContent).toContain('База на месте.')
   })
 
   it('share card does not contain old band label', () => {

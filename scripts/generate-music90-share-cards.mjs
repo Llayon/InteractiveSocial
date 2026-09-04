@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Canonical Music90s share-card generator — single truth with runtime ResultCard.
 // Renders Music90ShareCard via Vite dev server + Playwright screenshot at 1080x1350,
-// then produces JPEG + thumbnail in versioned path public/share-cards/v2/
+// then produces JPEG + thumbnail in versioned path public/share-cards/v3/
 
 import { chromium } from '@playwright/test'
 import fs from 'node:fs/promises'
@@ -12,7 +12,7 @@ import { createServer } from 'vite'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const root = path.resolve(__dirname, '..')
-const outDir = path.join(root, 'public', 'share-cards', 'v2')
+const outDir = path.join(root, 'public', 'share-cards', 'v3')
 let baseUrl = process.env.SHARE_CARD_BASE_URL || null
 
 async function ensureOutDir() {

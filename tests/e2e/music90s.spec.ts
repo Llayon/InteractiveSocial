@@ -156,7 +156,7 @@ test.describe('Music90s journey (?quiz=music90s, mock mode)', () => {
     await expectNoRuntimeErrors(page, errorCollector)
   })
 
-  test('18/18 perfect score → Ты и есть 90-е (18 из 18)', async ({ page, errorCollector }) => {
+  test('18/18 perfect score → Главред журнала Cool ✨ (18 из 18)', async ({ page, errorCollector }) => {
     await page.goto('/?mock=1&quiz=music90s')
     await page.getByTestId('start-cta').click()
     await answerAllMusicQuestions(page, async (qid, ids) => {
@@ -165,14 +165,14 @@ test.describe('Music90s journey (?quiz=music90s, mock mode)', () => {
     })
     await expect(page.getByTestId('result-screen')).toBeVisible({ timeout: 5_000 })
     await expect(page.getByTestId('result-score')).toContainText('18 / 18')
-    await expect(page.getByTestId('result-title')).toContainText('Ты и есть 90-е')
+    await expect(page.getByTestId('result-title')).toContainText('Главред журнала Cool')
     // share must use 18/18 card
     await page.getByTestId('share-button').click()
     await expect(page.getByTestId('share-status')).toHaveText('native', { timeout: 5000 })
     await expectNoRuntimeErrors(page, errorCollector)
   })
 
-  test('17/18 near-perfect → Ты и есть 90-е (17 из 18)', async ({ page, errorCollector }) => {
+  test('17/18 near-perfect → Главред журнала Cool (17 из 18)', async ({ page, errorCollector }) => {
     await page.goto('/?mock=1&quiz=music90s')
     await page.getByTestId('start-cta').click()
     // answer all correct except last one wrong
@@ -185,7 +185,7 @@ test.describe('Music90s journey (?quiz=music90s, mock mode)', () => {
     })
     await expect(page.getByTestId('result-screen')).toBeVisible({ timeout: 5_000 })
     await expect(page.getByTestId('result-score')).toContainText('17 / 18')
-    await expect(page.getByTestId('result-title')).toContainText('Ты и есть 90-е')
+    await expect(page.getByTestId('result-title')).toContainText('Главред журнала Cool')
     await page.getByTestId('share-button').click()
     await expect(page.getByTestId('share-status')).toHaveText('native', { timeout: 5000 })
     await expectNoRuntimeErrors(page, errorCollector)

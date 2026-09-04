@@ -134,7 +134,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   })()
   const version = (() => {
     try {
-      return new URL(imageUrl).pathname.includes('/v2/') ? 'v2' : 'v1'
+      const p = new URL(imageUrl).pathname
+      if (p.includes('/v3/')) return 'v3'
+      if (p.includes('/v2/')) return 'v2'
+      return 'v1'
     } catch {
       return 'unknown'
     }

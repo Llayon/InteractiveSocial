@@ -290,3 +290,126 @@ describe('Music90s: share-card asset key encoding (quiz-scoped)', () => {
     expect(resolveShareCardAsset(q, r18, 18)).toBe('m90_score_18')
   })
 })
+
+describe('Music90s: approved result copy (RESULT COPY remap)', () => {
+  // canonical hook map — must match ResultCard/Music90ShareCard runtime
+  const hookMap: Record<string, string> = {
+    m90_rookie: 'И, кажется, быстро вышла.',
+    m90_familiar: 'Что-то смутно всплывает в памяти.',
+    m90_cassette: 'База на месте.',
+    m90_disco: 'Сразу видно человека с опытом.',
+    m90_legend: 'Первый медляк помнишь до сих пор.',
+    m90_era17: 'На одном всё-таки срезалась.',
+    m90_era18: 'Я с тобой про попсу даже спорить не буду.',
+  }
+
+  it('0–4 title/hook/copy/shareQuote exact', () => {
+    const r = q.results.find((x) => x.id === 'm90_rookie')!
+    expect(r.title).toBe('Случайно заглянула в 90-е')
+    expect(r.presentation.subtitle).toBe('0–4 из 18')
+    expect(r.presentation.description).toEqual([
+      'Похоже, эта эпоха пролетела совсем мимо.',
+      'Но тебе простительно — скорее всего, ты тогда ещё даже не родилась.',
+      'Зато теперь понятно, с чего начинать ликбез и что закинуть в плейлист на вечер.',
+    ])
+    expect(r.presentation.shareQuote).toBe('Я случайно заглянула в 90-е 😅 И, кажется, быстро вышла. Сколько наберёшь ты?')
+  })
+
+  it('5–7 title/hook/copy/shareQuote exact', () => {
+    const r = q.results.find((x) => x.id === 'm90_familiar')!
+    expect(r.title).toBe('Где-то это слышала')
+    expect(r.presentation.subtitle).toBe('5–7 из 18')
+    expect(r.presentation.description).toEqual([
+      'Обрывками — из папиной девятки, с телевизора на кухне или из комнаты старшей сестры.',
+      'Имена исполнителей уже путаются, но фоновый шум детства никуда не делся.',
+    ])
+    expect(r.presentation.shareQuote).toBe('Кажется, где-то это всё играло 📻 А ты сколько вспомнишь?')
+  })
+
+  it('8–10 title/hook/copy/shareQuote exact', () => {
+    const r = q.results.find((x) => x.id === 'm90_cassette')!
+    expect(r.title).toBe('Знаю только припевы')
+    expect(r.presentation.subtitle).toBe('8–10 из 18')
+    expect(r.presentation.description).toEqual([
+      '«Тополиный пух», анкеты с секретиками и клипы по пузатому телеку застряли где-то глубоко в голове.',
+      'Авторов и запевы память уже стирает, но знакомый мотив ты подхватишь с первой ноты.',
+    ])
+    expect(r.presentation.shareQuote).toBe('Мой уровень: знаю только припевы 🎶 А сколько выбьешь ты?')
+  })
+
+  it('11–13 title/hook/copy/shareQuote exact', () => {
+    const r = q.results.find((x) => x.id === 'm90_disco')!
+    expect(r.title).toBe('Слушала MTV сутками')
+    expect(r.presentation.subtitle).toBe('11–13 из 18')
+    expect(r.presentation.description).toEqual([
+      'Ты отлично помнишь клипы после школы, тетрадки с наклейками и вечерние хит-парады.',
+      'Парочку каверзных вопросов ты упустила, но золотой фонд эпохи у тебя в голове в полном порядке.',
+    ])
+    expect(r.presentation.shareQuote).toBe('В 90-х я явно смотрела MTV сутками 📺 Попробуй набрать больше!')
+  })
+
+  it('14–16 title/hook/copy/shareQuote exact', () => {
+    const r = q.results.find((x) => x.id === 'm90_legend')!
+    expect(r.title).toBe('Королева школьной дискотеки')
+    expect(r.presentation.subtitle).toBe('14–16 из 18')
+    expect(r.presentation.description).toEqual([
+      'Тебя так просто не срежешь.',
+      'Ты без подсказок знаешь, под какой трек тряслись полы в спортзале, а под какой плакали в подушку.',
+      'Солидное танцевальное прошлое не скрыть.',
+    ])
+    expect(r.presentation.shareQuote).toBe('Мой статус: королева школьной дискотеки 🪩 Рискнёшь побить мой счёт?')
+  })
+
+  it('17 title/hook/copy/shareQuote exact (Главред журнала Cool)', () => {
+    const r = q.results.find((x) => x.id === 'm90_era17')!
+    expect(r.title).toBe('Главред журнала Cool')
+    expect(r.presentation.subtitle).toBe('17 из 18')
+    expect(r.presentation.description).toEqual([
+      '17 из 18. Спорить с тобой про попсу 90-х — себе дороже.',
+      'Ты помнишь всё: от солистов до скандалов в номерах.',
+      'Та единственная ошибка списывается на опечатку в типографии.',
+    ])
+    expect(r.presentation.shareQuote).toBe('17 из 18! Мой уровень: главред журнала Cool 💅 На одном всё-таки срезалась. А ты сколько наберёшь?')
+  })
+
+  it('18 title/hook/copy/shareQuote exact (RARE FOIL Главред журнала Cool ✨)', () => {
+    const r = q.results.find((x) => x.id === 'm90_era18')!
+    expect(r.title).toBe('Главред журнала Cool ✨')
+    expect(r.presentation.subtitle).toBe('18 из 18')
+    expect(r.presentation.description).toEqual([
+      '18 из 18. Ни единой осечки.',
+      'Ощущение, что ты сама верстала те номера, утверждала плакаты в печать и лично знала всех продюсеров.',
+      'Сдаюсь, это чистый абсолют.',
+    ])
+    expect(r.presentation.shareQuote).toBe('18 из 18! Выбила секретную карточку: главред журнала Cool ✨ Попробуй повторить, если сможешь.')
+  })
+
+  it('all seven hooks match runtime M90_HOOKS map exactly', async () => {
+    const { M90_HOOKS } = await import('@/features/result/ResultCard')
+    for (const [id, hook] of Object.entries(hookMap)) {
+      expect(M90_HOOKS[id]).toBe(hook)
+    }
+  })
+
+  it('old titles no longer appear in current Music90s result/share UI', () => {
+    const allText = q.results.map((r) => `${r.title} ${r.presentation.shareQuote} ${r.presentation.description.join(' ')}`).join(' | ')
+    expect(allText).not.toContain('Где-то это играло')
+    expect(allText).not.toContain('Кассетная память')
+    expect(allText).not.toContain('Звезда школьной дискотеки')
+    // "Ты и есть 90-е" must be gone for both era outcomes
+    expect(allText).not.toContain('Ты и есть 90-е')
+  })
+
+  it('band mapping remains 0–4,5–7,8–10,11–13,14–16,17,18', () => {
+    const bands = q.scoring.kind === 'correct-count' ? q.scoring.bands : []
+    expect(bands).toEqual([
+      { min: 0, max: 4, resultId: 'm90_rookie' },
+      { min: 5, max: 7, resultId: 'm90_familiar' },
+      { min: 8, max: 10, resultId: 'm90_cassette' },
+      { min: 11, max: 13, resultId: 'm90_disco' },
+      { min: 14, max: 16, resultId: 'm90_legend' },
+      { min: 17, max: 17, resultId: 'm90_era17' },
+      { min: 18, max: 18, resultId: 'm90_era18' },
+    ])
+  })
+})

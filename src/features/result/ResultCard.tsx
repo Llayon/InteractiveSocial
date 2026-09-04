@@ -20,12 +20,12 @@ export interface ResultCardProps {
 
 export const M90_HOOKS: Record<string, string> = {
   m90_rookie: 'И, кажется, быстро вышла.',
-  m90_familiar: 'Где-то это всё играло.',
-  m90_cassette: 'Кассетная память ещё держится.',
-  m90_disco: 'Зачёт автоматом. Дискотека удалась.',
-  m90_legend: 'Подшивка Cool дома была?',
-  m90_era17: 'Джинсы-клёш с блёстками носила?',
-  m90_era18: 'Я с тобой про попсу спорить не буду.',
+  m90_familiar: 'Что-то смутно всплывает в памяти.',
+  m90_cassette: 'База на месте.',
+  m90_disco: 'Сразу видно человека с опытом.',
+  m90_legend: 'Первый медляк помнишь до сих пор.',
+  m90_era17: 'На одном всё-таки срезалась.',
+  m90_era18: 'Я с тобой про попсу даже спорить не буду.',
 }
 
 export const M90_HERO_CLASS: Record<string, string> = {
@@ -44,8 +44,8 @@ export const M90_OBJECT_SRC: Record<string, string> = {
   m90_cassette: '/optimized/music90s/cassette.png',
   m90_disco: '/optimized/music90s/cd-collage.png',
   m90_legend: '/optimized/music90s/magazines.png',
-  m90_era17: '/optimized/music90s/crown.png',
-  m90_era18: '/optimized/music90s/crown.png',
+  m90_era17: '/optimized/music90s/magazines.png',
+  m90_era18: '/optimized/music90s/magazines.png',
 }
 
 export const M90_STICKER: Record<string, { label: string; mod?: string }> = {
