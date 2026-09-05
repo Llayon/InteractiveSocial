@@ -1,6 +1,8 @@
 import { OptimizedImage } from '@/images/OptimizedImage'
 import { scoreCardAsset } from '@/features/quiz/scoring'
 import type { Quiz, Result } from '@/features/quiz/schema'
+import { Music90Hook } from './Music90Hook'
+import { Music90ResultHero } from './Music90ResultHero'
 
 export interface ResultCardProps {
   quiz: Quiz
@@ -41,7 +43,8 @@ export const M90_HERO_CLASS: Record<string, string> = {
 export const M90_OBJECT_SRC: Record<string, string> = {
   m90_rookie: '/optimized/music90s/tv.png',
   m90_familiar: '/optimized/music90s/boombox.png',
-  m90_cassette: '/optimized/music90s/cassette.png',
+  // Reference implementation for 8–10 uses layered transparent cassette asset
+  m90_cassette: '/optimized/music90s/result/m90-cassette.webp',
   m90_disco: '/optimized/music90s/cd-collage.png',
   m90_legend: '/optimized/music90s/magazines.png',
   m90_era17: '/optimized/music90s/magazines.png',
@@ -68,8 +71,6 @@ export function ResultCard({ quiz, result, score, children }: ResultCardProps) {
 
   if (isMusic90s && isScore) {
     const hook = M90_HOOKS[result.id] ?? ''
-    const heroClass = M90_HERO_CLASS[result.id] ?? 'm90-result-hero--cassette'
-    const objectSrc = M90_OBJECT_SRC[result.id] ?? '/optimized/music90s/cassette.png'
     const sticker = M90_STICKER[result.id]
     return (
       <article
@@ -77,19 +78,10 @@ export function ResultCard({ quiz, result, score, children }: ResultCardProps) {
         data-testid="result-card"
         data-result-id={result.id}
         data-presentation={presentation.kind}
+        data-quiz="music90s"
       >
-        {/* Collectible hero: score badge + object collage */}
-        <div className={`m90-result-hero ${heroClass}`} data-testid="result-hero">
-          {typeof score === 'number' && (
-            <span className="m90-score-badge" data-testid="result-score" aria-label={`Счёт ${score} из ${quiz.questions.length}`}>
-              {score} / {quiz.questions.length}
-            </span>
-          )}
-          <img src={objectSrc} alt="" loading="eager" decoding="async" />
-          <span className="m90-tape m90-tape--tl" aria-hidden="true" />
-          <span className="m90-tape m90-tape--tr" aria-hidden="true" />
-          {result.id === 'm90_era18' && <span className="m90-foil-accent" aria-hidden="true" />}
-        </div>
+        {/* Layered editorial collage hero — separate transparent assets + CSS */}
+        <Music90ResultHero resultId={result.id} score={score} total={quiz.questions.length} />
 
         <header className="result-card__header">
           {sticker && <span className={`m90-sticker-title ${sticker.mod ?? ''}`.trim()}>{sticker.label}</span>}
@@ -98,11 +90,8 @@ export function ResultCard({ quiz, result, score, children }: ResultCardProps) {
           </h1>
         </header>
 
-        {hook && (
-          <p className="result-card__hook" data-testid="result-hook">
-            {hook}
-          </p>
-        )}
+        {/* Hook on torn pink paper strip — strip is decorative, text is live HTML */}
+        <Music90Hook hook={hook} />
 
         <div className="result-card__description" data-testid="result-description">
           {presentation.description.map((paragraph) => (

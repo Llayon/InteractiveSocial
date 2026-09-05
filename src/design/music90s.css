@@ -681,6 +681,215 @@
   pointer-events: none;
 }
 
+/* ==========================================================================
+   Layered editorial collage — RESULT SCREEN ASSET COMPOSITION (v4+)
+   Separate transparent assets + CSS. No flattened poster for in-app screen.
+   Reference: m90_cassette (8–10 / 18) — "ЗНАЮ ТОЛЬКО ПРИПЕВЫ" / "База на месте."
+   ========================================================================== */
+
+/* Stage wrapper — position: relative, decorative assets absolutely positioned */
+.m90-result-stage {
+  position: relative;
+  width: 100%;
+  height: 236px;
+  background: #fffdf9;
+  overflow: hidden;
+  border-bottom: 1px solid rgba(126, 45, 53, 0.08);
+  display: block;
+  flex-shrink: 0;
+}
+
+.m90-result-stage::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(126, 45, 53, 0.045) 1px, transparent 1px);
+  background-size: 16px 16px;
+  opacity: 0.55;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Silver holographic foil scrap — behind cassette, offset irregular */
+.m90-foil {
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.10));
+  opacity: 0.96;
+}
+
+.m90-foil--cassette {
+  left: 50%;
+  top: 50%;
+  width: 78%;
+  max-width: 420px;
+  transform: translate(-50%, -48%) rotate(-9deg);
+  opacity: 0.98;
+}
+
+.m90-foil--generic {
+  left: 50%;
+  top: 50%;
+  width: 72%;
+  max-width: 380px;
+  transform: translate(-50%, -50%) rotate(-7deg);
+  opacity: 0.88;
+}
+
+/* Main object — cassette hero for 8–10, swapped per band for other results */
+.m90-object {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 3;
+  pointer-events: none;
+  filter: drop-shadow(0 10px 22px rgba(0, 0, 0, 0.14));
+  object-fit: contain;
+  display: block;
+}
+
+.m90-object--cassette {
+  width: 74%;
+  max-width: 360px;
+  transform: translate(-50%, -50%) rotate(-3.5deg);
+}
+
+.m90-object--m90_rookie,
+.m90-object--m90_familiar,
+.m90-object--m90_disco,
+.m90-object--m90_legend,
+.m90-object--m90_era17,
+.m90-object--m90_era18 {
+  width: 64%;
+  max-width: 320px;
+  transform: translate(-50%, -50%) rotate(-2deg);
+}
+
+/* Pink tape assets — pinning collage, 2 pieces */
+.m90-result-stage .m90-tape {
+  position: absolute;
+  z-index: 6;
+  pointer-events: none;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.08));
+  opacity: 0.98;
+  background: transparent;
+  border: none;
+  height: auto;
+}
+
+.m90-result-stage .m90-tape.m90-tape--a {
+  top: 10px;
+  left: 12px;
+  width: 72px;
+  transform: rotate(-14deg);
+}
+
+.m90-result-stage .m90-tape.m90-tape--b {
+  bottom: 12px;
+  right: 14px;
+  width: 64px;
+  transform: rotate(12deg);
+}
+
+/* Sticker pack — curated, not messy: 3 small stickers */
+.m90-sticker {
+  position: absolute;
+  z-index: 5;
+  pointer-events: none;
+  filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.10));
+  object-fit: contain;
+  display: block;
+}
+
+.m90-sticker--heart {
+  top: 16px;
+  right: 18%;
+  width: 42px;
+  height: auto;
+  transform: rotate(7deg);
+}
+
+.m90-sticker--star {
+  bottom: 18px;
+  left: 16%;
+  width: 32px;
+  height: auto;
+  transform: rotate(-9deg);
+}
+
+.m90-sticker--lips {
+  left: 10px;
+  bottom: 42px;
+  width: 38px;
+  height: auto;
+  transform: rotate(-6deg);
+  opacity: 0.92;
+}
+
+/* Score badge — live HTML, upper-right of hero */
+.m90-result-stage .m90-score-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 7;
+  background: rgba(255, 253, 249, 0.97);
+  border: 1px solid rgba(126, 45, 53, 0.16);
+  color: #7e2d35;
+  font-weight: 700;
+  font-size: 0.76rem;
+  letter-spacing: 0.05em;
+  padding: 5px 10px;
+  border-radius: 999px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  line-height: 1;
+}
+
+/* Hook on torn pink paper strip — strip is decorative bg, text is live HTML */
+.m90-hook-wrap {
+  position: relative;
+  margin: 12px var(--space-m) 0;
+  width: calc(100% - 2 * var(--space-m));
+  max-width: 100%;
+  display: block;
+  line-height: 0;
+}
+
+.m90-hook-bg {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.06));
+  pointer-events: none;
+  user-select: none;
+}
+
+.m90-hook-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 10px 28px 12px;
+  font-family: 'Georgia', 'Times New Roman', serif;
+  font-style: italic;
+  font-weight: 600;
+  font-size: 1.02rem;
+  color: #7e2d35;
+  line-height: 1.25;
+  text-wrap: balance;
+  letter-spacing: -0.01em;
+  pointer-events: auto;
+  user-select: text;
+}
+
+/* Legacy hook fallback — hidden when new hook-wrap is present */
+.result-card:has(.m90-hook-wrap) .result-card__hook {
+  display: none;
+}
+
 /* Ensure all seven results belong to same collection — 80% shared system */
 
 /* Result title - HERO */
@@ -835,7 +1044,7 @@
   gap: var(--m90-result-gap-sm);
 }
 
-/* Responsive — mobile-first density tuning (22–24px title, hero −12%) */
+/* Responsive — mobile-first density tuning (22–24px title, hero 220–260) */
 @media (max-width: 380px) {
   [data-quiz='music90s'] .landing__title {
     font-size: 1.375rem;
@@ -858,6 +1067,26 @@
   .m90-collage-item--cd { width: 42%; }
   .m90-collage-item--boombox { width: 44%; }
   .m90-collage-item--tv { width: 30%; }
+
+  .m90-result-stage {
+    height: 220px;
+  }
+
+  .m90-object--cassette {
+    width: 76% !important;
+  }
+
+  .m90-result-stage .m90-tape.m90-tape--a { width: 62px; }
+  .m90-result-stage .m90-tape.m90-tape--b { width: 54px; }
+
+  .m90-result-stage .m90-sticker.m90-sticker--heart { width: 36px; }
+  .m90-result-stage .m90-sticker.m90-sticker--star { width: 28px; }
+  .m90-result-stage .m90-sticker.m90-sticker--lips { width: 32px; }
+
+  .m90-hook-text {
+    font-size: 0.95rem;
+    padding: 8px 22px 10px;
+  }
 }
 
 @media (min-width: 390px) {
@@ -867,6 +1096,10 @@
 
   .m90-collage-stage {
     height: 200px;
+  }
+
+  .m90-result-stage {
+    height: 236px;
   }
 }
 
@@ -883,11 +1116,38 @@
     gap: 12px;
     padding: 14px 18px 18px;
   }
+
+  .m90-result-stage {
+    height: 254px;
+  }
+
+  .m90-object--cassette {
+    width: 72% !important;
+  }
+
+  .m90-result-stage .m90-tape.m90-tape--a { width: 74px; }
+  .m90-result-stage .m90-tape.m90-tape--b { width: 66px; }
+
+  .m90-result-stage .m90-sticker.m90-sticker--heart { width: 46px; }
+  .m90-result-stage .m90-sticker.m90-sticker--star { width: 36px; }
+  .m90-result-stage .m90-sticker.m90-sticker--lips { width: 42px; }
+
+  .m90-hook-text {
+    font-size: 1.08rem;
+  }
 }
 
 @media (min-width: 720px) {
   .m90-collage-stage {
     height: 300px;
+  }
+
+  .m90-result-stage {
+    height: 320px;
+  }
+
+  .m90-object--cassette {
+    width: 68%;
   }
 
   [data-quiz='music90s'] .m90-result-hero {
@@ -896,6 +1156,10 @@
 
   [data-quiz='music90s'] .result-card__hook {
     font-size: 1.0rem;
+  }
+
+  .m90-hook-text {
+    font-size: 1.12rem;
   }
 
   [data-quiz='music90s'] .landing {
