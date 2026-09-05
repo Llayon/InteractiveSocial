@@ -15,6 +15,7 @@
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
     "images:runtime": "node scripts/optimize-runtime-images.mjs",
+    "images:music90-results": "node scripts/optimize-music90s-result-assets.mjs",
     "generate:music90-share-cards": "node scripts/generate-music90-share-cards.mjs",
     "test": "vitest run",
     "test:watch": "vitest",

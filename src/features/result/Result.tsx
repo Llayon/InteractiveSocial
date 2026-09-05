@@ -8,6 +8,8 @@ import { ShareButton } from '@/features/share/ShareButton'
 import type { MiniAppAdapter } from '@/platform/types'
 import type { TelegramAdapter } from '@/platform/telegram'
 import { ResultCard } from './ResultCard'
+import { Music90ResultLayout } from './Music90ResultLayout'
+import { getMusic90AssetSet } from '@/content/quizzes/music90s/resultAssets.js'
 
 export interface ResultScreenProps {
   quiz: Quiz
@@ -85,6 +87,45 @@ export function ResultScreen({ quiz, outcome, telegram, adapter, onRestart, comp
       /* swallow */
     }
     onRestart()
+  }
+
+  const isMusic90sScore = quiz.id === 'music90s' && result.presentation.kind === 'score'
+
+  if (isMusic90sScore) {
+    const assetSet = getMusic90AssetSet(result.id)
+    return (
+      <section className="screen result" data-testid="result-screen">
+        <Music90ResultLayout
+          quiz={quiz}
+          result={result}
+          score={score}
+          assetSet={assetSet}
+          showPromo={showPromo}
+          promoIntro={promo?.resultIntro ?? null}
+          promoCta={promo?.resultCta ?? null}
+          channelUrl={channelUrl}
+          onChannelClick={handleChannelClick}
+          onRestart={handleRestart}
+          shareSlot={
+            <ShareButton
+              quizId={quiz.id}
+              resultId={result.id}
+              shareCta={quiz.shareCta}
+              shareCtaIntro={quiz.shareCtaIntro}
+              score={score}
+              total={quiz.questions.length}
+              quizTitle={quiz.title}
+              result={result}
+              telegram={telegram as TelegramAdapter}
+              adapter={platformAdapter}
+              completionId={completionId}
+              maxMid={maxMid}
+              maxPending={maxPending}
+            />
+          }
+        />
+      </section>
+    )
   }
 
   return (
