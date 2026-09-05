@@ -1180,3 +1180,139 @@
     font-size: 0.9375rem;
   }
 }
+
+/* ==========================================================================
+   Production-pass 2026-09-05 — data-driven per-band visual differentiation
+   Keeps 80% shared system, 20% editorial tuning per resultId.
+   Guarantees: title readable, hook inside strip, decor bounded before CTA,
+   mobile viewport 360/390 no overflow, CTA in first sane scroll.
+   ========================================================================== */
+
+/* Per-band stage paper tint — subtle editorial differentiation without breaking collection */
+.m90-result-stage.m90-result-hero--rookie { background: #f0ece6; }
+.m90-result-stage.m90-result-hero--familiar { background: #fff6df; }
+.m90-result-stage.m90-result-hero--cassette { background: #fde8ee; }
+.m90-result-stage.m90-result-hero--disco { background: #eef2f7; }
+.m90-result-stage.m90-result-hero--legend { background: #fdf1f4; }
+.m90-result-stage.m90-result-hero--era17 { background: #f5efe9; }
+.m90-result-stage.m90-result-hero--era18 { background: linear-gradient(135deg, #fdf2f4 0%, #fff9ee 45%, #eef2f7 100%); }
+
+/* Rarity treatment for 18/18 — holographic pearl, slightly richer */
+.m90-foil--rare {
+  left: 50%;
+  top: 50%;
+  width: 78%;
+  max-width: 420px;
+  transform: translate(-50%, -50%) rotate(-8deg);
+  opacity: 0.96;
+  filter: drop-shadow(0 6px 16px rgba(0,0,0,0.12)) saturate(1.2);
+}
+
+.m90-result-stage[data-rare='true'] {
+  box-shadow: inset 0 0 0 1px rgba(214, 226, 90, 0.28);
+}
+
+.m90-result-stage[data-rare='true'] .m90-foil-accent {
+  position: absolute;
+  left: 14%;
+  bottom: 12%;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #fffdf9 0%, #fff6c8 35%, #f0ece6 62%, #d7a0aa 78%, #c7c5c2 100%);
+  border: 1px solid rgba(126, 45, 53, 0.14);
+  opacity: 0.92;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.10);
+  pointer-events: none;
+  z-index: 4;
+}
+
+/* 14-16 legend — queen disco: pink torn banner vibe via hook strip + glossy stickers */
+/* Legend gets slightly larger stickers + rotated photostrip illusion via existing stickers */
+.m90-result-stage.m90-result-hero--legend .m90-sticker--heart { width: 44px; transform: rotate(8deg); }
+.m90-result-stage.m90-result-hero--legend .m90-sticker--star { width: 36px; transform: rotate(-11deg); }
+.m90-result-stage.m90-result-hero--legend .m90-sticker--lips { width: 40px; }
+
+/* 17 editorial — cleaner, fewer stickers already via config, but tune tape opacity */
+.m90-result-stage.m90-result-hero--era17 .m90-tape { opacity: 0.82; }
+.m90-result-stage.m90-result-hero--era17 .m90-sticker--heart { width: 38px; }
+.m90-result-stage.m90-result-hero--era17 .m90-sticker--star { width: 30px; }
+
+/* 18 rare — richer stickering: third sticker restored + foil accent extra */
+.m90-result-stage.m90-result-hero--era18 .m90-sticker--heart { width: 46px; }
+.m90-result-stage.m90-result-hero--era18 .m90-sticker--star { width: 36px; }
+.m90-result-stage.m90-result-hero--era18 .m90-sticker--lips { width: 42px; opacity: 1; }
+
+/* Hero object sizing per band — keep cassette dominant, magazines editorial smaller */
+.m90-object--m90_era17,
+.m90-object--m90_era18 {
+  width: 56% !important;
+  max-width: 300px;
+}
+.m90-object--m90_legend {
+  width: 62% !important;
+  max-width: 310px;
+}
+
+/* Title readability — prevent letter sticking, ensure balance and line-height */
+[data-quiz='music90s'] .result-card__title {
+  word-spacing: 0.02em;
+  letter-spacing: -0.018em;
+  line-height: 0.96;
+  text-wrap: balance;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+/* Hook on pink strip — ensure text never overflows strip, scale down on narrow */
+.m90-hook-text {
+  overflow-wrap: break-word;
+  word-break: break-word;
+  hyphens: auto;
+  padding: 10px 22px 11px;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+@media (max-width: 360px) {
+  .m90-hook-text { font-size: 0.92rem; padding: 8px 18px 9px; }
+}
+
+/* Decor bounded — no elongation after Share block */
+/* Ensure result-card decor (stage, hook, description) does not push CTA beyond ~900px */
+[data-quiz='music90s'] .result-card {
+  padding-bottom: 10px;
+}
+[data-quiz='music90s'] .result-card__description {
+  margin-bottom: 0;
+}
+[data-quiz='music90s'] .share {
+  margin-top: 6px;
+  padding-top: 14px;
+}
+
+/* Prevent lower graphic from pushing channel CTA beyond fold — cap description + share spacing */
+[data-quiz='music90s'] .result__promo-note {
+  margin-top: 12px;
+}
+[data-quiz='music90s'] .result__channel {
+  margin-top: 6px;
+}
+
+/* No horizontal overflow — stage and hook respect viewport */
+.m90-result-stage,
+.m90-hook-wrap {
+  max-width: 100%;
+  overflow: hidden;
+}
+
+/* Ensure all tapes/stickers stay inside stage bounds on narrow viewports */
+@media (max-width: 390px) {
+  .m90-result-stage .m90-tape.m90-tape--a { left: 8px; }
+  .m90-result-stage .m90-tape.m90-tape--b { right: 8px; }
+}
+
+/* Graceful fallback indicator — hidden but useful for QA (data-range) */
+.result-card[data-range]::after {
+  content: '';
+  display: none;
+}

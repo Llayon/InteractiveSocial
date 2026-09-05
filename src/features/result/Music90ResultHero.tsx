@@ -1,149 +1,114 @@
 /**
- * Layered editorial collage hero for Music90s.
- * Separate transparent assets + CSS — no flattened poster.
- * Reference implementation for m90_cassette (8–10 / 18), reusable for all 7 bands by swapping config.
+ * Layered editorial collage hero for Music90s — now fully data-driven via Music90AssetSet.
+ * No hardcoded asset maps in JSX; all paths flow through resultAssets.ts.
+ * Graceful fallback: hero → hero fallback → objectFallback (music90s-objects).
  */
 
+import type { Music90AssetSet } from '@/content/quizzes/music90s/resultAssets.js'
+import { getMusic90AssetSet } from '@/content/quizzes/music90s/resultAssets.js'
+
 export interface Music90HeroProps {
-  resultId: string
+  resultId?: string
+  assetSet?: Music90AssetSet
   score?: number
   total: number
 }
 
-// Central asset map — stage swaps object family, decorative arrangement, optional rare treatment.
-// All assets are transparent PNG/WebP with soft shadows, optimized for runtime.
-const HERO_OBJECT_SRC: Record<string, string> = {
-  m90_rookie: '/optimized/music90s/tv.png',
-  m90_familiar: '/optimized/music90s/boombox.png',
-  // 8–10 reference — high-fidelity cassette with pink tapes & stickers baked + foil separation
-  m90_cassette: '/optimized/music90s/result/m90-cassette.webp',
-  m90_disco: '/optimized/music90s/cd-collage.png',
-  m90_legend: '/optimized/music90s/magazines.png',
-  m90_era17: '/optimized/music90s/magazines.png',
-  m90_era18: '/optimized/music90s/magazines.png',
-}
-
-const HERO_OBJECT_FALLBACK: Record<string, string> = {
-  m90_cassette: '/optimized/music90s/result/m90-cassette.png',
-}
-
+// Backward compat — still used by tests that import getHeroObjectSrc
 export function getHeroObjectSrc(resultId: string): string {
-  return HERO_OBJECT_SRC[resultId] ?? '/optimized/music90s/result/m90-cassette.webp'
+  return getMusic90AssetSet(resultId).hero.src
 }
 
 export function getHeroObjectFallback(resultId: string): string | undefined {
-  return HERO_OBJECT_FALLBACK[resultId]
+  return getMusic90AssetSet(resultId).hero.fallback
 }
 
-export function Music90ResultHero({ resultId, score, total }: Music90HeroProps) {
-  const objectSrc = getHeroObjectSrc(resultId)
-  const objectFallback = getHeroObjectFallback(resultId)
-  const isCassette = resultId === 'm90_cassette'
-  // Foil is hero for cassette, subtle for disco/legend/era, hidden for rookie/familiar
-  const showFoil = resultId === 'm90_cassette' || resultId === 'm90_disco' || resultId === 'm90_legend' || resultId === 'm90_era17' || resultId === 'm90_era18'
-  const foilClass = isCassette ? 'm90-foil--cassette' : 'm90-foil--generic'
+export function Music90ResultHero({ resultId, assetSet, score, total }: Music90HeroProps) {
+  const set = assetSet ?? (resultId ? getMusic90AssetSet(resultId) : getMusic90AssetSet('m90_cassette'))
+  const objectSrc = set.hero.src
+  const objectFallback = set.hero.fallback
+  const foil = set.foil
+  const isCassette = set.id === 'm90_cassette'
+  const showFoil = foil !== null && foil.variant !== 'hidden'
+  const foilClass =
+    foil?.variant === 'cassette' ? 'm90-foil--cassette' : foil?.variant === 'rare' ? 'm90-foil--rare' : 'm90-foil--generic'
 
+  // Tapes & stickers are now driven by assetSet, but still bounded to 2–3 pieces for mobile density
   return (
-    <div className="m90-result-stage" data-testid="result-hero" data-hero={resultId} data-quiz="music90s">
+    <div className={`m90-result-stage ${set.layout.heroClass}`} data-testid="result-hero" data-hero={set.id} data-range={set.rangeFolder} data-quiz="music90s" data-rare={set.layout.rare ? 'true' : undefined}>
       {/* Cream paper texture is CSS ::before, no image */}
-      {showFoil && (
+      {showFoil && foil && (
         <img
           className={`m90-foil ${foilClass}`}
-          src="/optimized/music90s/result/m90-foil.webp"
-          srcSet="/optimized/music90s/result/m90-foil.webp 1x"
+          src={foil.src}
           alt=""
           aria-hidden="true"
           decoding="async"
           loading="eager"
-          // PNG fallback for older browsers handled via onError or <picture>; webp is primary
           onError={(e) => {
             const t = e.currentTarget
-            if (t.src.endsWith('.webp')) t.src = '/optimized/music90s/result/m90-foil.png'
+            if (t.src.endsWith('.webp')) t.src = foil.fallback
           }}
         />
       )}
 
-      {/* Pink tape assets — 2 pieces pinning the collage, irregular */}
-      <img
-        className="m90-tape m90-tape--a"
-        src="/optimized/music90s/result/m90-tape-gingham-1.webp"
-        alt=""
-        aria-hidden="true"
-        decoding="async"
-        loading="eager"
-        onError={(e) => {
-          const t = e.currentTarget
-          if (t.src.endsWith('.webp')) t.src = '/optimized/music90s/result/m90-tape-gingham-1.png'
-        }}
-      />
-      <img
-        className="m90-tape m90-tape--b"
-        src="/optimized/music90s/result/m90-tape-pale-1.webp"
-        alt=""
-        aria-hidden="true"
-        decoding="async"
-        loading="eager"
-        onError={(e) => {
-          const t = e.currentTarget
-          if (t.src.endsWith('.webp')) t.src = '/optimized/music90s/result/m90-tape-pale-1.png'
-        }}
-      />
+      {/* Decorative tapes — position classes come from assetSet */}
+      {set.tapes.map((tape) => (
+        <img
+          key={tape.positionClass}
+          className={`m90-tape ${tape.positionClass}`}
+          src={tape.src}
+          alt=""
+          aria-hidden="true"
+          decoding="async"
+          loading="eager"
+          onError={(e) => {
+            const t = e.currentTarget
+            if (t.src.endsWith('.webp')) t.src = tape.fallback
+          }}
+        />
+      ))}
 
-      {/* Main object — cassette for 8–10, TV/boombox/CD/magazine for other bands */}
+      {/* Main object — hero is range-specific, with objectFallback chain for empty ranges */}
       <img
-        className={`m90-object ${isCassette ? 'm90-object--cassette' : `m90-object--${resultId}`}`}
+        className={`m90-object ${isCassette ? 'm90-object--cassette' : `m90-object--${set.id}`}`}
         src={objectSrc}
         alt=""
         decoding="async"
         loading="eager"
         onError={(e) => {
-          if (objectFallback) {
-            const t = e.currentTarget
-            if (t.src.endsWith('.webp')) t.src = objectFallback
+          const t = e.currentTarget
+          // first fallback: webp → png
+          if (t.src.endsWith('.webp') && objectFallback) {
+            t.src = objectFallback
+            return
+          }
+          // second fallback: png → music90s-objects graceful chain
+          if (set.hero.objectFallback && t.src !== set.hero.objectFallback) {
+            t.src = set.hero.objectFallback
           }
         }}
       />
 
-      {/* Sticker pack — curated, not messy: 3 small stickers around hero */}
-      <img
-        className="m90-sticker m90-sticker--heart"
-        src="/optimized/music90s/result/m90-sticker-heart-glitter.webp"
-        alt=""
-        aria-hidden="true"
-        decoding="async"
-        loading="eager"
-        onError={(e) => {
-          const t = e.currentTarget
-          if (t.src.endsWith('.webp')) t.src = '/optimized/music90s/result/m90-sticker-heart-glitter.png'
-        }}
-      />
-      <img
-        className="m90-sticker m90-sticker--star"
-        src="/optimized/music90s/result/m90-sticker-star-gold.webp"
-        alt=""
-        aria-hidden="true"
-        decoding="async"
-        loading="eager"
-        onError={(e) => {
-          const t = e.currentTarget
-          if (t.src.endsWith('.webp')) t.src = '/optimized/music90s/result/m90-sticker-star-gold.png'
-        }}
-      />
-      <img
-        className="m90-sticker m90-sticker--lips"
-        src="/optimized/music90s/result/m90-sticker-lips.webp"
-        alt=""
-        aria-hidden="true"
-        decoding="async"
-        loading="eager"
-        onError={(e) => {
-          const t = e.currentTarget
-          if (t.src.endsWith('.webp')) t.src = '/optimized/music90s/result/m90-sticker-lips.png'
-        }}
-      />
+      {/* Sticker pack — curated, not messy */}
+      {set.stickers.map((sticker) => (
+        <img
+          key={sticker.positionClass}
+          className={`m90-sticker ${sticker.positionClass}`}
+          src={sticker.src}
+          alt=""
+          aria-hidden="true"
+          decoding="async"
+          loading="eager"
+          onError={(e) => {
+            const t = e.currentTarget
+            if (t.src.endsWith('.webp')) t.src = sticker.fallback
+          }}
+        />
+      ))}
 
       {/* Rare foil accent for 18 only — pearl/holographic extra */}
-      {resultId === 'm90_era18' && <span className="m90-foil-accent" aria-hidden="true" />}
+      {set.layout.rare && <span className="m90-foil-accent" aria-hidden="true" />}
 
       {/* Live score badge — HTML text, not baked into image */}
       {typeof score === 'number' && (
