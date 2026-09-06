@@ -138,11 +138,15 @@
 
 /* Star-rated long question tuning handled via base size */
 
-/* ---------- Landing collage — hidden 2x2 editorial hierarchy (2026-09-06 editorial pass) ----------
-   Hybrid: implicit 2x2 grid + small overlaps + explicit weight hierarchy.
-   Hierarchy: boombox (hero, central anchor) > tv + cassette (secondaries) > cd (accent background).
-   Each object remains separately readable; overlaps are intentionally shallow (~12–24%) not pile-up.
-   Container softened to paper editorial: warm #fffcF7, lighter border, softer shadow — less sterile white.
+/* ---------- Landing collage — controlled editorial collage (2026-09-06) ----------
+   Asymmetrical but stable, editorial with controlled spacing.
+   Hierarchy: boombox — hero central anchor (largest, centered bottom)
+              cassette — left & slightly behind, tilted back
+              cd — right top accent, fully readable
+              tv — right bottom secondary, clearly separate
+   Air: 12–20px visual breathing between neighbors; overlaps only shallow edge
+   tucks (≤15px) not piles. Not a strict 2×2 tile — free but balanced.
+   Container: warm #fffcF7 paper, light border, soft shadow.
 */
 .m90-hero-collage {
   position: relative;
@@ -187,28 +191,28 @@
   display: block;
 }
 
-/* Cassette — background left, behind boombox, left/top cell of hidden 2x2 */
+/* Cassette — left & slightly behind, tilted back, readable */
 .m90-collage-item--cassette {
-  left: -0.5%;
-  top: 6%;
-  width: 36%;
+  left: 1.5%;
+  top: 9%;
+  width: 32%;
   z-index: 1;
-  transform: rotate(-9deg);
-  opacity: 0.95;
+  transform: rotate(-11deg);
+  opacity: 0.96;
 }
 
 .m90-collage-item--cassette img {
   filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.08));
 }
 
-/* CD — accent background, top-right cell, must NOT compete with boombox */
+/* CD — right-top accent, fully readable, light */
 .m90-collage-item--cd {
-  right: 5.5%;
-  top: 1.5%;
-  width: 30%;
+  right: 7%;
+  top: 4.5%;
+  width: 27%;
   z-index: 1;
-  transform: rotate(12deg);
-  opacity: 0.88;
+  transform: rotate(13.5deg);
+  opacity: 0.90;
 }
 
 .m90-collage-item--cd img {
@@ -217,24 +221,24 @@
 
 /* Boombox — HERO, central anchor, largest, centered bottom */
 .m90-collage-item--boombox {
-  left: 50%;
-  bottom: 2.5%;
-  width: 52%;
+  left: 51%;
+  bottom: 4%;
+  width: 49%;
   z-index: 4;
-  transform: translateX(-50%) rotate(-1.1deg);
+  transform: translateX(-50%) rotate(-1.2deg);
 }
 
 .m90-collage-item--boombox img {
   filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.13));
 }
 
-/* TV — second hero, right cell, clearly separate from boombox */
+/* TV — right-bottom secondary, clearly separate, with air from boombox */
 .m90-collage-item--tv {
-  right: 1.5%;
-  bottom: 8.5%;
-  width: 36%;
+  right: 2.5%;
+  bottom: 11%;
+  width: 32%;
   z-index: 3;
-  transform: rotate(2.6deg);
+  transform: rotate(2.4deg);
 }
 
 .m90-collage-item--tv img {
@@ -275,21 +279,25 @@
   opacity: 0.70;
 }
 
+/* 1999 badge — independent editorial sticker, not glued to TV screen
+   Positioned in top-center air between cassette & CD, balancing the
+   composition; provides asymmetry anchor without covering any object. */
 .m90-sticker-1999 {
   position: absolute;
-  right: 10px;
-  top: 38%;
+  left: 50%;
+  top: 14px;
   background: #7e2d35;
   color: #f5efe7;
   font-family: 'Arial Black', Helvetica, sans-serif;
   font-weight: 900;
-  font-size: 0.6rem;
+  font-size: 0.58rem;
   letter-spacing: 0.08em;
-  padding: 4px 8px;
+  padding: 5px 9px;
   border-radius: 999px;
-  transform: rotate(-7deg);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  transform: translateX(-50%) rotate(-5deg);
+  box-shadow: 0 2px 7px rgba(0, 0, 0, 0.14);
   z-index: 7;
+  white-space: nowrap;
 }
 
 .m90-hero-caption {
@@ -1091,10 +1099,13 @@
     height: 176px;
   }
 
-  .m90-collage-item--cassette { width: 36%; left: -0.5%; top: 6%; }
-  .m90-collage-item--cd { width: 28%; right: 4.5%; top: 1%; }
-  .m90-collage-item--boombox { width: 50%; bottom: 2%; }
-  .m90-collage-item--tv { width: 34%; bottom: 8%; }
+  /* Controlled collage — tighter air at 360, preserve 12px min */
+  .m90-collage-item--cassette { width: 30%; left: 1%; top: 8%; }
+  .m90-collage-item--cd { width: 24%; right: 6%; top: 3%; }
+  .m90-collage-item--boombox { width: 47%; bottom: 3%; left: 51%; }
+  .m90-collage-item--tv { width: 30%; bottom: 10%; right: 2.5%; }
+
+  .m90-sticker-1999 { top: 10px; font-size: 0.54rem; padding: 4px 8px; }
 
   .m90-result-stage {
     height: 220px;
@@ -1168,6 +1179,12 @@
 @media (min-width: 720px) {
   .m90-collage-stage {
     height: 300px;
+  }
+
+  .m90-sticker-1999 {
+    top: 18px;
+    font-size: 0.62rem;
+    padding: 5px 10px;
   }
 
   .m90-result-stage {
