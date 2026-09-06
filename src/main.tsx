@@ -7,6 +7,7 @@ import { createPlatformAdapter } from './platform/factory'
 import '@/design/tokens.css'
 import '@/design/styles.css'
 import '@/design/music90s.css'
+import '@/challenges/ui/challenge.css'
 
 function pushStage(s: string) {
   try {

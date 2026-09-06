@@ -49,5 +49,12 @@ export default tseslint.config(
       'react-hooks/refs': 'off',
     },
   },
+  {
+    // Challenge engine hydrates from localStorage — intentional setState in effect
+    files: ['src/challenges/**/*.{ts,tsx}'],
+    rules: {
+      'react-hooks/set-state-in-effect': 'off',
+    },
+  },
   prettier,
 )

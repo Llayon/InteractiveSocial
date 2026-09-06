@@ -15,6 +15,14 @@ export type AnalyticsEvent =
   | 'channel_click'
   | 'quiz_restart_click'
   | 'challenge_attributed_open'
+  | 'challenge_view'
+  | 'challenge_start'
+  | 'challenge_day_view'
+  | 'challenge_day_hint_open'
+  | 'challenge_day_quick_open'
+  | 'challenge_day_complete'
+  | 'challenge_day_complete_quick'
+  | 'challenge_feedback'
   | 'share_success'
   | 'share_failed'
   | 'share_prepare_failed'
@@ -53,6 +61,10 @@ export interface AnalyticsContext {
   entry_source?: string
   score?: number
   question_count?: number
+  challenge_id?: string
+  day?: number
+  rating?: string
+  reasons?: string
 }
 
 export interface QuestionAnsweredPayload extends AnalyticsContext {

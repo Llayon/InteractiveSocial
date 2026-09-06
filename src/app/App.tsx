@@ -21,6 +21,8 @@ import type { MiniAppAdapter } from '@/platform/types'
 import type { TelegramAdapter } from '@/platform/telegram'
 import { maxShareTransport } from '@/platform/share/ShareTransport'
 import { initialScreen, screenAfterQuizStart, screenForCompletedQuiz, type Screen } from './routes'
+import { isChallengeRoute } from '@/challenges/router'
+import { ChallengeApp } from '@/challenges/ui/ChallengeApp'
 
 export interface AppProps {
   /** Platform adapter; defaults to the environment-detected implementation. */
@@ -45,7 +47,11 @@ function generateCompletionId(): string {
 
 export function App({ telegram, adapter }: AppProps) {
   const platformAdapter = (adapter ?? telegram) as MiniAppAdapter | undefined
-  // Expose for E2E bootstrap tests (not for production logic)
+  // Product routing: beautiful-shots challenge is a separate product engine.
+  // Keep quiz routing untouched; only branch when the URL explicitly targets the challenge.
+  // This keeps /beautiful-shots deep-links working in Telegram/MAX WebView and browser.
+  const isChallenge = typeof window !== 'undefined' ? isChallengeRoute() : false
+  // Expose for E2E bootstrap tests (not for production logic) — must run regardless of product
   useEffect(() => {
     if (typeof window !== 'undefined') {
       ;(window as unknown as Record<string, unknown>).__platform = platformAdapter?.platform ?? 'none'
@@ -306,6 +312,11 @@ export function App({ telegram, adapter }: AppProps) {
   }, [analytics, quiz.id, platformAdapter])
 
   const quizThemeAttr = { 'data-quiz': quiz.id } as const
+
+  // Challenge product branching — after all quiz hooks have run so hook order stays stable.
+  if (isChallenge) {
+    return <ChallengeApp adapter={platformAdapter} />
+  }
 
   switch (screen) {
     case 'quiz':
