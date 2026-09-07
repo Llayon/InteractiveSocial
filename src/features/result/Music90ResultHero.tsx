@@ -69,6 +69,23 @@ export function Music90ResultHero({ resultId, assetSet, score, total }: Music90H
         />
       ))}
 
+      {/* Secondary editorial layers — photostrip for 14-16, CD for 17/18 etc. Behind hero, above foil */}
+      {set.secondary.map((layer, idx) => (
+        <img
+          key={layer.src + String(idx)}
+          className={`m90-secondary m90-secondary--${set.id} m90-secondary--${idx}`}
+          src={layer.src}
+          alt=""
+          aria-hidden="true"
+          decoding="async"
+          loading="eager"
+          onError={(e) => {
+            const t = e.currentTarget
+            if (t.src.endsWith('.webp')) t.src = layer.fallback
+          }}
+        />
+      ))}
+
       {/* Main object — hero is range-specific, with objectFallback chain for empty ranges */}
       <img
         className={`m90-object ${isCassette ? 'm90-object--cassette' : `m90-object--${set.id}`}`}

@@ -31,7 +31,7 @@ const HERO_PREFERENCE = {
   '5-7': ['boombox'], // fallback to objects
   '8-10': ['cassette'],
   '11-13': ['cd-collage'],
-  '14-16': null, // use first folder asset (disco family)
+  '14-16': ['88e0d7b2-0ed2-4b88-a067-0f463aef8586', 'aaf8308e-6c15-44c6-a46f-fa327556dac0'], // disco-ball hero, photostrip secondary
   '17-18': ['magazines'],
   '18-18': ['magazines'],
 }
@@ -81,7 +81,7 @@ async function main() {
     console.log(`\n[${resultId} → ${range}] ${files.length} source files`)
     if (files.length === 0) {
       console.log(`  (empty) -> will fallback to music90s-objects`)
-      // create fallback hero from objects
+      // create fallback hero from objects — 17 and 18 must be distinct
       const pref = HERO_PREFERENCE[range]
       if (pref && pref[0]) {
         const key = pref[0]
@@ -90,8 +90,31 @@ async function main() {
           const src = path.join(sourceObjectsDir, objFile)
           if (existsSync(src)) {
             const dest = path.join(outFolder, 'hero')
-            const res = await optimizePngToWebpPng(src, dest, 700)
-            console.log(`  fallback hero ${objFile} -> hero.webp ${res.w}x${res.h} ${res.webp} bytes`)
+            const maxW = range === '17-18' ? 720 : range === '18-18' ? 680 : 700
+            const res = await optimizePngToWebpPng(src, dest, maxW)
+            console.log(`  fallback hero ${objFile} -> hero.webp ${res.w}x${res.h} ${res.webp} bytes (maxW ${maxW} for ${range})`)
+            // Distinct editorial secondary layers for 17/18 — magazines family but different composition
+            if (range === '17-18') {
+              const cdSrc = path.join(sourceObjectsDir, OBJECTS_FALLBACK['cd-collage'])
+              if (existsSync(cdSrc)) {
+                const cdDest = path.join(outFolder, 'layer-cd-editorial')
+                const cdRes = await optimizePngToWebpPng(cdSrc, cdDest, 420)
+                console.log(`  secondary cd for 17-18 -> layer-cd-editorial.webp ${cdRes.w}x${cdRes.h}`)
+              }
+            } else if (range === '18-18') {
+              const cdSrc = path.join(sourceObjectsDir, OBJECTS_FALLBACK['cd-collage'])
+              const stickersSrc = path.join(sourceObjectsDir, OBJECTS_FALLBACK['stickers'])
+              if (existsSync(cdSrc)) {
+                const cdDest = path.join(outFolder, 'layer-cd-editorial')
+                const cdRes = await optimizePngToWebpPng(cdSrc, cdDest, 480)
+                console.log(`  secondary cd for 18-18 -> layer-cd-editorial.webp ${cdRes.w}x${cdRes.h}`)
+              }
+              if (existsSync(stickersSrc)) {
+                const stDest = path.join(outFolder, 'layer-stickers-editorial')
+                const stRes = await optimizePngToWebpPng(stickersSrc, stDest, 320)
+                console.log(`  secondary stickers for 18-18 -> layer-stickers-editorial.webp ${stRes.w}x${stRes.h}`)
+              }
+            }
           }
         }
       }

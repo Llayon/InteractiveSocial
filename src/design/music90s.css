@@ -671,12 +671,14 @@
   height: 16px;
 }
 
-/* Era 17/18 — reduced crown as collectible sticker collage */
+/* Era 17/18 — magazines family, neutralized legacy 52% constraint
+   New system uses .m90-result-stage / .m90-object data-driven sizing;
+   keep this block neutral to avoid shrinking hero to 52%. */
 .m90-result-hero--era17 img,
 .m90-result-hero--era18 img {
-  width: 52%;
-  height: 52%;
-  transform: rotate(-2deg);
+  width: auto;
+  height: auto;
+  transform: none;
 }
 
 /* Decorative motifs for 17/18 — limited to 2-3 */
@@ -803,12 +805,58 @@
 .m90-object--m90_rookie,
 .m90-object--m90_familiar,
 .m90-object--m90_disco,
-.m90-object--m90_legend,
-.m90-object--m90_era17,
-.m90-object--m90_era18 {
+.m90-object--m90_legend {
   width: 64%;
   max-width: 320px;
   transform: translate(-50%, -50%) rotate(-2deg);
+}
+
+/* Secondary editorial layers — photostrip for 14-16, CD for 17/18 */
+.m90-secondary {
+  position: absolute;
+  z-index: 2;
+  pointer-events: none;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.10));
+  object-fit: contain;
+  display: block;
+}
+
+.m90-secondary--m90_legend {
+  left: 6%;
+  top: 50%;
+  width: 28%;
+  max-width: 160px;
+  transform: translateY(-50%) rotate(-3deg);
+  opacity: 0.96;
+}
+
+.m90-secondary--m90_era17 {
+  right: 8%;
+  top: 18%;
+  width: 22%;
+  max-width: 120px;
+  transform: rotate(6deg);
+  opacity: 0.92;
+}
+
+.m90-secondary--m90_era18 {
+  right: 10%;
+  top: 22%;
+  width: 24%;
+  max-width: 130px;
+  transform: rotate(8deg);
+  opacity: 0.95;
+}
+
+.m90-secondary--m90_era18.m90-secondary--1 {
+  left: 8%;
+  bottom: 18%;
+  top: auto;
+  right: auto;
+  width: 26%;
+  max-width: 140px;
+  transform: rotate(-5deg);
+  opacity: 0.90;
 }
 
 /* Pink tape assets — pinning collage, 2 pieces */
@@ -1299,11 +1347,12 @@
 .m90-result-stage.m90-result-hero--era18 .m90-sticker--star { width: 36px; }
 .m90-result-stage.m90-result-hero--era18 .m90-sticker--lips { width: 42px; opacity: 1; }
 
-/* Hero object sizing per band — keep cassette dominant, magazines editorial smaller */
+/* Hero object sizing per band — magazines editorial large, 72–78% usable width */
 .m90-object--m90_era17,
 .m90-object--m90_era18 {
-  width: 56% !important;
-  max-width: 300px;
+  width: 75% !important;
+  max-width: 380px;
+  height: auto;
 }
 .m90-object--m90_legend {
   width: 62% !important;

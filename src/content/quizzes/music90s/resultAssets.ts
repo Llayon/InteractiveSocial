@@ -193,8 +193,7 @@ export const MUSIC90_RESULT_ASSETS: Record<Music90ResultId, Music90AssetSet> = {
       objectFallback: OBJECTS_FALLBACK.cd, // should never need fallback if folder has content
     },
     secondary: [
-      { src: '/optimized/music90s/results/14-16/layer-39cf1b97-37cc-4e66-8650-d014ceaa5cc4.webp', fallback: '/optimized/music90s/results/14-16/layer-39cf1b97-37cc-4e66-8650-d014ceaa5cc4.png' },
-      { src: '/optimized/music90s/results/14-16/layer-88e0d7b2-0ed2-4b88-a067-0f463aef8586.webp', fallback: '/optimized/music90s/results/14-16/layer-88e0d7b2-0ed2-4b88-a067-0f463aef8586.png' },
+      { src: '/optimized/music90s/results/14-16/layer-aaf8308e-6c15-44c6-a46f-fa327556dac0.webp', fallback: '/optimized/music90s/results/14-16/layer-aaf8308e-6c15-44c6-a46f-fa327556dac0.png' },
     ],
     tapes: BASE_TAPES,
     foil: { src: '/optimized/music90s/result/m90-foil.webp', fallback: '/optimized/music90s/result/m90-foil.png', variant: 'generic' },
@@ -213,9 +212,11 @@ export const MUSIC90_RESULT_ASSETS: Record<Music90ResultId, Music90AssetSet> = {
       fallback: '/optimized/music90s/results/17-18/hero.png',
       objectFallback: OBJECTS_FALLBACK.magazines,
     },
-    secondary: [],
-    tapes: BASE_TAPES.slice(0, 1), // editorial: fewer tapes, cleaner
-    foil: null, // editorial vibe, foil subtle via CSS not image
+    secondary: [
+      { src: '/optimized/music90s/results/17-18/layer-cd-editorial.webp', fallback: '/optimized/music90s/results/17-18/layer-cd-editorial.png' },
+    ],
+    tapes: BASE_TAPES.slice(0, 1), // editorial: fewer tapes, cleaner — one tape
+    foil: null, // calmer, less foil — foil via CSS subtle not image
     stickers: BASE_STICKERS.slice(0, 2),
     hookStrip: HOOK_STRIP,
     label: { text: '17/18' },
@@ -231,7 +232,10 @@ export const MUSIC90_RESULT_ASSETS: Record<Music90ResultId, Music90AssetSet> = {
       fallback: '/optimized/music90s/results/18-18/hero.png',
       objectFallback: OBJECTS_FALLBACK.magazines,
     },
-    secondary: [],
+    secondary: [
+      { src: '/optimized/music90s/results/18-18/layer-cd-editorial.webp', fallback: '/optimized/music90s/results/18-18/layer-cd-editorial.png' },
+      { src: '/optimized/music90s/results/18-18/layer-stickers-editorial.webp', fallback: '/optimized/music90s/results/18-18/layer-stickers-editorial.png' },
+    ],
     tapes: BASE_TAPES,
     foil: { src: '/optimized/music90s/result/m90-foil.webp', fallback: '/optimized/music90s/result/m90-foil.png', variant: 'rare' },
     stickers: BASE_STICKERS, // richer stickering for rare
