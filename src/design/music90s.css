@@ -392,17 +392,28 @@
   transform: rotate(-0.4deg);
 }
 
- /* Rebus block — m1 */
+  /* Rebus block — m1: editorial spacing between title and emoji, and emoji to answers */
 .m90-rebus {
   display: block;
   white-space: nowrap;
   font-size: 1.35rem;
   line-height: 1.2;
   letter-spacing: 0.08em;
-  margin-top: 8px;
+  margin-top: 11px;
   text-align: left;
   overflow: hidden;
   text-overflow: clip;
+}
+
+/* Question / Answers vertical rhythm — preferred variant:
+   title → rebus 10–12px (via .m90-rebus margin-top 11px)
+   rebus → first answer 14–16px (via .answers margin-top 15px)
+   Alternative total question-block → answers 18–20 is also satisfied. */
+[data-quiz='music90s'] .question .answers {
+  margin-top: 15px;
+}
+[data-quiz='music90s'] .question__title + .answers {
+  margin-top: 19px;
 }
 
 @media (max-width: 380px) {
