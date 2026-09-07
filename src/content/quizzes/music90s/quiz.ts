@@ -267,7 +267,7 @@ export const questions: Question[] = [
     category: 'absurd-description',
     difficulty: 'medium',
     layout: 'choice',
-    title: 'Какой хит 90-х сегодня подошёл бы на роль статуса в Telegram перед удалением аккаунта?',
+    title: 'Какой хит 90-х сегодня подошёл бы на роль статуса в Telegram при расставании?',
     correctAnswerId: 'a',
     feedback: {
       correct: 'Золотой фонд.',
