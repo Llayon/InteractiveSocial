@@ -671,16 +671,6 @@
   height: 16px;
 }
 
-/* Era 17/18 — magazines family, neutralized legacy 52% constraint
-   New system uses .m90-result-stage / .m90-object data-driven sizing;
-   keep this block neutral to avoid shrinking hero to 52%. */
-.m90-result-hero--era17 img,
-.m90-result-hero--era18 img {
-  width: auto;
-  height: auto;
-  transform: none;
-}
-
 /* Decorative motifs for 17/18 — limited to 2-3 */
 .m90-result-hero--era17::after,
 .m90-result-hero--era18::after {
@@ -1347,12 +1337,15 @@
 .m90-result-stage.m90-result-hero--era18 .m90-sticker--star { width: 36px; }
 .m90-result-stage.m90-result-hero--era18 .m90-sticker--lips { width: 42px; opacity: 1; }
 
-/* Hero object sizing per band — magazines editorial large, 72–78% usable width */
+/* Hero object sizing per band — magazines editorial large, 72–78% usable width, centered */
 .m90-object--m90_era17,
 .m90-object--m90_era18 {
+  left: 50%;
+  top: 50%;
   width: 75% !important;
   max-width: 380px;
   height: auto;
+  transform: translate(-50%, -50%) rotate(-1.8deg);
 }
 .m90-object--m90_legend {
   width: 62% !important;
