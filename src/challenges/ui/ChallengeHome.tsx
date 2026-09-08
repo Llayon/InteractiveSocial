@@ -17,7 +17,8 @@ export function ChallengeHome({ definition, progress, availableDay, onOpenDay, o
   const nextDay = nextIncomplete ? definition.days.find((d) => d.day === nextIncomplete) : null
 
   const allAvailableDone = nextIncomplete === null
-  const nextLockedDay = allAvailableDone ? definition.days.find((d) => d.day === availableDay + 1) : null
+  const nextLockedDay = allAvailableDone ? definition.days.find((d) => d.day === availableDay + 1) ?? null : null
+  const hasUnpublishedFuture = allAvailableDone && !nextLockedDay && availableDay < definition.durationDays
   const progressPercent = total > 0 ? Math.round((completedCount / total) * 100) : 0
 
   const eyebrowLabel = `${total} дней красивых кадров`
@@ -64,6 +65,8 @@ export function ChallengeHome({ definition, progress, availableDay, onOpenDay, o
                 День {nextLockedDay.day} — {nextLockedDay.title}
               </strong>
             </p>
+          ) : hasUnpublishedFuture ? (
+            <p className="challenge-card__meta">Продолжение программы скоро.</p>
           ) : (
             <p className="challenge-card__meta">Все {total} дней завершены — вы сделали это.</p>
           )}

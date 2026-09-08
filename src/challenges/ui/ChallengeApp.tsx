@@ -29,6 +29,7 @@ export function ChallengeApp({ adapter }: ChallengeAppProps) {
   const { progress, loading, availableDay, start, complete } = useChallengeProgress(definition)
   const [screen, setScreen] = useState<ChallengeScreen>({ kind: 'landing' })
   const [pendingCompletion, setPendingCompletion] = useState<{ day: number; mode: 'normal' | 'quick' } | null>(null)
+  const [starting, setStarting] = useState(false)
 
   const platform = adapter?.platform ?? 'browser'
 
@@ -54,13 +55,19 @@ export function ChallengeApp({ adapter }: ChallengeAppProps) {
   }, [loading, progress, definition.id, platform, availableDay])
 
   const handleStart = useCallback(async () => {
-    const p = await start()
+    if (starting) return
+    setStarting(true)
     try {
-      getAnalytics().track('challenge_start', { challenge_id: definition.id, platform })
-    } catch {}
-    setScreen({ kind: 'home' })
-    void p
-  }, [start, definition.id, platform])
+      const p = await start()
+      try {
+        getAnalytics().trackOnce(`challenge_start:${definition.id}:${platform}`, 'challenge_start', { challenge_id: definition.id, platform })
+      } catch {}
+      setScreen({ kind: 'home' })
+      void p
+    } finally {
+      setTimeout(() => setStarting(false), 500)
+    }
+  }, [start, definition.id, platform, starting])
 
   const handleOpenDay = useCallback(
     (dayNum: number) => {
@@ -145,9 +152,9 @@ export function ChallengeApp({ adapter }: ChallengeAppProps) {
 
   switch (screen.kind) {
     case 'landing':
-      return <ChallengeLanding onStart={handleStart} />
+      return <ChallengeLanding onStart={handleStart} disabled={starting} />
     case 'home':
-      if (!progress) return <ChallengeLanding onStart={handleStart} />
+      if (!progress) return <ChallengeLanding onStart={handleStart} disabled={starting} />
       return (
         <ChallengeHome
           definition={definition}

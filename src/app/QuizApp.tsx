@@ -219,7 +219,6 @@ export function QuizApp({ telegram, adapter }: QuizAppProps) {
       if (raw) {
         if (platformAdapter.platform === 'max') {
           const cid = completionId
-          // eslint-disable-next-line -- completion delivery state sync inside effect
           setMaxDeliverPending(true)
           setMaxSelfMid(null)
           void (async () => {

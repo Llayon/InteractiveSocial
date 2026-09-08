@@ -1,5 +1,5 @@
 import type { ChallengeDefinition, ChallengeProgress } from '../engine/types'
-import { getDayState } from '../engine/unlock'
+import { getPublishedDayState } from '../engine/unlock'
 
 export interface ChallengeGridProps {
   definition: ChallengeDefinition
@@ -33,21 +33,21 @@ export function ChallengeGrid({ definition, progress, availableDay, onSelectDay,
       <p style={{ margin: 0, color: 'var(--muted)', fontSize: '0.85rem' }}>Открытые дни доступны всегда. Будущие откроются по календарю.</p>
 
       <div className="challenge-grid" data-testid="challenge-grid-cells">
-        {definition.days.map((d) => {
-          const state = getDayState(d.day, progress, availableDay)
+        {Array.from({ length: total }, (_, i) => i + 1).map((dayNum) => {
+          const state = getPublishedDayState(definition, dayNum, progress, availableDay)
           const disabled = state === 'locked'
           return (
             <button
-              key={d.day}
+              key={dayNum}
               type="button"
               className={`challenge-grid__cell challenge-grid__cell--${state}`}
-              data-testid={`challenge-grid-day-${d.day}`}
+              data-testid={`challenge-grid-day-${dayNum}`}
               data-state={state}
-              aria-label={`День ${d.day} ${state}`}
+              aria-label={`День ${dayNum} ${state}`}
               disabled={disabled}
-              onClick={() => !disabled && onSelectDay(d.day)}
+              onClick={() => !disabled && onSelectDay(dayNum)}
             >
-              <span className="challenge-grid__number">{String(d.day).padStart(2, '0')}</span>
+              <span className="challenge-grid__number">{String(dayNum).padStart(2, '0')}</span>
               <span className="challenge-grid__state" aria-hidden>
                 {labelForState(state)}
               </span>

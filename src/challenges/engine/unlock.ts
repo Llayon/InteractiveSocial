@@ -56,13 +56,12 @@ export function clampDay(day: number, max: number): number {
 export function isDayPublished(day: number, definition: ChallengeDefinition): boolean;
 export function isDayPublished(definition: ChallengeDefinition, day: number): boolean;
 export function isDayPublished(a: number | ChallengeDefinition, b: number | ChallengeDefinition): boolean {
-  // Support both (day, definition) and (definition, day) for backward compat with tests
   let day: number
   let definition: ChallengeDefinition
-  if (typeof a === 'number' && typeof b === 'object' && b !== null && 'days' in (b as Record<string, unknown>)) {
+  if (typeof a === 'number' && typeof b === 'object' && b !== null && 'days' in (b as unknown as Record<string, unknown>)) {
     day = a
     definition = b as ChallengeDefinition
-  } else if (typeof b === 'number' && typeof a === 'object' && a !== null && 'days' in (a as Record<string, unknown>)) {
+  } else if (typeof b === 'number' && typeof a === 'object' && a !== null && 'days' in (a as unknown as Record<string, unknown>)) {
     definition = a as ChallengeDefinition
     day = b as number
   } else {
@@ -72,42 +71,23 @@ export function isDayPublished(a: number | ChallengeDefinition, b: number | Chal
   return definition.days.some((d) => d.day === day)
 }
 
-export function isDayUnlocked(
-  day: number,
-  _progress: ChallengeProgress | null,
-  availableDay: number,
-  definition: ChallengeDefinition,
-): boolean {
+export function isDayUnlocked(day: number, _progress: ChallengeProgress | null, availableDay: number, definition: ChallengeDefinition): boolean {
   if (!isDayPublished(day, definition)) return false
   return day <= availableDay
 }
 
-export function isDayLocked(
-  day: number,
-  progress: ChallengeProgress | null,
-  availableDay: number,
-  definition: ChallengeDefinition,
-): boolean {
+export function isDayLocked(day: number, progress: ChallengeProgress | null, availableDay: number, definition: ChallengeDefinition): boolean {
   if (!isDayPublished(day, definition)) return true
   const state = getDayState(day, progress, availableDay)
   return state === 'locked'
 }
 
-export function getPublishedDayState(
-  definition: ChallengeDefinition,
-  dayNumber: number,
-  progress: ChallengeProgress | null,
-  availableDay: number,
-): ReturnType<typeof getDayState> {
+export function getPublishedDayState(definition: ChallengeDefinition, dayNumber: number, progress: ChallengeProgress | null, availableDay: number): ReturnType<typeof getDayState> {
   if (!isDayPublished(dayNumber, definition)) return 'locked'
   return getDayState(dayNumber, progress, availableDay)
 }
 
-export function getDayState(
-  dayNumber: number,
-  progress: ChallengeProgress | null,
-  availableDay: number,
-): ChallengeDayState {
+export function getDayState(dayNumber: number, progress: ChallengeProgress | null, availableDay: number): ChallengeDayState {
   if (!progress) {
     return dayNumber <= availableDay ? 'available' : 'locked'
   }
@@ -119,15 +99,20 @@ export function getDayState(
   return 'locked'
 }
 
-export function getNextAvailableIncompleteDay(
-  definition: ChallengeDefinition,
-  progress: ChallengeProgress | null,
-  availableDay: number,
-): number | null {
+export function getNextAvailableIncompleteDay(definition: ChallengeDefinition, progress: ChallengeProgress | null, availableDay: number): number | null {
   for (let d = 1; d <= Math.min(availableDay, definition.durationDays); d++) {
     if (!isDayPublished(d, definition)) continue
     const st = getDayState(d, progress, availableDay)
     if (st === 'available') return d
+  }
+  return null
+}
+
+export function getNextLockedUnpublishedDay(definition: ChallengeDefinition, availableDay: number): number | null {
+  for (let d = availableDay + 1; d <= definition.durationDays; d++) {
+    if (!isDayPublished(d, definition)) {
+      return d
+    }
   }
   return null
 }
@@ -142,26 +127,10 @@ export function isChallengeComplete(definition: ChallengeDefinition, progress: C
   return progress.completed.length >= definition.durationDays
 }
 
-export function getProgressSummary(
-  definition: ChallengeDefinition,
-  progress: ChallengeProgress | null,
-  today: Date = new Date(),
-): {
-  availableDay: number
-  nextIncomplete: number | null
-  completedCount: number
-  total: number
-  isComplete: boolean
-} {
+export function getProgressSummary(definition: ChallengeDefinition, progress: ChallengeProgress | null, today: Date = new Date()): { availableDay: number; nextIncomplete: number | null; completedCount: number; total: number; isComplete: boolean } {
   const availableDay = getAvailableDay(progress, today)
   const nextIncomplete = getNextAvailableIncompleteDay(definition, progress, availableDay)
   const completedCount = getCompletedCount(progress)
   const isComplete = isChallengeComplete(definition, progress)
-  return {
-    availableDay,
-    nextIncomplete,
-    completedCount,
-    total: definition.durationDays,
-    isComplete,
-  }
+  return { availableDay, nextIncomplete, completedCount, total: definition.durationDays, isComplete }
 }

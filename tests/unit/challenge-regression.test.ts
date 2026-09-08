@@ -135,6 +135,16 @@ describe('regression: query route', () => {
     window.history.replaceState(null, '', '/?quiz=music90s')
     expect(isChallengeRoute()).toBe(false)
   })
+
+  it('startParam challenge_beautiful-shots is challenge route', () => {
+    expect(isChallengeRoute({ startParam: 'challenge_beautiful-shots' })).toBe(true)
+    expect(isChallengeRoute({ startParam: 'challenge_beautiful_shots' })).toBe(true)
+  })
+
+  it('startParam quiz_ still not challenge', () => {
+    expect(isChallengeRoute({ startParam: 'quiz_music90s' })).toBe(false)
+    expect(isChallengeRoute({ startParam: 's2_m90_lg_123' })).toBe(false)
+  })
 })
 
 describe('regression: App product boundary (no quiz hooks on challenge route)', () => {
@@ -226,6 +236,60 @@ describe('regression: App product boundary (no quiz hooks on challenge route)', 
     expect(await screen.findByTestId('start-cta')).toBeInTheDocument()
     expect(screen.queryByTestId('challenge-landing')).not.toBeInTheDocument()
     expect(screen.getByText(/Ты точно помнишь музыку 90-х/)).toBeInTheDocument()
+    unmount()
+  })
+
+  it('Telegram challenge startParam routes to ChallengeApp even on root', async () => {
+    window.history.replaceState(null, '', '/')
+    window.localStorage.clear()
+    const adapter = createMockAdapter('telegram')
+    ;(adapter.getStartParam as unknown as ReturnType<typeof vi.fn>).mockReturnValue('challenge_beautiful-shots')
+    const { render } = await import('@testing-library/react')
+    const { default: React } = await import('react')
+    const AppMod = await import('@/app/App')
+    const { unmount } = render(React.createElement(AppMod.App, { adapter } as never))
+    expect(await screen.findByTestId('challenge-landing')).toBeInTheDocument()
+    expect(screen.queryByTestId('start-cta')).not.toBeInTheDocument()
+    unmount()
+  })
+
+  it('MAX challenge startParam routes to ChallengeApp even on root', async () => {
+    window.history.replaceState(null, '', '/')
+    window.localStorage.clear()
+    const adapter = createMockAdapter('max')
+    ;(adapter.getStartParam as unknown as ReturnType<typeof vi.fn>).mockReturnValue('challenge_beautiful-shots')
+    const { render } = await import('@testing-library/react')
+    const { default: React } = await import('react')
+    const AppMod = await import('@/app/App')
+    const { unmount } = render(React.createElement(AppMod.App, { adapter } as never))
+    expect(await screen.findByTestId('challenge-landing')).toBeInTheDocument()
+    unmount()
+  })
+
+  it('quiz startParam still routes to QuizApp', async () => {
+    window.history.replaceState(null, '', '/')
+    window.localStorage.clear()
+    const adapter = createMockAdapter('telegram')
+    ;(adapter.getStartParam as unknown as ReturnType<typeof vi.fn>).mockReturnValue('quiz_music90s')
+    const { render } = await import('@testing-library/react')
+    const { default: React } = await import('react')
+    const AppMod = await import('@/app/App')
+    const { unmount } = render(React.createElement(AppMod.App, { adapter } as never))
+    expect(await screen.findByTestId('start-cta')).toBeInTheDocument()
+    expect(screen.queryByTestId('challenge-landing')).not.toBeInTheDocument()
+    unmount()
+  })
+
+  it('s2_ startParam still routes to QuizApp', async () => {
+    window.history.replaceState(null, '', '/')
+    window.localStorage.clear()
+    const adapter = createMockAdapter('telegram')
+    ;(adapter.getStartParam as unknown as ReturnType<typeof vi.fn>).mockReturnValue('s2_m90_lg_123')
+    const { render } = await import('@testing-library/react')
+    const { default: React } = await import('react')
+    const AppMod = await import('@/app/App')
+    const { unmount } = render(React.createElement(AppMod.App, { adapter } as never))
+    expect(await screen.findByTestId('start-cta')).toBeInTheDocument()
     unmount()
   })
 })

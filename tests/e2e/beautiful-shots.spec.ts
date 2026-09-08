@@ -10,7 +10,7 @@ test.describe('beautiful-shots challenge e2e', () => {
 
     await page.getByTestId('challenge-start-cta').click()
     await expect(page.getByTestId('challenge-home')).toBeVisible()
-    await expect(page.getByTestId('challenge-progress-count')).toHaveText('00 / 07')
+    await expect(page.getByTestId('challenge-progress-count')).toHaveText('00 / 30')
     await expect(page.getByTestId('challenge-next-card')).toContainText('ДЕНЬ 01')
     await expect(page.getByTestId('challenge-continue-cta')).toBeVisible()
 
@@ -36,22 +36,28 @@ test.describe('beautiful-shots challenge e2e', () => {
 
     await expect(page.getByTestId('challenge-completion')).toBeVisible()
     await expect(page.getByTestId('challenge-completion-number')).toHaveText('01')
-    await expect(page.getByTestId('challenge-completion-progress')).toHaveText('01 / 07')
+    await expect(page.getByTestId('challenge-completion-progress')).toHaveText('01 / 30')
     await expect(page.getByTestId('challenge-completion-cta')).toBeVisible()
 
     await page.getByTestId('challenge-completion-cta').click()
     await expect(page.getByTestId('challenge-home')).toBeVisible()
-    await expect(page.getByTestId('challenge-progress-count')).toHaveText('01 / 07')
+    await expect(page.getByTestId('challenge-progress-count')).toHaveText('01 / 30')
 
     await page.reload()
     await expect(page.getByTestId('challenge-home')).toBeVisible()
-    await expect(page.getByTestId('challenge-progress-count')).toHaveText('01 / 07')
+    await expect(page.getByTestId('challenge-progress-count')).toHaveText('01 / 30')
     await page.getByTestId('challenge-open-grid').click()
     await expect(page.getByTestId('challenge-grid')).toBeVisible()
+    await expect(page.getByTestId('challenge-grid-cells').locator('button')).toHaveCount(30)
     const day1 = page.getByTestId('challenge-grid-day-1')
     await expect(day1).toHaveAttribute('data-state', 'completed')
     const day2 = page.getByTestId('challenge-grid-day-2')
     await expect(day2).toHaveAttribute('data-state', 'locked')
+    const day8 = page.getByTestId('challenge-grid-day-8')
+    await expect(day8).toHaveAttribute('data-state', 'locked')
+    await expect(day8).toBeDisabled()
+    const day30 = page.getByTestId('challenge-grid-day-30')
+    await expect(day30).toHaveAttribute('data-state', 'locked')
   })
 
   test('locked state: future days are locked and cannot be opened', async ({ page }) => {
@@ -60,12 +66,17 @@ test.describe('beautiful-shots challenge e2e', () => {
     await expect(page.getByTestId('challenge-home')).toBeVisible()
     await page.getByTestId('challenge-open-grid').click()
     await expect(page.getByTestId('challenge-grid')).toBeVisible()
+    await expect(page.getByTestId('challenge-grid-cells').locator('button')).toHaveCount(30)
     const day5 = page.getByTestId('challenge-grid-day-5')
     await expect(day5).toHaveAttribute('data-state', 'locked')
     await expect(day5).toBeDisabled()
     const day1 = page.getByTestId('challenge-grid-day-1')
     await expect(day1).toHaveAttribute('data-state', 'available')
     await expect(day1).toBeEnabled()
+    const day8 = page.getByTestId('challenge-grid-day-8')
+    await expect(day8).toHaveAttribute('data-state', 'locked')
+    const day30 = page.getByTestId('challenge-grid-day-30')
+    await expect(day30).toHaveAttribute('data-state', 'locked')
   })
 
   test('quick completion saved as quick', async ({ page }) => {
@@ -98,5 +109,31 @@ test.describe('beautiful-shots challenge e2e', () => {
       await expect(page.getByTestId('challenge-landing')).toBeVisible()
       await expect(page.getByTestId('challenge-start-cta')).toBeVisible()
     }
+  })
+
+  test('after completing all 7 published days shows continuation not false 30/30', async ({ page }) => {
+    await page.goto('/beautiful-shots?mock=1')
+    await page.evaluate(() => {
+      const pad = (n: number) => String(n).padStart(2, '0')
+      const progress = {
+        challengeId: 'beautiful-shots',
+        startedAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
+        startedAtLocalDate: (() => {
+          const d = new Date(Date.now() - 6 * 24 * 60 * 60 * 1000)
+          return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+        })(),
+        completed: Array.from({ length: 7 }, (_, i) => ({ day: i + 1, completedAt: new Date().toISOString(), mode: 'normal' })),
+      }
+      localStorage.setItem('challenge-progress:beautiful-shots', JSON.stringify(progress))
+    })
+    await page.reload()
+    await expect(page.getByTestId('challenge-home')).toBeVisible()
+    await expect(page.getByTestId('challenge-progress-count')).toHaveText('07 / 30')
+    await expect(page.getByTestId('challenge-done-today')).toContainText('Продолжение программы скоро')
+    await expect(page.getByTestId('challenge-done-today')).not.toContainText('Все 30 дней завершены')
+    await page.getByTestId('challenge-open-grid').click()
+    await expect(page.getByTestId('challenge-grid-cells').locator('button')).toHaveCount(30)
+    await expect(page.getByTestId('challenge-grid-day-8')).toHaveAttribute('data-state', 'locked')
+    await expect(page.getByTestId('challenge-grid-day-8')).toBeDisabled()
   })
 })

@@ -1,5 +1,5 @@
 import type { ChallengeDefinition, ChallengeProgress } from '../engine/types'
-import { getDayState } from '../engine/unlock'
+import { getPublishedDayState, isDayPublished } from '../engine/unlock'
 
 export interface ChallengeCompletionProps {
   definition: ChallengeDefinition
@@ -24,14 +24,16 @@ export function ChallengeCompletion({
   const total = definition.durationDays
   let nextDayNumber: number | null = null
   for (let d = 1; d <= Math.min(availableDay, total); d++) {
-    const st = getDayState(d, progress, availableDay)
+    if (!isDayPublished(d, definition)) continue
+    const st = getPublishedDayState(definition, d, progress, availableDay)
     if (st === 'available') {
       nextDayNumber = d
       break
     }
   }
   const nextDay = nextDayNumber ? definition.days.find((d) => d.day === nextDayNumber) : null
-  const lockedNext = !nextDay && availableDay < total ? definition.days.find((d) => d.day === availableDay + 1) : null
+  const lockedNext = !nextDay && availableDay < total ? definition.days.find((d) => d.day === availableDay + 1) ?? null : null
+  const hasUnpublishedFuture = !nextDay && !lockedNext && availableDay < total
   const isQuick = mode === 'quick'
 
   return (
@@ -53,6 +55,10 @@ export function ChallengeCompletion({
         <div className="challenge-completion__next" data-testid="challenge-completion-next-locked">
           Завтра откроется: <strong>День {lockedNext.day} — {lockedNext.title}</strong>
         </div>
+      ) : hasUnpublishedFuture ? (
+        <div className="challenge-completion__next">Продолжение программы скоро.</div>
+      ) : completedCount >= definition.days.length && completedCount < total ? (
+        <div className="challenge-completion__next">На сегодня всё — вернитесь завтра.</div>
       ) : completedCount >= total ? (
         <div className="challenge-completion__next">Вы прошли все {total} дней — поздравляем!</div>
       ) : (

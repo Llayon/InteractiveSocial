@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 
-import { isChallengeRoute } from '@/challenges/router'
+import { isChallengeRoute, isChallengeStartParam } from '@/challenges/router'
 import { ChallengeApp } from '@/challenges/ui/ChallengeApp'
 import type { MiniAppAdapter } from '@/platform/types'
 import type { TelegramAdapter } from '@/platform/telegram'
@@ -13,7 +13,16 @@ export interface AppProps {
 
 export function App({ telegram, adapter }: AppProps) {
   const platformAdapter = (adapter ?? telegram) as MiniAppAdapter | undefined
-  const isChallenge = typeof window !== 'undefined' ? isChallengeRoute() : false
+  const startParam = platformAdapter?.getStartParam() ?? null
+  const isChallenge =
+    typeof window !== 'undefined'
+      ? isChallengeRoute({
+          pathname: window.location.pathname,
+          search: window.location.search,
+          hash: window.location.hash,
+          startParam,
+        })
+      : isChallengeStartParam(startParam)
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
