@@ -59,15 +59,14 @@ export function Landing({ quiz, onStart }: LandingProps) {
             <div className="m90-collage-item m90-collage-item--cd">
               <img src="/optimized/music90s/cd-collage.png" alt="" loading="eager" decoding="async" width={300} height={300} />
             </div>
-            <div className="m90-collage-item m90-collage-item--boombox">
-              <img src="/optimized/music90s/boombox.png" alt="" loading="lazy" decoding="async" width={300} height={300} />
-            </div>
             <div className="m90-collage-item m90-collage-item--tv">
               <img src="/optimized/music90s/tv.png" alt="" loading="lazy" decoding="async" width={300} height={300} />
             </div>
-            <span className="m90-sticker-1999">1999</span>
-            <span className="m90-tape m90-tape--mid" aria-hidden="true" />
+            <div className="m90-collage-item m90-collage-item--boombox">
+              <img src="/optimized/music90s/boombox.png" alt="" loading="lazy" decoding="async" width={300} height={300} />
+            </div>
           </div>
+          <span className="m90-sticker-1999">1999</span>
           <p className="m90-hero-caption">кассеты · диски · MTV · анкеты</p>
         </div>
       )}
