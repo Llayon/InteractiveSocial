@@ -212,7 +212,7 @@ describe('In-app sticker fix', () => {
     expect(M90_STICKER['m90_legend']).toEqual(expect.objectContaining({ label: 'дискотека' }))
   })
   it('17/18 stickers remain correct', () => {
-    expect(M90_STICKER['m90_era17'].label).toBe('17/18')
+    expect(M90_STICKER['m90_era17'].label).toBe('почти идеально')
     expect(M90_STICKER['m90_era18'].label).toBe('редкая')
   })
 })
