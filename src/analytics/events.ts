@@ -65,6 +65,14 @@ export interface AnalyticsContext {
   day?: number
   rating?: string
   reasons?: string
+  /** Anonymous installation id — never a Telegram/MAX user id */
+  anonymous_id?: string
+  /** Per-app-open session id — ephemeral, not persisted */
+  session_id?: string
+  /** Per-quiz-run id — supplied when available, accepted without schema migration */
+  run_id?: string
+  /** Allow arbitrary safe dimensions (category, position, is_correct, elapsed_ms, etc.) */
+  [key: string]: unknown
 }
 
 export interface QuestionAnsweredPayload extends AnalyticsContext {

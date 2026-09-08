@@ -1,5 +1,8 @@
-import { getAnalytics, initAnalytics } from '@/analytics/analytics'
+import { consoleProvider, getAnalytics, initAnalytics } from '@/analytics/analytics'
+import type { AnalyticsProvider } from '@/analytics/analytics'
 import { deriveSource } from '@/analytics/events'
+import { createSessionId, getOrCreateAnonymousId } from '@/analytics/identity'
+import { compositeProvider, httpAnalyticsProvider } from '@/analytics/httpProvider'
 import type { MiniAppAdapter } from '@/platform/types'
 import type { TelegramAdapter } from '@/platform/telegram'
 
@@ -7,6 +10,24 @@ export interface BootstrapOptions {
   telegram: TelegramAdapter
   // New neutral name; telegram alias kept for BC
   adapter?: MiniAppAdapter
+}
+
+function resolveAnalyticsProvider(): AnalyticsProvider {
+  try {
+    const env = (import.meta as unknown as { env?: Record<string, unknown> }).env
+    const mode = env?.MODE as string | undefined
+    const isProd = Boolean(env?.PROD)
+    const isTest = mode === 'test'
+    const explicit = env?.VITE_ANALYTICS_PROVIDER as string | undefined
+
+    if (isTest) return consoleProvider
+    if (isProd) return httpAnalyticsProvider
+    if (explicit === 'console') return consoleProvider
+    if (explicit === 'http') return httpAnalyticsProvider
+    return compositeProvider(consoleProvider, httpAnalyticsProvider)
+  } catch {
+    return consoleProvider
+  }
 }
 
 /**
@@ -21,11 +42,29 @@ export function bootstrap(options: BootstrapOptions): void {
 
   const startParam = adapter.getStartParam() ?? undefined
 
+  let anonymousId: string | undefined
+  let sessionId: string | undefined
+  try {
+    anonymousId = getOrCreateAnonymousId()
+  } catch {
+    anonymousId = undefined
+  }
+  try {
+    sessionId = createSessionId()
+  } catch {
+    sessionId = undefined
+  }
+
+  const provider = resolveAnalyticsProvider()
+
   initAnalytics({
+    provider,
     baseContext: {
       platform: adapter.platform,
       start_param: startParam,
       source: deriveSource(startParam),
+      ...(anonymousId ? { anonymous_id: anonymousId } : {}),
+      ...(sessionId ? { session_id: sessionId } : {}),
     },
   })
 

@@ -77,3 +77,9 @@ export function getAnalytics(): Analytics {
   }
   return instance
 }
+
+/** Test helper: clear singleton and trackOnce dedup cache. */
+export function __resetAnalyticsForTests(): void {
+  instance = null
+  emittedOnceKeys.clear()
+}
