@@ -379,7 +379,8 @@ describe('Fallback context bug fix', () => {
   it('ResultScreen passes total and quizTitle', async () => {
     const fs = await import('node:fs')
     const content = fs.readFileSync('src/features/result/Result.tsx', 'utf-8')
-    expect(content).toContain('total={quiz.questions.length}')
+    // total may be quiz.questions.length (generic) or getEffectiveTotal for sampled banks (music90s 42→18)
+    expect(content.includes('total={quiz.questions.length}') || content.includes('total={getEffectiveTotal(quiz)}')).toBe(true)
     expect(content).toContain('quizTitle={quiz.title}')
   })
   it('fallback copy uses total/quizTitle generically', async () => {

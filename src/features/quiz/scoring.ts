@@ -202,12 +202,19 @@ export function resolveBandResultId(quiz: Quiz, correct: number): string {
   return band.resultId
 }
 
+/** Effective attempt length for correct-count quizzes (bands max), not raw bank size. */
+export function getEffectiveTotal(quiz: Quiz): number {
+  if (quiz.scoring.kind !== 'correct-count') return quiz.questions.length
+  const sorted = [...quiz.scoring.bands].sort((a, b) => a.min - b.min)
+  return sorted[sorted.length - 1].max
+}
+
 export function resolveCorrectCountOutcome(
   quiz: Quiz,
   answers: readonly SelectedAnswer[],
 ): Extract<QuizOutcome, { kind: 'correct-count' }> {
   const correct = computeCorrectCount(quiz, answers)
-  const total = quiz.questions.length
+  const total = getEffectiveTotal(quiz)
   return { kind: 'correct-count', resultId: resolveBandResultId(quiz, correct), correct, total }
 }
 

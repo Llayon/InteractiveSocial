@@ -5,15 +5,17 @@ import { RUNTIME_IMAGE_MANIFEST } from '@/images/manifest'
 import { resolveShareCardAsset, scoreCardAsset } from '@/features/quiz/scoring'
 
 describe('Quiz-scoped exact-score asset namespace (no collision)', () => {
-  it('music90s 9 → m90_score_09 (9/18) via quiz-scoped asset', () => {
+  it('music90s 9 → m90_score_09 (9/18) via quiz-scoped asset', async () => {
+    const { getEffectiveTotal } = await import('@/features/quiz/scoring')
     const asset = scoreCardAsset(music90sQuiz, 9)
     expect(asset).toBe('m90_score_09')
     const result = music90sQuiz.results.find((r) => r.id === 'm90_cassette')!
     expect(resolveShareCardAsset(music90sQuiz, result, 9)).toBe('m90_score_09')
     // manifest hero for this exact score must exist and be quiz-scoped
     expect(RUNTIME_IMAGE_MANIFEST.results['m90_score_09']).toBeTruthy()
-    // total for music90s is 18, so 9/18 is correct
-    expect(music90sQuiz.questions.length).toBe(18)
+    // effective total for music90s is 18 (bank 42, attempt 18), so 9/18 is correct
+    expect(getEffectiveTotal(music90sQuiz)).toBe(18)
+    expect(music90sQuiz.questions.length).toBe(42)
   })
 
   it('music90s 18 → m90_score_18 (18/18)', () => {

@@ -8,6 +8,7 @@ import { buildMaxAttachments, createMaxImageAttachment, type MaxSecondaryButton 
 import { RESULT_ID_REGEX } from '../../../src/features/quiz/schema.js'
 import { resolvePromotionDestination } from '../../../src/features/quiz/promotion.js'
 import {
+  getEffectiveTotal,
   resolveBandResultId,
   resolveShareCardAsset,
   resolveShareCardVersion,
@@ -149,7 +150,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
 
   let score: number | undefined
   if (quiz.scoring.kind === 'correct-count') {
-    const total = quiz.questions.length
+    const total = getEffectiveTotal(quiz)
     if (
       typeof rawScore !== 'number' ||
       !Number.isInteger(rawScore) ||
@@ -206,7 +207,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     }
   } else {
     const headline =
-      score === undefined ? `${result.title} — ${result.presentation.subtitle}` : `Твой счёт: ${score} из ${quiz.questions.length}`
+      score === undefined ? `${result.title} — ${result.presentation.subtitle}` : `Твой счёт: ${score} из ${getEffectiveTotal(quiz)}`
     const caption = [headline, '', `«${result.presentation.shareQuote}»`, '', quiz.copy.deliverOwnLine].join('\n')
     const host = (() => {
       try {

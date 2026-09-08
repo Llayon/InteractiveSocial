@@ -85,7 +85,7 @@ export function QuizQuestion({
   })()
 
   return (
-    <div className="question" data-testid="quiz-question" data-layout={question.layout} data-content-kind={question.content?.kind ?? 'default'}>
+    <div className="question" data-testid="quiz-question" data-question-id={question.id} data-layout={question.layout} data-content-kind={question.content?.kind ?? 'default'}>
       {rebused ? (
         <>
           <h2 className="question__title">{rebused.head}</h2>

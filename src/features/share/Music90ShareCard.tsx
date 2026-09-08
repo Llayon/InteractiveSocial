@@ -1,4 +1,4 @@
-import { getResultById, resolveBandResultId } from '@/features/quiz/scoring'
+import { getEffectiveTotal, getResultById, resolveBandResultId } from '@/features/quiz/scoring'
 import type { Quiz } from '@/features/quiz/schema'
 import { M90_HERO_CLASS, M90_HOOKS, M90_OBJECT_SRC } from '@/features/result/ResultCard'
 import '@/features/share/Music90ShareCard.css'
@@ -30,7 +30,7 @@ export function Music90ShareCard({ quiz, score }: Music90ShareCardProps) {
   const heroClass = M90_HERO_CLASS[resultId] ?? 'm90-result-hero--cassette'
   const objectSrc = M90_OBJECT_SRC[resultId] ?? '/optimized/music90s/cassette.png'
 
-  const total = quiz.questions.length
+  const total = getEffectiveTotal(quiz)
 
   return (
     <div className="m90-share-card" data-score={score} data-result-id={resultId} data-testid="m90-share-card">

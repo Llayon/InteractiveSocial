@@ -1,5 +1,5 @@
 import { OptimizedImage } from '@/images/OptimizedImage'
-import { scoreCardAsset } from '@/features/quiz/scoring'
+import { getEffectiveTotal, scoreCardAsset } from '@/features/quiz/scoring'
 import type { Quiz, Result } from '@/features/quiz/schema'
 import { MUSIC90_RESULT_ASSETS, getMusic90AssetSet } from '@/content/quizzes/music90s/resultAssets.js'
 import { Music90ResultHero } from './Music90ResultHero'
@@ -58,7 +58,7 @@ export function ResultCard({ quiz, result, score, children }: ResultCardProps) {
         data-rare={assetSet.layout.rare ? 'true' : undefined}
       >
         {/* Layered editorial collage hero — data-driven, graceful fallback to objects */}
-        <Music90ResultHero assetSet={assetSet} score={score} total={quiz.questions.length} />
+        <Music90ResultHero assetSet={assetSet} score={score} total={getEffectiveTotal(quiz)} />
 
         <header className="result-card__header">
           <span className={`m90-sticker-title ${assetSet.label.mod ?? ''}`.trim()}>{assetSet.label.text}</span>
@@ -133,9 +133,9 @@ export function ResultCard({ quiz, result, score, children }: ResultCardProps) {
         <p
           className="result-card__score"
           data-testid="result-score"
-          aria-label={`Счёт ${score} из ${quiz.questions.length}`}
+          aria-label={`Счёт ${score} из ${getEffectiveTotal(quiz)}`}
         >
-          {score} / {quiz.questions.length}
+          {score} / {getEffectiveTotal(quiz)}
         </p>
       )}
 

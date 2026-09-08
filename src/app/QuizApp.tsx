@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { getAnalytics } from '@/analytics/analytics'
 import { deriveEntrySource, isChallengeAttributedParam } from '@/analytics/events'
@@ -14,6 +14,7 @@ import type { MiniAppAdapter } from '@/platform/types'
 import type { TelegramAdapter } from '@/platform/telegram'
 import { maxShareTransport } from '@/platform/share/ShareTransport'
 import { initialScreen, screenAfterQuizStart, screenForCompletedQuiz, type Screen } from './routes'
+import { MUSIC90_QUESTIONS_PER_RUN, selectMusic90Questions } from '@/content/quizzes/music90s/select'
 
 export interface QuizAppProps {
   telegram?: TelegramAdapter
@@ -41,7 +42,7 @@ export function QuizApp({ telegram, adapter }: QuizAppProps) {
     pushStage('APP_MOUNTED')
   }, [])
 
-  const quiz = useMemo(() => {
+  const baseQuiz = useMemo(() => {
     const q = resolveQuizFromLaunch({
       startParam: platformAdapter?.getStartParam() ?? null,
       search: typeof window === 'undefined' ? '' : window.location.search,
@@ -52,13 +53,26 @@ export function QuizApp({ telegram, adapter }: QuizAppProps) {
     return q
   }, [platformAdapter])
 
+  const [attempt, setAttempt] = useState(0)
+
+  const quiz = useMemo(() => {
+    // attempt is read to trigger reselect on replay
+    void attempt
+    if (baseQuiz.id !== 'music90s') return baseQuiz
+    if (baseQuiz.questions.length <= MUSIC90_QUESTIONS_PER_RUN) return baseQuiz
+    const selected = selectMusic90Questions(baseQuiz.questions, MUSIC90_QUESTIONS_PER_RUN, Math.random)
+    return { ...baseQuiz, questions: selected }
+  }, [baseQuiz, attempt])
+
   const analytics = useMemo(() => getAnalytics(), [])
   const [screen, setScreen] = useState<Screen>(initialScreen)
-  const [state, dispatch] = useReducer(
-    (s: typeof idleQuizState, action: Parameters<typeof quizReducer>[1]) => quizReducer(s, action, quiz),
-    idleQuizState,
+  const [state, setState] = useState(idleQuizState)
+  const dispatch = useCallback(
+    (action: Parameters<typeof quizReducer>[1]) => {
+      setState((prev) => quizReducer(prev, action, quiz))
+    },
+    [quiz],
   )
-  const [attempt, setAttempt] = useState(0)
   const [completionId, setCompletionId] = useState<string>(() => generateCompletionId())
   const [maxSelfMid, setMaxSelfMid] = useState<string | null>(null)
   const [maxDeliverPending, setMaxDeliverPending] = useState(false)
@@ -115,7 +129,7 @@ export function QuizApp({ telegram, adapter }: QuizAppProps) {
       entry_source: deriveEntrySource(startParam ?? null),
       ...(startParam ? { start_param: startParam } : {}),
     })
-  }, [analytics, attempt, quiz.id, quiz.questions.length, platformAdapter])
+  }, [analytics, attempt, dispatch, quiz.id, quiz.questions.length, platformAdapter])
 
   const lastTrackedAnswer = useRef<string>('')
   const replayedQuestions = useRef<Set<string>>(new Set())
@@ -158,7 +172,7 @@ export function QuizApp({ telegram, adapter }: QuizAppProps) {
         })
       }
     },
-    [analytics, attempt, quiz, platformAdapter],
+    [analytics, attempt, dispatch, quiz, platformAdapter],
   )
 
   const handleSkip = useCallback(
@@ -166,18 +180,18 @@ export function QuizApp({ telegram, adapter }: QuizAppProps) {
       dispatch({ type: 'skip', questionId })
       platformAdapter?.haptic('light')
     },
-    [platformAdapter],
+    [dispatch, platformAdapter],
   )
 
   const handleBack = useCallback(() => {
     dispatch({ type: 'back' })
     platformAdapter?.haptic('light')
-  }, [platformAdapter])
+  }, [dispatch, platformAdapter])
 
   const handleNext = useCallback(() => {
     dispatch({ type: 'next' })
     platformAdapter?.haptic('light')
-  }, [platformAdapter])
+  }, [dispatch, platformAdapter])
 
   const revealFinishedRef = useRef<string>('')
   useEffect(() => {
@@ -301,7 +315,7 @@ export function QuizApp({ telegram, adapter }: QuizAppProps) {
     } catch {
       /* swallow */
     }
-  }, [analytics, quiz.id, platformAdapter])
+  }, [analytics, dispatch, quiz.id, platformAdapter])
 
   const quizThemeAttr = { 'data-quiz': quiz.id } as const
 

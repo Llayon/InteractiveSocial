@@ -50,7 +50,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // We import quiz lazily to avoid bundling issues in Vercel
   try {
     const { music90sQuiz } = await import('../src/content/quizzes/music90s/quiz.js')
-    if (music90sQuiz.id !== 'music90s' || music90sQuiz.questions.length !== 18) {
+    const { getEffectiveTotal } = await import('../src/features/quiz/scoring.js')
+    if (music90sQuiz.id !== 'music90s' || getEffectiveTotal(music90sQuiz) !== 18 || music90sQuiz.questions.length !== 42) {
       res.status(500).json({ ok: false, error: 'quiz_music90s_invalid', quizId: music90sQuiz.id, len: music90sQuiz.questions.length })
       return
     }

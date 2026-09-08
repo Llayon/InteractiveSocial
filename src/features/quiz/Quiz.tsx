@@ -261,6 +261,7 @@ export function Quiz({
 
   const isMusic90s = quiz.id === 'music90s'
   const rubricLabels: Record<string, string> = {
+    // legacy detailed categories (first 18)
     emoji: 'ребус',
     'music-video': 'клип',
     'artist-history': 'история',
@@ -275,6 +276,12 @@ export function Quiz({
     'artist-image': 'образ',
     'era-culture': 'школьная дискотека',
     'song-recognition': 'узнай хит',
+    // stratified taxonomy for bank 42 (Q19–Q42 and future)
+    rebus: 'ребус',
+    song: 'хит',
+    clip: 'клип',
+    mtv: 'MTV',
+    culture: '90-е',
   }
   const rubric = isMusic90s ? (question.category ? (rubricLabels[question.category] ?? question.category) : undefined) : undefined
 

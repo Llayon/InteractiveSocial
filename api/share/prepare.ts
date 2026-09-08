@@ -8,6 +8,7 @@ import { quizCodeFor, resultCodeFor } from '../../src/content/quizzes/codes.js'
 import { validateInitData } from '../_lib/initData.js'
 import { RESULT_ID_REGEX } from '../../src/features/quiz/schema.js'
 import {
+  getEffectiveTotal,
   preparedShareId,
   resolveBandResultId,
   resolveShareCardAsset,
@@ -98,7 +99,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
    */
   let score: number | undefined
   if (quiz.scoring.kind === 'correct-count') {
-    const total = quiz.questions.length
+    const total = getEffectiveTotal(quiz)
     if (
       typeof rawScore !== 'number' ||
       !Number.isInteger(rawScore) ||
@@ -152,7 +153,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   const messageText = [
     typeof headline === 'string'
       ? headline
-      : `Я набрала ${score}/${quiz.questions.length} в тесте «${quiz.title}»`,
+      : `Я набрала ${score}/${getEffectiveTotal(quiz)} в тесте «${quiz.title}»`,
     '',
     `«${result.presentation.shareQuote}»`,
     '',

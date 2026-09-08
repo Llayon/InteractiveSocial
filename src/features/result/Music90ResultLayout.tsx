@@ -1,4 +1,5 @@
 import type { Quiz, Result } from '@/features/quiz/schema'
+import { getEffectiveTotal } from '@/features/quiz/scoring'
 import { getMusic90AssetSet, type Music90AssetSet } from '@/content/quizzes/music90s/resultAssets.js'
 import { Music90ResultHero } from './Music90ResultHero'
 import { Music90Hook } from './Music90Hook'
@@ -54,7 +55,7 @@ export function Music90ResultLayout({
       data-rare={set.layout.rare ? 'true' : undefined}
     >
       {/* Hero collage — data-driven per band, graceful fallback internally */}
-      <Music90ResultHero assetSet={set} score={score} total={quiz.questions.length} />
+      <Music90ResultHero assetSet={set} score={score} total={getEffectiveTotal(quiz)} />
 
       <header className="result-card__header">
         <span className={`m90-sticker-title ${set.label.mod ?? ''}`.trim()}>{set.label.text}</span>

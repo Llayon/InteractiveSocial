@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { music90sQuiz } from '@/content/quizzes/music90s/quiz'
+import { MUSIC90_QUESTIONS_PER_RUN, selectMusic90Questions, createSeededRng } from '@/content/quizzes/music90s/select'
 import { quizzes } from '@/content/quizzes'
 import { codesForQuiz } from '@/content/quizzes/codes'
 import {
   computeCorrectCount,
+  getEffectiveTotal,
   resolveBandResultId,
   resolveCorrectCountOutcome,
   resolveOutcome,
@@ -13,8 +15,8 @@ import {
 
 const q = music90sQuiz
 
-function answerAll(ids: string[]) {
-  return ids.map((answerId, i) => ({ questionId: q.questions[i].id, answerId }))
+function answerAllForQuiz(quiz: typeof q, ids: string[]) {
+  return ids.map((answerId, i) => ({ questionId: quiz.questions[i].id, answerId }))
 }
 
 describe('Music90s: correct-count scoring config', () => {
@@ -22,18 +24,21 @@ describe('Music90s: correct-count scoring config', () => {
     expect(q.scoring.kind).toBe('correct-count')
   })
 
-  it('has exactly 18 questions, each with a single valid correct answer', () => {
-    expect(q.questions).toHaveLength(18)
+  it('has exactly 42 questions in bank, each with a single valid correct answer', () => {
+    expect(q.questions).toHaveLength(42)
     for (const question of q.questions) {
       expect(typeof question.correctAnswerId).toBe('string')
       const ids = question.answers.map((a) => a.id)
       expect(ids).toContain(question.correctAnswerId)
       expect(new Set(ids).size).toBe(ids.length)
       expect(ids).toHaveLength(4)
+      // each has feedback
+      expect(question.feedback?.correct).toBeTruthy()
+      expect(question.feedback?.wrong).toBeTruthy()
     }
     const qids = q.questions.map((qu) => qu.id)
     expect(new Set(qids).size).toBe(qids.length)
-    expect(qids).toEqual(['m1','m2','m3','m4','m5','m6','m7','m8','m9','m10','m11','m12','m13','m14','m15','m16','m17','m18'])
+    expect(qids).toEqual(['m1','m2','m3','m4','m5','m6','m7','m8','m9','m10','m11','m12','m13','m14','m15','m16','m17','m18','m19','m20','m21','m22','m23','m24','m25','m26','m27','m28','m29','m30','m31','m32','m33','m34','m35','m36','m37','m38','m39','m40','m41','m42'])
   })
 
   it('uses the canonical seven bands covering 0..18 with no gaps/overlaps', () => {
@@ -60,6 +65,12 @@ describe('Music90s: correct-count scoring config', () => {
     expect(sorted[4]).toEqual({ min: 14, max: 16, resultId: 'm90_legend' })
     expect(sorted[5]).toEqual({ min: 17, max: 17, resultId: 'm90_era17' })
     expect(sorted[6]).toEqual({ min: 18, max: 18, resultId: 'm90_era18' })
+  })
+
+  it('effective total is 18 (attempt length) even though bank is 42', () => {
+    expect(getEffectiveTotal(q)).toBe(18)
+    expect(q.questions.length).toBe(42)
+    expect(MUSIC90_QUESTIONS_PER_RUN).toBe(18)
   })
 
   it('has globally namespaced result ids (m90_*) and 7 results', () => {
@@ -90,7 +101,7 @@ describe('Music90s: correct-count scoring config', () => {
     expect(codes!.results['m90_legend']).toBe('lg')
   })
 
-  it('question order and correct answers match the fixed 18 spec', () => {
+  it('existing 18 question correct answers unchanged (first 18 preserved)', () => {
     const expected: Array<{ id: string; correct: string }> = [
       { id: 'm1', correct: 'a' }, // Крошка моя
       { id: 'm2', correct: 'b' }, // Влад Сташевский
@@ -115,6 +126,20 @@ describe('Music90s: correct-count scoring config', () => {
       expect(q.questions[i].id).toBe(id)
       expect(q.questions[i].correctAnswerId).toBe(correct)
     })
+  })
+
+  it('new Q19–Q42 have correct answers per spec', () => {
+    const expected: Record<string, string> = {
+      m19: 'b', m20: 'b', m21: 'c', m22: 'b', m23: 'a', m24: 'c',
+      m25: 'b', m26: 'a', m27: 'a', m28: 'b', m29: 'b', m30: 'b',
+      m31: 'a', m32: 'a', m33: 'a', m34: 'a', m35: 'b', m36: 'a',
+      m37: 'a', m38: 'a', m39: 'a', m40: 'a', m41: 'a', m42: 'a',
+    }
+    for (const [id, correct] of Object.entries(expected)) {
+      const qq = q.questions.find((x) => x.id === id)!
+      expect(qq, `missing ${id}`).toBeDefined()
+      expect(qq.correctAnswerId).toBe(correct)
+    }
   })
 
   it('landing meta says 18 questions', () => {
@@ -195,10 +220,16 @@ describe('Music90s: score → band → result mapping', () => {
   })
 })
 
-describe('Music90s: outcome boundary', () => {
+describe('Music90s: outcome boundary with sampled 18', () => {
+  // For outcome tests we sample 18 via deterministic selector, not the full 42 bank
+  function sampledQuiz() {
+    const selected = selectMusic90Questions(q.questions, 18, createSeededRng(1))
+    return { ...q, questions: selected }
+  }
   it('all-correct answers resolve to m90_era18 with correct=18/total=18', () => {
-    const allCorrect = answerAll(q.questions.map((qu) => qu.correctAnswerId!))
-    const outcome = resolveCorrectCountOutcome(q, allCorrect)
+    const sq = sampledQuiz()
+    const allCorrect = answerAllForQuiz(sq, sq.questions.map((qu) => qu.correctAnswerId!))
+    const outcome = resolveCorrectCountOutcome(sq, allCorrect)
     expect(outcome).toEqual({
       kind: 'correct-count',
       resultId: 'm90_era18',
@@ -208,10 +239,11 @@ describe('Music90s: outcome boundary', () => {
   })
 
   it('all-wrong answers resolve to m90_rookie with correct=0/total=18', () => {
-    const allWrong = answerAll(
-      q.questions.map((qu) => qu.answers.find((a) => a.id !== qu.correctAnswerId)!.id),
+    const sq = sampledQuiz()
+    const allWrong = answerAllForQuiz(sq,
+      sq.questions.map((qu) => qu.answers.find((a) => a.id !== qu.correctAnswerId)!.id),
     )
-    const outcome = resolveCorrectCountOutcome(q, allWrong)
+    const outcome = resolveCorrectCountOutcome(sq, allWrong)
     expect(outcome).toEqual({
       kind: 'correct-count',
       resultId: 'm90_rookie',
@@ -221,12 +253,13 @@ describe('Music90s: outcome boundary', () => {
   })
 
   it('mixed answer set maps to the correct band (e.g. 6/18 → familiar)', () => {
-    const half = q.questions.map((qu, i) => ({
+    const sq = sampledQuiz()
+    const half = sq.questions.map((qu, i) => ({
       questionId: qu.id,
       answerId: i < 6 ? qu.correctAnswerId! : qu.answers.find((a) => a.id !== qu.correctAnswerId)!.id,
     }))
-    expect(computeCorrectCount(q, half)).toBe(6)
-    const outcome = resolveOutcome(q, half)
+    expect(computeCorrectCount(sq, half)).toBe(6)
+    const outcome = resolveOutcome(sq, half)
     expect(outcome).toEqual({
       kind: 'correct-count',
       resultId: 'm90_familiar',
@@ -236,30 +269,33 @@ describe('Music90s: outcome boundary', () => {
   })
 
   it('17/18 → m90_era17 boundary', () => {
-    const seventeen = q.questions.map((qu, i) => ({
+    const sq = sampledQuiz()
+    const seventeen = sq.questions.map((qu, i) => ({
       questionId: qu.id,
       answerId: i < 17 ? qu.correctAnswerId! : qu.answers.find((a) => a.id !== qu.correctAnswerId)!.id,
     }))
-    expect(computeCorrectCount(q, seventeen)).toBe(17)
-    expect(resolveOutcome(q, seventeen).resultId).toBe('m90_era17')
+    expect(computeCorrectCount(sq, seventeen)).toBe(17)
+    expect(resolveOutcome(sq, seventeen).resultId).toBe('m90_era17')
   })
 
   it('14/18 → m90_legend (Главред журнала Cool) boundary', () => {
-    const fourteen = q.questions.map((qu, i) => ({
+    const sq = sampledQuiz()
+    const fourteen = sq.questions.map((qu, i) => ({
       questionId: qu.id,
       answerId: i < 14 ? qu.correctAnswerId! : qu.answers.find((a) => a.id !== qu.correctAnswerId)!.id,
     }))
-    expect(computeCorrectCount(q, fourteen)).toBe(14)
-    expect(resolveOutcome(q, fourteen).resultId).toBe('m90_legend')
+    expect(computeCorrectCount(sq, fourteen)).toBe(14)
+    expect(resolveOutcome(sq, fourteen).resultId).toBe('m90_legend')
   })
 
   it('answer list ordering never changes the outcome (correct set)', () => {
-    const correct = q.questions.map((qu) => ({ questionId: qu.id, answerId: qu.correctAnswerId! }))
+    const sq = sampledQuiz()
+    const correct = sq.questions.map((qu) => ({ questionId: qu.id, answerId: qu.correctAnswerId! }))
     const reversed = [...correct].reverse()
-    const a = resolveOutcome(q, correct)
-    const b = resolveOutcome(q, reversed)
+    const a = resolveOutcome(sq, correct)
+    const b = resolveOutcome(sq, reversed)
     expect(a.resultId).toBe(b.resultId)
-    expect(computeCorrectCount(q, correct)).toBe(computeCorrectCount(q, reversed))
+    expect(computeCorrectCount(sq, correct)).toBe(computeCorrectCount(sq, reversed))
   })
 })
 
@@ -434,6 +470,30 @@ describe('Music90s: per-question answer feedback (ANSWER FEEDBACK pass)', () => 
     m16: { correct: 'Чистая победа.', wrong: 'Не попала в такт.' },
     m17: { correct: 'Уровень: профи.', wrong: 'Ай, осечка!' },
     m18: { correct: 'Абсолют!', wrong: 'Тут не срослось.' },
+    m19: { correct: 'Точно!', wrong: 'Мимо.' },
+    m20: { correct: 'Зачёт!', wrong: 'Не-а, мимо.' },
+    m21: { correct: 'В яблочко!', wrong: 'Почти.' },
+    m22: { correct: 'Память работает.', wrong: 'Мимо кассы.' },
+    m23: { correct: 'Красиво!', wrong: 'Не тот трек.' },
+    m24: { correct: 'Да!', wrong: 'Ай, осечка.' },
+    m25: { correct: 'Точно в цель!', wrong: 'Не угадала.' },
+    m26: { correct: 'Как по нотам!', wrong: 'Память подвела.' },
+    m27: { correct: 'Классика.', wrong: 'Рядом, но нет.' },
+    m28: { correct: 'Золотой фонд.', wrong: 'Фальшивая нота.' },
+    m29: { correct: 'В точку!', wrong: 'Эх, мимо.' },
+    m30: { correct: 'Чистая победа.', wrong: 'Срезалась!' },
+    m31: { correct: 'Точно в ритм.', wrong: 'Мимо нот.' },
+    m32: { correct: 'Абсолют!', wrong: 'Тут не срослось.' },
+    m33: { correct: 'База на месте.', wrong: 'Не попала в такт.' },
+    m34: { correct: 'Уровень: профи.', wrong: 'Обидно, но мимо.' },
+    m35: { correct: 'Ни секунды сомнений!', wrong: 'Увы, не угадала.' },
+    m36: { correct: 'Легчайшая.', wrong: 'Спутала!' },
+    m37: { correct: 'С первой ноты.', wrong: 'Мимо кассы.' },
+    m38: { correct: 'Знаешь наизусть!', wrong: 'Не-а, не то.' },
+    m39: { correct: 'Память не подводит!', wrong: 'Чуть-чуть не туда.' },
+    m40: { correct: 'Без шансов для ошибки.', wrong: 'Не угадала.' },
+    m41: { correct: 'Красиво!', wrong: 'Рядом, но нет.' },
+    m42: { correct: 'Точно!', wrong: 'Мимо.' },
   }
 
   it('answerBehavior is feedback with duration 900 and neutral fallback', () => {
@@ -448,7 +508,7 @@ describe('Music90s: per-question answer feedback (ANSWER FEEDBACK pass)', () => 
   })
 
   it('every question defines feedback correct/wrong exactly matching approved copy', () => {
-    expect(q.questions).toHaveLength(18)
+    expect(q.questions).toHaveLength(42)
     for (const question of q.questions) {
       const exp = approved[question.id]
       expect(exp, `missing approved entry for ${question.id}`).toBeDefined()
@@ -476,7 +536,19 @@ describe('Music90s: per-question answer feedback (ANSWER FEEDBACK pass)', () => 
     expect(m18.feedback!.wrong).toBe('Тут не срослось.')
   })
 
-  it('all 18 mapped yes', () => {
+  it('m19 correct → Точно! / wrong → Мимо.', () => {
+    const m19 = q.questions.find((qq) => qq.id === 'm19')!
+    expect(m19.feedback!.correct).toBe('Точно!')
+    expect(m19.feedback!.wrong).toBe('Мимо.')
+  })
+
+  it('m42 correct → Точно! / wrong → Мимо.', () => {
+    const m42 = q.questions.find((qq) => qq.id === 'm42')!
+    expect(m42.feedback!.correct).toBe('Точно!')
+    expect(m42.feedback!.wrong).toBe('Мимо.')
+  })
+
+  it('all 42 mapped yes', () => {
     const ids = q.questions.map((qq) => qq.id).sort()
     expect(ids).toEqual(Object.keys(approved).sort())
     for (const id of ids) {
@@ -497,8 +569,8 @@ describe('Music90s: per-question answer feedback (ANSWER FEEDBACK pass)', () => 
     }
   })
 
-  it('questions and answer keys unchanged (feedback-only)', () => {
-    // spot check that question text and correctAnswerId still match original spec
+  it('questions and answer keys unchanged for first 18 (feedback-only preservation)', () => {
+    // spot check that question text and correctAnswerId still match original spec for first 18
     expect(q.questions[0].title).toContain('Какой хит зашифрован')
     expect(q.questions[0].correctAnswerId).toBe('a')
     expect(q.questions[9].correctAnswerId).toBe('b') // m10

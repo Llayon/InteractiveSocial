@@ -4,6 +4,7 @@ import { resolveQuizRequest } from '../_lib/quizRequest.js'
 import { validateInitData } from '../_lib/initData.js'
 import { RESULT_ID_REGEX } from '../../src/features/quiz/schema.js'
 import {
+  getEffectiveTotal,
   resolveBandResultId,
   resolveShareCardAsset,
   shareCardImageUrl,
@@ -124,7 +125,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   // for leaderboards/competition/rewards.
   let score: number | undefined
   if (quiz.scoring.kind === 'correct-count') {
-    const total = quiz.questions.length
+    const total = getEffectiveTotal(quiz)
     if (
       typeof rawScore !== 'number' ||
       !Number.isInteger(rawScore) ||
@@ -169,7 +170,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     const headline =
       score === undefined
         ? `${result.title} — ${result.presentation.subtitle}`
-        : `Твой счёт: ${score} из ${quiz.questions.length}`
+        : `Твой счёт: ${score} из ${getEffectiveTotal(quiz)}`
     const caption = [
       headline,
       '',

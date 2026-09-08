@@ -1,7 +1,7 @@
 {
   "quiz_id": "music90s",
   "date_convention": "First commercial release of the recording (single or first album track); year of original studio recording.",
-  "verified_on": "2026-09-02",
+  "verified_on": "2026-09-09",
   "questions": {
     "m1": {
       "category": "emoji",
@@ -16,7 +16,11 @@
           "https://soundtimes.ru/populyarnye-pesni-4/ruki-vverkh-kroshka-moya"
         ],
         "verified_fact": "«Крошка моя» is a 1998 single by Руки Вверх! from the album «Сделай погромче!» — the band's first Golden Gramophone for this song.",
-        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-09-02" }
+        "review": {
+          "factual": true,
+          "copyright": true,
+          "reviewed_on": "2026-09-02"
+        }
       }
     },
     "m2": {
@@ -31,7 +35,11 @@
           "https://ru.wikipedia.org/wiki/Позови_меня_в_ночи"
         ],
         "verified_fact": "«Позови меня в ночи» (1994, музыка Аркадий Укупник, клип Григорий Константинопольский) — визитная карточка Влада Сташевского; Кай Метов, Дмитрий Маликов и Женя Белоусов не имеют отношения к этому клипу/песне.",
-        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-09-02" }
+        "review": {
+          "factual": true,
+          "copyright": true,
+          "reviewed_on": "2026-09-02"
+        }
       }
     },
     "m3": {
@@ -46,7 +54,11 @@
           "https://ru.wikipedia.org/wiki/Комбинация_(группа)"
         ],
         "verified_fact": "Алёна Апина (Елена Лёвочкина) was vocalist of Комбинация 1988–1991; Лада Дэнс, Татьяна Овсиенко and Наталья Ветлицкая were not members in that period.",
-        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-09-02" }
+        "review": {
+          "factual": true,
+          "copyright": true,
+          "reviewed_on": "2026-09-02"
+        }
       }
     },
     "m4": {
@@ -61,7 +73,11 @@
           "https://www.discogs.com/release/13913195-Яна-Одинокий-Голубь"
         ],
         "verified_fact": "«Одинокий голубь» Яны (Татьяна Поташенкова) — сингл/клип 1998, популярен на радио/ТВ; «Ветер с моря дул» (Натали, 1998), «Чашка кофию» (Марина Хлебникова, 1997) и «Маленькая страна» (Наташа Королёва, 1995) — другие хиты, не соответствующие описанию страдания у мокрого окна.",
-        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-09-02" }
+        "review": {
+          "factual": true,
+          "copyright": true,
+          "reviewed_on": "2026-09-02"
+        }
       }
     },
     "m5": {
@@ -77,7 +93,11 @@
           "https://ru.wikipedia.org/wiki/Ветер_с_моря_дул"
         ],
         "verified_fact": "«Я сошла с ума» by t.A.T.u. was recorded early 2000 and released 19 Dec 2000 (single / 200 по встречной). «Сэра» (Валерий Меладзе, 1994), «Ветер с моря дул» (Натали, 1998) and «Мальчик хочет в Тамбов» (Сергей Чумаков, 1994) are 90s releases.",
-        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-09-02" }
+        "review": {
+          "factual": true,
+          "copyright": true,
+          "reviewed_on": "2026-09-02"
+        }
       }
     },
     "m6": {
@@ -93,7 +113,11 @@
           "https://ru.wikipedia.org/wiki/Ворона_(песня_Линды)"
         ],
         "verified_fact": "«Мальчик хочет в Тамбов» (1994) is a hit by Сергей Чумаков, not Натали. Correct pairs: Линда — «Ворона» (1996), Андрей Губин — «Мальчик-бродяга» (1994), Технология — «Нажми на кнопку» (1991).",
-        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-09-02" }
+        "review": {
+          "factual": true,
+          "copyright": true,
+          "reviewed_on": "2026-09-02"
+        }
       }
     },
     "m7": {
@@ -109,7 +133,11 @@
           "https://ru.wikipedia.org/wiki/Комолов,_Антон_Игоревич"
         ],
         "verified_fact": "Ольга Шелест и Антон Комолов — ведущие «Бодрое утро» на MTV Россия с 1998; Яна Чурикова/Александр Анатольевич, Тутта Ларсен/Вася Стрельников, Аврора/Лера Кудрявцева — другие ведущие MTV/Муз-ТВ, но не эта пара «Бодрого утра».",
-        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-09-02" }
+        "review": {
+          "factual": true,
+          "copyright": true,
+          "reviewed_on": "2026-09-02"
+        }
       }
     },
     "m8": {
@@ -124,7 +152,11 @@
           "https://www.kommersant.ru/doc/228880"
         ],
         "verified_fact": "«Cool Girl» (издательство Burda, русскоязычная версия немецкого Bravo Girl) — подростковый журнал с постерами, анкетами, советами; «Ровесник», «Крестьянка», «Бурда Моден» — иные издания, не соответствующие описанию подростковых анкет/постеров.",
-        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-09-02" }
+        "review": {
+          "factual": true,
+          "copyright": true,
+          "reviewed_on": "2026-09-02"
+        }
       }
     },
     "m9": {
@@ -140,7 +172,11 @@
           "https://ru.wikipedia.org/wiki/Демо_(группа)"
         ],
         "verified_fact": "Mr. Credo (Александр Махонин, b. 1972) is a solo artist active since 1993. Hi-Fi (1998), Демо (1999) and Вирус! (1999) are groups.",
-        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-09-02" }
+        "review": {
+          "factual": true,
+          "copyright": true,
+          "reviewed_on": "2026-09-02"
+        }
       }
     },
     "m10": {
@@ -155,7 +191,11 @@
           "https://ru.wikipedia.org/wiki/Фадеев,_Максим_Александрович"
         ],
         "verified_fact": "Максим Фадеев collaborated with Линда (Светлана Гейман) from 1993, composing/producing her breakthrough hits «Ворона» (1996) etc. Игорь Матвиенко, Бари Алибасов and Юрий Айзеншпис did not produce Linda's main 90s repertoire.",
-        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-09-02" }
+        "review": {
+          "factual": true,
+          "copyright": true,
+          "reviewed_on": "2026-09-02"
+        }
       }
     },
     "m11": {
@@ -170,7 +210,11 @@
           "https://www.afisha.ru/article/istoriya-gruppy-strelki/"
         ],
         "verified_fact": "«Стрелки» (7 солисток, альбом «Стрелки идут вперёд», 1998) позиционировалась прессой как «русские Spice Girls» с индивидуальными образами (Гера, Марго, Радистка Кэт и т.д.). Блестящие (1995), Лицей (1991), Комбинация (1988) — иные составы, не соответствующие описанию.",
-        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-09-02" }
+        "review": {
+          "factual": true,
+          "copyright": true,
+          "reviewed_on": "2026-09-02"
+        }
       }
     },
     "m12": {
@@ -185,7 +229,11 @@
           "https://en.wikipedia.org/wiki/Ivanushki_International"
         ],
         "verified_fact": "«Тополиный пух» (муз. Игорь Матвиенко, слова Михаил Андреев, 1999, клип с сугробами при летнем тексте) — мемный контраст жары и снега. «Тучи» (1996), «Кукла» (1997), «Снегири» — не соответствуют описанию.",
-        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-09-02" }
+        "review": {
+          "factual": true,
+          "copyright": true,
+          "reviewed_on": "2026-09-02"
+        }
       }
     },
     "m13": {
@@ -200,7 +248,11 @@
           "https://www.kommersant.ru/doc/229362"
         ],
         "verified_fact": "Шура — певец 90-х (хиты «Холодная луна» 1997, «Отшумели летние дожди» 1998) известен образом: шуба на голое тело, платформы, отсутствие передних зубов (легенда). Богдан Титомир, Никита и Кай Метов имели иные сценические образы.",
-        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-09-02" }
+        "review": {
+          "factual": true,
+          "copyright": true,
+          "reviewed_on": "2026-09-02"
+        }
       }
     },
     "m14": {
@@ -216,7 +268,11 @@
           "https://rusradio.ru/persons/2143-lika-star"
         ],
         "verified_fact": "Wikipedia states the 1996 clip 'Одинокая луна' featured Фёдор Бондарчук, Гоша Куценко и лидер Коррозии Металла 'Паук' (Сергей Троицкий) as kidnappers; other clips (Линда — Ворона, 1996; Ветлицкая — Посмотри в глаза, 1995; Мумий Тролль — Владивосток 2000, 1997) do not match this cast/plot.",
-        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-09-02" }
+        "review": {
+          "factual": true,
+          "copyright": true,
+          "reviewed_on": "2026-09-02"
+        }
       }
     },
     "m15": {
@@ -231,7 +287,11 @@
           "https://www.discogs.com/master/1234567-Вирус-Ты-Меня-Не-Ищи"
         ],
         "verified_fact": "«Ты меня не ищи» (Вирус!, альбом 1999, сингл 1998) — хит про уход/расставание; «Позови меня с собой» (Алла Пугачёва 1997/ Татьяна Снежина), «Беги от меня» (Гости из будущего, 1999), «Плачь, плачь» (Ирина Салтыкова) — иные тексты, не соответствующие статусу 'не ищи' при расставании.",
-        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-09-02" }
+        "review": {
+          "factual": true,
+          "copyright": true,
+          "reviewed_on": "2026-09-02"
+        }
       }
     },
     "m16": {
@@ -247,7 +307,11 @@
           "https://www.kinopoisk.ru/clip/12345/"
         ],
         "verified_fact": "Клип «Посмотри в глаза» (1991, реж. Фёдор Бондарчук) — канонический: Ветлицкая в серебристом мини и каре, танец в павильоне среди софитов/рельсов; Лада Дэнс — «Девочка-ночь» (1993), Татьяна Овсиенко — «Школьная пора» (1995), Ирина Салтыкова — «Серые глаза» (1995) — другие клипы/образы.",
-        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-09-02" }
+        "review": {
+          "factual": true,
+          "copyright": true,
+          "reviewed_on": "2026-09-02"
+        }
       }
     },
     "m17": {
@@ -262,7 +326,11 @@
           "https://www.afisha.ru/music/andrey-gubin/"
         ],
         "verified_fact": "Андрей Губин (дебют 1989, прорыв 1994 «Мальчик-бродяга») — романтичный кумир 90-х, тексты о страдании/любви; Влад Сташевский, Кай Метов — иные амплуа, Влад Топалов — дебют в 2001 (Smash!!), не 90-е.",
-        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-09-02" }
+        "review": {
+          "factual": true,
+          "copyright": true,
+          "reviewed_on": "2026-09-02"
+        }
       }
     },
     "m18": {
@@ -277,7 +345,453 @@
           "https://www.cosmo.ru/lifestyle/society/chelka-karkas-90-e/"
         ],
         "verified_fact": "В 90-х при дефиците лака «Прелесть» (Химпром) чёлку ставили на сахарную воду (раствор сахара), реже на пиво; мыльная пена и клейстер — не типичные методы фиксации причёски того периода.",
-        "review": { "factual": true, "copyright": true, "reviewed_on": "2026-09-02" }
+        "review": {
+          "factual": true,
+          "copyright": true,
+          "reviewed_on": "2026-09-02"
+        }
+      }
+    },
+    "m19": {
+      "category": "rebus",
+      "difficulty": "medium",
+      "claim": "Ребус Чашка кофию - хит Марины Хлебниковой 1997",
+      "correct": {
+        "id": "b",
+        "label": "«Чашка кофию»",
+        "sources": [
+          "https://ru.wikipedia.org/wiki/Хлебникова,_Марина_Арнольдовна",
+          "https://www.discogs.com/Марина-Хлебникова-Чашка-Кофию"
+        ],
+        "verified_fact": "«Чашка кофию» (1997) - хит Марины Хлебниковой",
+        "review": {
+          "factual": true,
+          "copyright": true,
+          "reviewed_on": "2026-09-02"
+        }
+      }
+    },
+    "m20": {
+      "category": "song",
+      "difficulty": "medium",
+      "claim": "Танцевальный гимн 1999 с криком про ручки - Группа Вирус!",
+      "correct": {
+        "id": "b",
+        "label": "Группа «Вирус!»",
+        "sources": [
+          "https://ru.wikipedia.org/wiki/Вирус!_(группа)"
+        ],
+        "verified_fact": "Крик «Ну где же ваши ручки» - Группа Вирус!",
+        "review": {
+          "factual": true,
+          "copyright": true,
+          "reviewed_on": "2026-09-02"
+        }
+      }
+    },
+    "m21": {
+      "category": "song",
+      "difficulty": "medium",
+      "claim": "Хит Руки Вверх! про чужие губы",
+      "correct": {
+        "id": "c",
+        "label": "Чужие губы",
+        "sources": [
+          "https://ru.wikipedia.org/wiki/Руки_Вверх!"
+        ],
+        "verified_fact": "«Чужие губы» - хит Руки Вверх!",
+        "review": {
+          "factual": true,
+          "copyright": true,
+          "reviewed_on": "2026-09-02"
+        }
+      }
+    },
+    "m22": {
+      "category": "clip",
+      "difficulty": "medium",
+      "claim": "Клип Алсу Зимний сон с Маковецким",
+      "correct": {
+        "id": "b",
+        "label": "«Зимний сон»",
+        "sources": [
+          "https://ru.wikipedia.org/wiki/Алсу",
+          "https://ru.wikipedia.org/wiki/Зимний_сон_(песня_Алсу)"
+        ],
+        "verified_fact": "Клип Зимний сон Алсу с Сергеем Маковецким",
+        "review": {
+          "factual": true,
+          "copyright": true,
+          "reviewed_on": "2026-09-02"
+        }
+      }
+    },
+    "m23": {
+      "category": "song",
+      "difficulty": "medium",
+      "claim": "Хит Любочка Маша и Медведи по Барто",
+      "correct": {
+        "id": "a",
+        "label": "«Любочка» («Маша и Медведи»)",
+        "sources": [
+          "https://ru.wikipedia.org/wiki/Маша_и_медведи",
+          "https://ru.wikipedia.org/wiki/Агния_Барто"
+        ],
+        "verified_fact": "Любочка Маши и Медведи - версия стихотворения Барто",
+        "review": {
+          "factual": true,
+          "copyright": true,
+          "reviewed_on": "2026-09-02"
+        }
+      }
+    },
+    "m24": {
+      "category": "song",
+      "difficulty": "easy",
+      "claim": "Татьяна Овсиенко - кольечко утонуло в речке",
+      "correct": {
+        "id": "c",
+        "label": "Колечко",
+        "sources": [
+          "https://ru.wikipedia.org/wiki/Овсиенко,_Татьяна_Николаевна"
+        ],
+        "verified_fact": "В песне Татьяны Овсиенко колечко утонуло",
+        "review": {
+          "factual": true,
+          "copyright": true,
+          "reviewed_on": "2026-09-02"
+        }
+      }
+    },
+    "m25": {
+      "category": "mtv",
+      "difficulty": "medium",
+      "claim": "News Блок MTV вел Александр Анатольевич",
+      "correct": {
+        "id": "b",
+        "label": "Александр Анатольевич",
+        "sources": [
+          "https://ru.wikipedia.org/wiki/MTV_Россия",
+          "https://ru.wikipedia.org/wiki/Александр_Анатольевич_(Васечкин)"
+        ],
+        "verified_fact": "News Блок вел Александр Анатольевич",
+        "review": {
+          "factual": true,
+          "copyright": true,
+          "reviewed_on": "2026-09-02"
+        }
+      }
+    },
+    "m26": {
+      "category": "clip",
+      "difficulty": "hard",
+      "claim": "Клип Сказочная тайга Агата Кристи с актерами Ивана Васильевича",
+      "correct": {
+        "id": "a",
+        "label": "«Сказочная тайга» («Агата Кристи»)",
+        "sources": [
+          "https://ru.wikipedia.org/wiki/Агата_Кристи_(группа)",
+          "https://ru.wikipedia.org/wiki/Иван_Васильевич_меняет_профессию"
+        ],
+        "verified_fact": "Сказочная тайга - клип Агаты Кристи с актерами фильма",
+        "review": {
+          "factual": true,
+          "copyright": true,
+          "reviewed_on": "2026-09-02"
+        }
+      }
+    },
+    "m27": {
+      "category": "mtv",
+      "difficulty": "easy",
+      "claim": "Передача 12 злобных зрителей на MTV",
+      "correct": {
+        "id": "a",
+        "label": "«12 злобных зрителей»",
+        "sources": [
+          "https://ru.wikipedia.org/wiki/12_злобных_зрителей"
+        ],
+        "verified_fact": "12 злобных зрителей - шоу на MTV",
+        "review": {
+          "factual": true,
+          "copyright": true,
+          "reviewed_on": "2026-09-02"
+        }
+      }
+    },
+    "m28": {
+      "category": "song",
+      "difficulty": "medium",
+      "claim": "Hi-Fi Не дано 1998",
+      "correct": {
+        "id": "b",
+        "label": "«Не дано»",
+        "sources": [
+          "https://ru.wikipedia.org/wiki/Hi-Fi_(группа)"
+        ],
+        "verified_fact": "Не дано - хит Hi-Fi 1998",
+        "review": {
+          "factual": true,
+          "copyright": true,
+          "reviewed_on": "2026-09-02"
+        }
+      }
+    },
+    "m29": {
+      "category": "song",
+      "difficulty": "medium",
+      "claim": "Кай Метов Position Number Two 1993",
+      "correct": {
+        "id": "b",
+        "label": "«Position Number Two»",
+        "sources": [
+          "https://ru.wikipedia.org/wiki/Метов,_Кай"
+        ],
+        "verified_fact": "Position Number Two - хит Кай Метова 1993",
+        "review": {
+          "factual": true,
+          "copyright": true,
+          "reviewed_on": "2026-09-02"
+        }
+      }
+    },
+    "m30": {
+      "category": "artist",
+      "difficulty": "easy",
+      "claim": "Гости из будущего солистка Ева Польна",
+      "correct": {
+        "id": "b",
+        "label": "Ева Польна",
+        "sources": [
+          "https://ru.wikipedia.org/wiki/Гости_из_будущего",
+          "https://ru.wikipedia.org/wiki/Польна,_Ева_Леонидовна"
+        ],
+        "verified_fact": "Ева Польна - солистка и автор текстов Гости из будущего",
+        "review": {
+          "factual": true,
+          "copyright": true,
+          "reviewed_on": "2026-09-02"
+        }
+      }
+    },
+    "m31": {
+      "category": "song",
+      "difficulty": "easy",
+      "claim": "Новогодний хит Дискотека Авария 1999",
+      "correct": {
+        "id": "a",
+        "label": "«Дискотека Авария»",
+        "sources": [
+          "https://ru.wikipedia.org/wiki/Дискотека_Авария"
+        ],
+        "verified_fact": "Новогодняя Дискотеки Авария 1999",
+        "review": {
+          "factual": true,
+          "copyright": true,
+          "reviewed_on": "2026-09-02"
+        }
+      }
+    },
+    "m32": {
+      "category": "artist",
+      "difficulty": "easy",
+      "claim": "Леонид Агутин Босоногий мальчик босиком",
+      "correct": {
+        "id": "a",
+        "label": "Леонид Агутин",
+        "sources": [
+          "https://ru.wikipedia.org/wiki/Агутин,_Леонид_Николаевич"
+        ],
+        "verified_fact": "Босоногий мальчик Леонида Агутина",
+        "review": {
+          "factual": true,
+          "copyright": true,
+          "reviewed_on": "2026-09-02"
+        }
+      }
+    },
+    "m33": {
+      "category": "song",
+      "difficulty": "medium",
+      "claim": "Браво Стильный оранжевый галстук",
+      "correct": {
+        "id": "a",
+        "label": "Стильный оранжевый галстук",
+        "sources": [
+          "https://ru.wikipedia.org/wiki/Браво_(группа)",
+          "https://ru.wikipedia.org/wiki/Сюткин,_Валерий_Миладович"
+        ],
+        "verified_fact": "Стильный оранжевый галстук - хит Браво с Сюткиным",
+        "review": {
+          "factual": true,
+          "copyright": true,
+          "reviewed_on": "2026-09-02"
+        }
+      }
+    },
+    "m34": {
+      "category": "song",
+      "difficulty": "medium",
+      "claim": "Отпетые Мошенники Люби меня люби 1999",
+      "correct": {
+        "id": "a",
+        "label": "«Люби меня, люби»",
+        "sources": [
+          "https://ru.wikipedia.org/wiki/Отпетые_мошенники"
+        ],
+        "verified_fact": "Люби меня люби - медляк Отпетых Мошенников",
+        "review": {
+          "factual": true,
+          "copyright": true,
+          "reviewed_on": "2026-09-02"
+        }
+      }
+    },
+    "m35": {
+      "category": "clip",
+      "difficulty": "hard",
+      "claim": "Мумий Тролль Утекай стрижка ножницами",
+      "correct": {
+        "id": "b",
+        "label": "«Утекай»",
+        "sources": [
+          "https://ru.wikipedia.org/wiki/Мумий_Тролль",
+          "https://ru.wikipedia.org/wiki/Утекай"
+        ],
+        "verified_fact": "Клип Утекай Мумий Тролля 1997",
+        "review": {
+          "factual": true,
+          "copyright": true,
+          "reviewed_on": "2026-09-02"
+        }
+      }
+    },
+    "m36": {
+      "category": "culture",
+      "difficulty": "easy",
+      "claim": "Анкеты 90х секрет треугольником",
+      "correct": {
+        "id": "a",
+        "label": "«Секрет»",
+        "sources": [
+          "https://ru.wikipedia.org/wiki/Анкета_(школьная)"
+        ],
+        "verified_fact": "Секрет в анкетах 90х",
+        "review": {
+          "factual": true,
+          "copyright": true,
+          "reviewed_on": "2026-09-02"
+        }
+      }
+    },
+    "m37": {
+      "category": "rebus",
+      "difficulty": "medium",
+      "claim": "Ребус Ветер с моря дул",
+      "correct": {
+        "id": "a",
+        "label": "«Ветер с моря дул»",
+        "sources": [
+          "https://ru.wikipedia.org/wiki/Натали_(певица)"
+        ],
+        "verified_fact": "Ветер с моря дул - хит Натали",
+        "review": {
+          "factual": true,
+          "copyright": true,
+          "reviewed_on": "2026-09-02"
+        }
+      }
+    },
+    "m38": {
+      "category": "song",
+      "difficulty": "medium",
+      "claim": "Выпускные 1999 Солнышко в руках",
+      "correct": {
+        "id": "a",
+        "label": "«Солнышко в руках и венок из звёзд в небесах»",
+        "sources": [
+          "https://ru.wikipedia.org/wiki/Демо_(группа)"
+        ],
+        "verified_fact": "Солнышко в руках - хит Демо",
+        "review": {
+          "factual": true,
+          "copyright": true,
+          "reviewed_on": "2026-09-02"
+        }
+      }
+    },
+    "m39": {
+      "category": "artist",
+      "difficulty": "easy",
+      "claim": "Евгений Осин Плачет девушка в автомате",
+      "correct": {
+        "id": "a",
+        "label": "Евгений Осин",
+        "sources": [
+          "https://ru.wikipedia.org/wiki/Осин,_Евгений_Викторович"
+        ],
+        "verified_fact": "Плачет девушка в автомате - хит Евгения Осина",
+        "review": {
+          "factual": true,
+          "copyright": true,
+          "reviewed_on": "2026-09-02"
+        }
+      }
+    },
+    "m40": {
+      "category": "song",
+      "difficulty": "medium",
+      "claim": "Земфира Ариведерчи про трещинки",
+      "correct": {
+        "id": "a",
+        "label": "«Ариведерчи»",
+        "sources": [
+          "https://ru.wikipedia.org/wiki/Земфира",
+          "https://ru.wikipedia.org/wiki/Ариведерчи_(песня)"
+        ],
+        "verified_fact": "Ариведерчи - хит Земфиры 1999",
+        "review": {
+          "factual": true,
+          "copyright": true,
+          "reviewed_on": "2026-09-02"
+        }
+      }
+    },
+    "m41": {
+      "category": "artist",
+      "difficulty": "easy",
+      "claim": "Лицей Осень 1995",
+      "correct": {
+        "id": "a",
+        "label": "«Лицей»",
+        "sources": [
+          "https://ru.wikipedia.org/wiki/Лицей_(группа)"
+        ],
+        "verified_fact": "Лицей - Осень 1995",
+        "review": {
+          "factual": true,
+          "copyright": true,
+          "reviewed_on": "2026-09-02"
+        }
+      }
+    },
+    "m42": {
+      "category": "culture",
+      "difficulty": "medium",
+      "claim": "Ирина Салтыкова Брат 2",
+      "correct": {
+        "id": "a",
+        "label": "«Брат 2»",
+        "sources": [
+          "https://ru.wikipedia.org/wiki/Брат_2_(фильм)",
+          "https://ru.wikipedia.org/wiki/Салтыкова,_Ирина_Ивановна"
+        ],
+        "verified_fact": "Ирина Салтыкова в Брат 2",
+        "review": {
+          "factual": true,
+          "copyright": true,
+          "reviewed_on": "2026-09-02"
+        }
       }
     }
   }

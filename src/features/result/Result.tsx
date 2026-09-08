@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 
 import { getAnalytics } from '@/analytics/analytics'
 import { resolvePromotionDestination } from '@/features/quiz/promotion'
-import { getResultById, type QuizOutcome } from '@/features/quiz/scoring'
+import { getEffectiveTotal, getResultById, type QuizOutcome } from '@/features/quiz/scoring'
 import type { Quiz } from '@/features/quiz/schema'
 import { ShareButton } from '@/features/share/ShareButton'
 import type { MiniAppAdapter } from '@/platform/types'
@@ -54,13 +54,13 @@ export function ResultScreen({ quiz, outcome, telegram, adapter, onRestart, comp
           result_id: result.id,
           platform,
           ...(score !== undefined ? { score } : {}),
-          question_count: quiz.questions.length,
+          question_count: getEffectiveTotal(quiz),
         },
       )
     } catch {
       /* analytics must never block */
     }
-  }, [showPromo, analytics, quiz.id, result.id, platform, score, quiz.questions.length])
+  }, [showPromo, analytics, quiz, result.id, platform, score])
 
   const handleChannelClick = () => {
     try {
@@ -113,7 +113,7 @@ export function ResultScreen({ quiz, outcome, telegram, adapter, onRestart, comp
               shareCta={quiz.shareCta}
               shareCtaIntro={quiz.shareCtaIntro}
               score={score}
-              total={quiz.questions.length}
+              total={getEffectiveTotal(quiz)}
               quizTitle={quiz.title}
               result={result}
               telegram={telegram as TelegramAdapter}
@@ -137,7 +137,7 @@ export function ResultScreen({ quiz, outcome, telegram, adapter, onRestart, comp
           shareCta={quiz.shareCta}
           shareCtaIntro={quiz.shareCtaIntro}
           score={score}
-          total={quiz.questions.length}
+          total={getEffectiveTotal(quiz)}
           quizTitle={quiz.title}
           result={result}
           telegram={telegram as TelegramAdapter}

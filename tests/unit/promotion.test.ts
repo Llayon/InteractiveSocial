@@ -66,9 +66,12 @@ describe('promotion config', () => {
 describe('result ordering', () => {
   it('music90s result shows challenge before channel before restart on telegram', async () => {
     cleanup()
-    const outcome = resolveOutcome(music90sQuiz, music90sQuiz.questions.map(q => ({ questionId: q.id, answerId: q.correctAnswerId! })))
+    const { selectMusic90Questions, createSeededRng, MUSIC90_QUESTIONS_PER_RUN } = await import('@/content/quizzes/music90s/select')
+    const selected = selectMusic90Questions(music90sQuiz.questions, MUSIC90_QUESTIONS_PER_RUN, createSeededRng(1))
+    const sampledQuiz = { ...music90sQuiz, questions: selected }
+    const outcome = resolveOutcome(sampledQuiz, selected.map(q => ({ questionId: q.id, answerId: q.correctAnswerId! })))
     const adapter = mockAdapter('telegram')
-    render(React.createElement(ResultScreen, { quiz: music90sQuiz, outcome, adapter, onRestart: vi.fn() }))
+    render(React.createElement(ResultScreen, { quiz: sampledQuiz, outcome, adapter, onRestart: vi.fn() }))
     const shareBtn = screen.getByTestId('share-button')
     const channelLink = screen.getByTestId('channel-link')
     const restart = screen.getByTestId('restart-button')
@@ -84,9 +87,12 @@ describe('result ordering', () => {
     for (let i=0;i<order.length-1;i++) expect(order[i]).toBeLessThan(order[i+1])
     cleanup()
   })
-  it('MAX with max destination shows channel with MAX url', () => {
+  it('MAX with max destination shows channel with MAX url', async () => {
     cleanup()
-    const outcome = resolveOutcome(music90sQuiz, music90sQuiz.questions.map(q => ({ questionId: q.id, answerId: q.correctAnswerId! })))
+    const { selectMusic90Questions, createSeededRng, MUSIC90_QUESTIONS_PER_RUN } = await import('@/content/quizzes/music90s/select')
+    const selected = selectMusic90Questions(music90sQuiz.questions, MUSIC90_QUESTIONS_PER_RUN, createSeededRng(2))
+    const sampledQuiz = { ...music90sQuiz, questions: selected }
+    const outcome = resolveOutcome(sampledQuiz, selected.map(q => ({ questionId: q.id, answerId: q.correctAnswerId! })))
     const adapter = mockAdapter('max')
     render(React.createElement(ResultScreen, { quiz: music90sQuiz, outcome, adapter, onRestart: vi.fn() }))
     const channelLink = screen.getByTestId('channel-link')

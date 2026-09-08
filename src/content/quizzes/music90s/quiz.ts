@@ -2,13 +2,21 @@ import { results } from './results.js'
 import type { Question, Quiz } from '../../../features/quiz/schema.js'
 
 /**
- * Music90s content — 18 FIXED questions: factual gate covers all 18.
- * Content safety: song titles, artist names and years only.
- * No lyrics, no album art, no audio, no third-party media.
+ * Music90s content — 42 question BANK, 18 per run via stratified selector.
+ * Content policy:
+ * - short lyric excerpts are allowed when needed for recognition/nostalgia;
+ * - no full verses, choruses, or long contiguous lyric passages;
+ * - lyric questions must not dominate the quiz;
+ * - no album art or rehosted third-party media.
  *
  * Answer ids (a/b/c/d) are reused across questions: identity is compound (questionId, answerId).
- * Fixed order, no random pool, no seed, no timer.
+ * Bank is sampled per attempt via selectMusic90Questions(bank, 18, rng) — stable within run.
  */
+
+export const MUSIC90_QUESTIONS_PER_RUN = 18
+
+export type Music90QuestionCategory = 'song' | 'artist' | 'clip' | 'mtv' | 'culture' | 'rebus'
+
 export const questions: Question[] = [
   {
     id: 'm1',
@@ -334,7 +342,443 @@ export const questions: Question[] = [
       { id: 'd', title: 'На мучной клейстер' },
     ],
   },
+  // --- 24 NEW QUESTIONS (Q19–Q42) ---
+  {
+    id: 'm19',
+    category: 'rebus',
+    difficulty: 'medium',
+    layout: 'choice',
+    title: 'Какой хит зашифрован?\n\n☕️ 🫖 ❌ 💐 ❌ 💬',
+    correctAnswerId: 'b',
+    feedback: {
+      correct: 'Точно!',
+      wrong: 'Мимо.',
+    },
+    answers: [
+      { id: 'a', title: '«Какао-какао»' },
+      { id: 'b', title: '«Чашка кофию»' },
+      { id: 'c', title: '«Зимний сон»' },
+      { id: 'd', title: '«Малыш»' },
+    ],
+  },
+  {
+    id: 'm20',
+    category: 'song',
+    difficulty: 'medium',
+    layout: 'choice',
+    title: 'Кому в танцевальном гимне 1999 года принадлежал крик: «Ну где же ваши ручки, девчонки и мальчики»?',
+    correctAnswerId: 'b',
+    feedback: {
+      correct: 'Зачёт!',
+      wrong: 'Не-а, мимо.',
+    },
+    answers: [
+      { id: 'a', title: 'Группа «Демо»' },
+      { id: 'b', title: 'Группа «Вирус!»' },
+      { id: 'c', title: '«Руки Вверх!»' },
+      { id: 'd', title: '«Стрелки»' },
+    ],
+  },
+  {
+    id: 'm21',
+    category: 'song',
+    difficulty: 'medium',
+    layout: 'choice',
+    title: 'Кто в хите «Руки Вверх!» бесстыдно целует девчонку и «к сердцу прижимает» вместо главного героя?',
+    correctAnswerId: 'c',
+    feedback: {
+      correct: 'В яблочко!',
+      wrong: 'Почти.',
+    },
+    answers: [
+      { id: 'a', title: 'Старший брат' },
+      { id: 'b', title: 'Студент' },
+      { id: 'c', title: 'Чужие губы' },
+      { id: 'd', title: 'Лучший друг' },
+    ],
+  },
+  {
+    id: 'm22',
+    category: 'clip',
+    difficulty: 'medium',
+    layout: 'choice',
+    title: 'В каком клипе юная Алсу бродит по заснеженному дому и страдает по взрослому герою Сергея Маковецкого?',
+    correctAnswerId: 'b',
+    feedback: {
+      correct: 'Память работает.',
+      wrong: 'Мимо кассы.',
+    },
+    answers: [
+      { id: 'a', title: '«Иногда»' },
+      { id: 'b', title: '«Зимний сон»' },
+      { id: 'c', title: '«Свет в твоём окне»' },
+      { id: 'd', title: '«Осень»' },
+    ],
+  },
+  {
+    id: 'm23',
+    category: 'song',
+    difficulty: 'medium',
+    layout: 'choice',
+    title: 'Какой поп-рок хит 1998 года превратил детское стихотворение Агнии Барто в главный альтернативный гимн дискотек?',
+    correctAnswerId: 'a',
+    feedback: {
+      correct: 'Красиво!',
+      wrong: 'Не тот трек.',
+    },
+    answers: [
+      { id: 'a', title: '«Любочка» («Маша и Медведи»)' },
+      { id: 'b', title: '«Ромашки» (Земфира)' },
+      { id: 'c', title: '«Орбит без сахара» («Сплин»)' },
+      { id: 'd', title: '«Ты кинула» («Ляпис Трубецкой»)' },
+    ],
+  },
+  {
+    id: 'm24',
+    category: 'song',
+    difficulty: 'easy',
+    layout: 'choice',
+    title: 'Что, согласно песне Татьяны Овсиенко, «в речке утонуло» вместе с девичьими надеждами?',
+    correctAnswerId: 'c',
+    feedback: {
+      correct: 'Да!',
+      wrong: 'Ай, осечка.',
+    },
+    answers: [
+      { id: 'a', title: 'Письмо' },
+      { id: 'b', title: 'Фотография' },
+      { id: 'c', title: 'Колечко' },
+      { id: 'd', title: 'Сердечко' },
+    ],
+  },
+  {
+    id: 'm25',
+    category: 'mtv',
+    difficulty: 'medium',
+    layout: 'choice',
+    title: 'Кто вёл культовый «News Блок» на MTV Россия бархатным баритоном с коронной фразой: «Пока, я — ...»?',
+    correctAnswerId: 'b',
+    feedback: {
+      correct: 'Точно в цель!',
+      wrong: 'Не угадала.',
+    },
+    answers: [
+      { id: 'a', title: 'Антон Комолов' },
+      { id: 'b', title: 'Александр Анатольевич' },
+      { id: 'c', title: 'Василий Стрельников' },
+      { id: 'd', title: 'Михаил Роллер' },
+    ],
+  },
+  {
+    id: 'm26',
+    category: 'clip',
+    difficulty: 'hard',
+    layout: 'choice',
+    title: 'В каком клипе 90-х в кинозале собрались повзрослевшие звёзды комедии «Иван Васильевич меняет профессию»?',
+    correctAnswerId: 'a',
+    feedback: {
+      correct: 'Как по нотам!',
+      wrong: 'Память подвела.',
+    },
+    answers: [
+      { id: 'a', title: '«Сказочная тайга» («Агата Кристи»)' },
+      { id: 'b', title: '«Как на войне» («Агата Кристи»)' },
+      { id: 'c', title: '«Ковёр-вертолёт» («Агата Кристи»)' },
+      { id: 'd', title: '«Скованные одной цепью» («Nautilus Pompilius»)' },
+    ],
+  },
+  {
+    id: 'm27',
+    category: 'mtv',
+    difficulty: 'easy',
+    layout: 'choice',
+    title: 'Культовая передача на MTV Россия, где зрители в студии в пух и прах разносили свежие клипы артистов:',
+    correctAnswerId: 'a',
+    feedback: {
+      correct: 'Классика.',
+      wrong: 'Рядом, но нет.',
+    },
+    answers: [
+      { id: 'a', title: '«12 злобных зрителей»' },
+      { id: 'b', title: '«Акулы пера»' },
+      { id: 'c', title: '«Башня»' },
+      { id: 'd', title: '«До 16 и старше»' },
+    ],
+  },
+  {
+    id: 'm28',
+    category: 'song',
+    difficulty: 'medium',
+    layout: 'choice',
+    title: 'Какой трек группы Hi-Fi в 1998 году гремел строчками: «...тебе закрыть эту дверь, остаться здесь и не жить»?',
+    correctAnswerId: 'b',
+    feedback: {
+      correct: 'Золотой фонд.',
+      wrong: 'Фальшивая нота.',
+    },
+    answers: [
+      { id: 'a', title: '«Беспризорник»' },
+      { id: 'b', title: '«Не дано»' },
+      { id: 'c', title: '«Глупые люди»' },
+      { id: 'd', title: '«Чёрный ворон»' },
+    ],
+  },
+  {
+    id: 'm29',
+    category: 'song',
+    difficulty: 'medium',
+    layout: 'choice',
+    title: 'Какую фразу хриплым полушёпотом повторял Кай Метов в припеве своего суперхита 1993 года?',
+    correctAnswerId: 'b',
+    feedback: {
+      correct: 'В точку!',
+      wrong: 'Эх, мимо.',
+    },
+    answers: [
+      { id: 'a', title: '«Position Number One»' },
+      { id: 'b', title: '«Position Number Two»' },
+      { id: 'c', title: '«Come on, everybody»' },
+      { id: 'd', title: '«Baby tonight»' },
+    ],
+  },
+  {
+    id: 'm30',
+    category: 'artist',
+    difficulty: 'easy',
+    layout: 'choice',
+    title: 'Кто была солисткой и писала тексты песен в группе «Гости из будущего»?',
+    correctAnswerId: 'b',
+    feedback: {
+      correct: 'Чистая победа.',
+      wrong: 'Срезалась!',
+    },
+    answers: [
+      { id: 'a', title: 'Лика Стар' },
+      { id: 'b', title: 'Ева Польна' },
+      { id: 'c', title: 'Саша Зверева' },
+      { id: 'd', title: 'Света' },
+    ],
+  },
+  {
+    id: 'm31',
+    category: 'song',
+    difficulty: 'easy',
+    layout: 'choice',
+    title: 'Какая группа в декабре 1999 года подарила стране гимн школьных дискотек со словами: «Новый год к нам мчится, скоро всё случится»?',
+    correctAnswerId: 'a',
+    feedback: {
+      correct: 'Точно в ритм.',
+      wrong: 'Мимо нот.',
+    },
+    answers: [
+      { id: 'a', title: '«Дискотека Авария»' },
+      { id: 'b', title: '«Стрелки»' },
+      { id: 'c', title: '«Отпетые Мошенники»' },
+      { id: 'd', title: '«Руки Вверх!»' },
+    ],
+  },
+  {
+    id: 'm32',
+    category: 'artist',
+    difficulty: 'easy',
+    layout: 'choice',
+    title: 'Какой певец покорил хит-парады 90-х, выступая босиком, с кудрями до плеч и песней про «Босоногого мальчика»?',
+    correctAnswerId: 'a',
+    feedback: {
+      correct: 'Абсолют!',
+      wrong: 'Тут не срослось.',
+    },
+    answers: [
+      { id: 'a', title: 'Леонид Агутин' },
+      { id: 'b', title: 'Владимир Пресняков' },
+      { id: 'c', title: 'Игорь Николаев' },
+      { id: 'd', title: 'Влад Сташевский' },
+    ],
+  },
+  {
+    id: 'm33',
+    category: 'song',
+    difficulty: 'medium',
+    layout: 'choice',
+    title: 'Какой предмет гардероба Валерий Сюткин в составе «Браво» воспевал как символ стиля назло серой толпе?',
+    correctAnswerId: 'a',
+    feedback: {
+      correct: 'База на месте.',
+      wrong: 'Не попала в такт.',
+    },
+    answers: [
+      { id: 'a', title: 'Стильный оранжевый галстук' },
+      { id: 'b', title: 'Малиновый пиджак' },
+      { id: 'c', title: 'Жёлтые ботинки' },
+      { id: 'd', title: 'Кожаную косуху' },
+    ],
+  },
+  {
+    id: 'm34',
+    category: 'song',
+    difficulty: 'medium',
+    layout: 'choice',
+    title: 'Под какой медляк «Отпетых Мошенников» 1999 года школьники танцевали на дискотеках, хором повторяя: «...жарким огнём, ночью и днём»?',
+    correctAnswerId: 'a',
+    feedback: {
+      correct: 'Уровень: профи.',
+      wrong: 'Обидно, но мимо.',
+    },
+    answers: [
+      { id: 'a', title: '«Люби меня, люби»' },
+      { id: 'b', title: '«Всяко-разно»' },
+      { id: 'c', title: '«Бросай курить»' },
+      { id: 'd', title: '«Я учусь танцевать»' },
+    ],
+  },
+  {
+    id: 'm35',
+    category: 'clip',
+    difficulty: 'hard',
+    layout: 'choice',
+    title: 'В каком клипе «Мумий Тролля» 1997 года Илья Лагутенко ножницами беспощадно стриг девушку?',
+    correctAnswerId: 'b',
+    feedback: {
+      correct: 'Ни секунды сомнений!',
+      wrong: 'Увы, не угадала.',
+    },
+    answers: [
+      { id: 'a', title: '«Владивосток 2000»' },
+      { id: 'b', title: '«Утекай»' },
+      { id: 'c', title: '«Дельфины»' },
+      { id: 'd', title: '«Кот кота»' },
+    ],
+  },
+  {
+    id: 'm36',
+    category: 'culture',
+    difficulty: 'easy',
+    layout: 'choice',
+    title: 'Как в школьных анкетах 90-х обычно называли страницу, которую складывали треугольником и строго запрещали открывать?',
+    correctAnswerId: 'a',
+    feedback: {
+      correct: 'Легчайшая.',
+      wrong: 'Спутала!',
+    },
+    answers: [
+      { id: 'a', title: '«Секрет»' },
+      { id: 'b', title: '«Тайник»' },
+      { id: 'c', title: '«Сюрприз»' },
+      { id: 'd', title: '«Загадка»' },
+    ],
+  },
+  {
+    id: 'm37',
+    category: 'rebus',
+    difficulty: 'medium',
+    layout: 'choice',
+    title: 'Какой хит зашифрован?\n\n🌬️ 🌊 💨 💔',
+    correctAnswerId: 'a',
+    feedback: {
+      correct: 'С первой ноты.',
+      wrong: 'Мимо кассы.',
+    },
+    answers: [
+      { id: 'a', title: '«Ветер с моря дул»' },
+      { id: 'b', title: '«Холодная луна»' },
+      { id: 'c', title: '«Тучи»' },
+      { id: 'd', title: '«Зимняя вишня»' },
+    ],
+  },
+  {
+    id: 'm38',
+    category: 'song',
+    difficulty: 'medium',
+    layout: 'choice',
+    title: 'Под какую строчку летом 1999 года школьники встречали рассветы на выпускных по всей стране?',
+    correctAnswerId: 'a',
+    feedback: {
+      correct: 'Знаешь наизусть!',
+      wrong: 'Не-а, не то.',
+    },
+    answers: [
+      { id: 'a', title: '«Солнышко в руках и венок из звёзд в небесах»' },
+      { id: 'b', title: '«Ветер с моря дул, нагонял беду»' },
+      { id: 'c', title: '«Ты бросил меня, ты бросил меня»' },
+      { id: 'd', title: '«Люби меня, люби, жарким огнём»' },
+    ],
+  },
+  {
+    id: 'm39',
+    category: 'artist',
+    difficulty: 'easy',
+    layout: 'choice',
+    title: 'Какой артист в свитере и с гитарой заставил всю страну в начале 90-х подпевать «Плачет девушка в автомате»?',
+    correctAnswerId: 'a',
+    feedback: {
+      correct: 'Память не подводит!',
+      wrong: 'Чуть-чуть не туда.',
+    },
+    answers: [
+      { id: 'a', title: 'Евгений Осин' },
+      { id: 'b', title: 'Сергей Крылов' },
+      { id: 'c', title: 'Кай Метов' },
+      { id: 'd', title: 'Виктор Салтыков' },
+    ],
+  },
+  {
+    id: 'm40',
+    category: 'song',
+    difficulty: 'medium',
+    layout: 'choice',
+    title: 'Как официально называется прорывной хит Земфиры 1999 года со строчками про «трещинки» и обещанием «убить соседей, что мешают спать»?',
+    correctAnswerId: 'a',
+    feedback: {
+      correct: 'Без шансов для ошибки.',
+      wrong: 'Не угадала.',
+    },
+    answers: [
+      { id: 'a', title: '«Ариведерчи»' },
+      { id: 'b', title: '«Трещинки»' },
+      { id: 'c', title: '«Соседи»' },
+      { id: 'd', title: '«Ромашки»' },
+    ],
+  },
+  {
+    id: 'm41',
+    category: 'artist',
+    difficulty: 'easy',
+    layout: 'choice',
+    title: 'Какая девичья группа с гитарами взорвала хит-парады 1995 года песней: «Осень, осень, лес остыл и листья сбросил»?',
+    correctAnswerId: 'a',
+    feedback: {
+      correct: 'Красиво!',
+      wrong: 'Рядом, но нет.',
+    },
+    answers: [
+      { id: 'a', title: '«Лицей»' },
+      { id: 'b', title: '«Блестящие»' },
+      { id: 'c', title: '«Стрелки»' },
+      { id: 'd', title: '«Комбинация»' },
+    ],
+  },
+  {
+    id: 'm42',
+    category: 'culture',
+    difficulty: 'medium',
+    layout: 'choice',
+    title: 'В каком культовом фильме певица Ирина Салтыкова сыграла саму себя и закрутила роман с главным героем?',
+    correctAnswerId: 'a',
+    feedback: {
+      correct: 'Точно!',
+      wrong: 'Мимо.',
+    },
+    answers: [
+      { id: 'a', title: '«Брат 2»' },
+      { id: 'b', title: '«Брат»' },
+      { id: 'c', title: '«Улицы разбитых фонарей»' },
+      { id: 'd', title: '«Мама, не горюй»' },
+    ],
+  },
 ]
+
+// Canonical 42-question bank alias (bank === questions)
+export const music90sBank = questions
 
 /** Approved Music90s definition, validated by loadQuiz() before use. */
 export const music90sQuiz: Quiz = {

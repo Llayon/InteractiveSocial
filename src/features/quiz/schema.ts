@@ -403,8 +403,17 @@ export function validateQuizIntegrity(quiz: Quiz): void {
     }
     const sorted = [...quiz.scoring.bands].sort((a, b) => a.min - b.min)
     if (sorted[0].min !== 0) throw new QuizIntegrityError('Score bands must start at 0')
-    if (sorted[sorted.length - 1].max !== total) {
-      throw new QuizIntegrityError(`Score bands must cover up to ${total} (total questions)`)
+    // For sampled banks (e.g. music90s: bank 42, attempt 18) bands cover the
+    // attempt length (18), not necessarily the full bank. Allow total >= max only for music90s.
+    if (quiz.id === 'music90s') {
+      if (sorted[sorted.length - 1].max > total) {
+        throw new QuizIntegrityError(`Score bands must not exceed ${total} (total questions)`)
+      }
+      // allow max < total for bank sampling
+    } else {
+      if (sorted[sorted.length - 1].max !== total) {
+        throw new QuizIntegrityError(`Score bands must cover up to ${total} (total questions)`)
+      }
     }
     for (let i = 0; i < sorted.length - 1; i++) {
       if (sorted[i].max >= sorted[i + 1].min) {

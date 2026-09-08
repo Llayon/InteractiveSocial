@@ -33,10 +33,11 @@ describe('media integrity: content ↔ runtime manifest', () => {
     }
   })
 
-  it('exact-score cards (quiz-scoped, e.g. m90_score_00) exist for correct-count quizzes', () => {
+  it('exact-score cards (quiz-scoped, e.g. m90_score_00) exist for correct-count quizzes', async () => {
+    const { getEffectiveTotal } = await import('@/features/quiz/scoring')
     for (const quiz of quizzes) {
       if (quiz.scoring.kind !== 'correct-count') continue
-      const total = quiz.questions.length
+      const total = getEffectiveTotal(quiz)
       const prefix = quiz.id === 'music90s' ? 'm90' : quiz.id === 'guess90s' ? 'g90' : quiz.id
       for (let s = 0; s <= total; s++) {
         const key = `${prefix}_score_${String(s).padStart(2, '0')}`
@@ -48,8 +49,9 @@ describe('media integrity: content ↔ runtime manifest', () => {
     }
   })
 
-  it('warns (but does not fail) about stale manifest entries', () => {
+  it('warns (but does not fail) about stale manifest entries', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const { getEffectiveTotal } = await import('@/features/quiz/scoring')
     const usedQuizKeys = new Set<string>()
     const usedResultKeys = new Set<string>()
     for (const quiz of quizzes) {
@@ -61,7 +63,7 @@ describe('media integrity: content ↔ runtime manifest', () => {
       for (const result of quiz.results) usedResultKeys.add(result.id)
       if (quiz.scoring.kind === 'correct-count') {
         const prefix = quiz.id === 'music90s' ? 'm90' : quiz.id === 'guess90s' ? 'g90' : quiz.id
-        const total = quiz.questions.length
+        const total = getEffectiveTotal(quiz)
         for (let s = 0; s <= total; s++) usedResultKeys.add(`${prefix}_score_${String(s).padStart(2, '0')}`)
         // legacy generic score_XX kept for backwards compat of old share links
         for (let s = 0; s <= total; s++) usedResultKeys.add(`score_${String(s).padStart(2, '0')}`)

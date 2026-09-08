@@ -152,9 +152,13 @@ describe('existing quizzes remain intact', () => {
     expect(interiorCharacterQuiz.scoring.kind).toBe('archetype')
     expect(interiorCharacterQuiz.id).toBe('interior-character')
   })
-  it('music90s now has 18 questions, text quiz, correct-count, no audio', async () => {
+  it('music90s now has 42 bank questions, 18 per run, text quiz, correct-count, no audio', async () => {
     const { music90sQuiz } = await import('@/content/quizzes/music90s/quiz')
-    expect(music90sQuiz.questions).toHaveLength(18)
+    const { getEffectiveTotal } = await import('@/features/quiz/scoring')
+    const { MUSIC90_QUESTIONS_PER_RUN } = await import('@/content/quizzes/music90s/select')
+    expect(music90sQuiz.questions).toHaveLength(42)
+    expect(getEffectiveTotal(music90sQuiz)).toBe(18)
+    expect(MUSIC90_QUESTIONS_PER_RUN).toBe(18)
     expect(music90sQuiz.scoring.kind).toBe('correct-count')
     for (const q of music90sQuiz.questions) {
       expect(q.content).toBeUndefined()
