@@ -4,8 +4,9 @@ import { buildMaxDeepLink } from '../../_lib/deeplink.js'
 import { resolveQuizRequest } from '../../_lib/quizRequest.js'
 import { validateMaxInitData } from '../../_lib/maxInitData.js'
 import { maxSendMessage } from '../../_lib/maxApi.js'
-import { buildMaxAttachments, createMaxImageAttachment } from '../../_lib/maxMedia.js'
+import { buildMaxAttachments, createMaxImageAttachment, type MaxSecondaryButton } from '../../_lib/maxMedia.js'
 import { RESULT_ID_REGEX } from '../../../src/features/quiz/schema.js'
+import { resolvePromotionDestination } from '../../../src/features/quiz/promotion.js'
 import {
   resolveBandResultId,
   resolveShareCardAsset,
@@ -32,7 +33,7 @@ async function sendMaxPhoto(
   caption: string,
   deepLink: string,
   cardAsset: string,
-  opts?: { quizId?: string; resultId?: string },
+  opts?: { quizId?: string; resultId?: string; secondaryButton?: MaxSecondaryButton | null },
 ): Promise<{ ok: boolean; mid?: string; via?: string; errorCode?: string }> {
   // Unified media: create attachment via token or URL with preflight
   let imageAttachment: Awaited<ReturnType<typeof createMaxImageAttachment>> | null = null
@@ -48,14 +49,10 @@ async function sendMaxPhoto(
       return 'invalid_url'
     }
   })()
+  const secondary = opts?.secondaryButton ?? null
   const attachments = imageAttachment?.attachment
-    ? buildMaxAttachments(imageAttachment.attachment, deepLink)
-    : [
-        {
-          type: 'inline_keyboard',
-          payload: { buttons: [[{ type: 'link', text: 'Пройти тест', url: deepLink }]] },
-        },
-      ]
+    ? buildMaxAttachments(imageAttachment.attachment, deepLink, { secondaryButton: secondary })
+    : buildMaxAttachments(null, deepLink, { secondaryButton: secondary })
   const payload: Record<string, unknown> = {
     user_id: chatId,
     text: `${caption}\n\n${deepLink}`,
@@ -76,10 +73,7 @@ async function sendMaxPhoto(
     const fallbackPayload: Record<string, unknown> = {
       user_id: chatId,
       text: `${caption}\n\n${deepLink}`,
-      attachments: [
-        { type: 'image', payload: { url: imageUrl } },
-        { type: 'inline_keyboard', payload: { buttons: [[{ type: 'link', text: 'Пройти тест', url: deepLink }]] } },
-      ],
+      attachments: buildMaxAttachments({ type: 'image', payload: { url: imageUrl } } as unknown as import('../../_lib/maxMedia.js').MaxImageAttachment, deepLink, { secondaryButton: secondary }),
     }
     r = await maxSendMessage(token, fallbackPayload as never, {
       quizId: opts?.quizId,
@@ -186,6 +180,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   const imageUrl = shareCardImageUrl(quiz, cardAsset, baseUrl)
   const deepLink = buildMaxDeepLink(maxBotUsername, `quiz_${quiz.id}`)
 
+  // Generic promo: resolve MAX destination from quiz config (no hard-coded URL)
+  const promoUrl = resolvePromotionDestination(quiz.channelPromotion, 'max')
+  const secondaryButton: MaxSecondaryButton | null =
+    promoUrl && quiz.channelPromotion?.authorName ? { text: quiz.channelPromotion.authorName, url: promoUrl } : null
+  if (secondaryButton) {
+    console.info(`[max-deliver] secondary_button text="${secondaryButton.text}" url=${secondaryButton.url} quiz=${quiz.id}`)
+  }
+
   // 1. Self card — attempt-aware idempotency
   const selfKey = completionId ? `max:${userId}:${quiz.id}:${completionId}` : `max:${userId}:${quiz.id}:${result.id}`
   let deliveredSelf = false
@@ -217,6 +219,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     const resultSend = await sendMaxPhoto(token, userId, imageUrl, caption, deepLink, cardAsset, {
       quizId: quiz.id,
       resultId: result.id,
+      secondaryButton,
     })
     deliveredSelf = Boolean(resultSend.ok && resultSend.mid)
     selfMid = resultSend.mid ?? null

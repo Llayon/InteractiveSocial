@@ -364,6 +364,7 @@ export const music90sQuiz: Quiz = {
     },
     destinations: {
       telegram: { url: 'https://t.me/takeiteasybefore' },
+      max: { url: 'https://max.ru/takeiteasybefore' },
     },
   },
   share: {

@@ -259,16 +259,32 @@ export async function createMaxImageAttachment(
   return { attachment: null, via: 'none', preflight, errorCode: 'no_attachment' }
 }
 
+export interface MaxSecondaryButton {
+  text: string
+  url: string
+}
+
 /**
  * Helper to build attachments array including image + keyboard.
- * Kept here for single shared usage.
+ * Generic: optional secondaryButton adds a second row (e.g. channel promo).
+ * Kept here for single shared usage between prepare (no promo) and deliver (with promo).
  */
-export function buildMaxAttachments(imageAttachment: MaxImageAttachment | null, deepLink: string): Array<Record<string, unknown>> {
+export function buildMaxAttachments(
+  imageAttachment: MaxImageAttachment | null,
+  deepLink: string,
+  options?: { secondaryButton?: MaxSecondaryButton | null },
+): Array<Record<string, unknown>> {
   const list: Array<Record<string, unknown>> = []
   if (imageAttachment) list.push(imageAttachment as unknown as Record<string, unknown>)
+  const buttons: Array<Array<{ type: 'link'; text: string; url: string }>> = [
+    [{ type: 'link', text: 'Пройти тест', url: deepLink }],
+  ]
+  if (options?.secondaryButton?.text && options?.secondaryButton?.url) {
+    buttons.push([{ type: 'link', text: options.secondaryButton.text, url: options.secondaryButton.url }])
+  }
   list.push({
     type: 'inline_keyboard',
-    payload: { buttons: [[{ type: 'link', text: 'Пройти тест', url: deepLink }]] },
+    payload: { buttons },
   })
   return list
 }
