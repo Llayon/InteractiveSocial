@@ -164,13 +164,13 @@ export const MUSIC90_RESULT_ASSETS: Record<Music90ResultId, Music90AssetSet> = {
     rangeFolder: '11-13',
     bandLabel: '11–13 из 18 — Слушала MTV сутками',
     hero: {
-      src: '/optimized/music90s/results/11-13/hero.webp',
-      fallback: '/optimized/music90s/results/11-13/hero.png',
+      src: '/optimized/music90s/cd-collage.png',
+      fallback: '/optimized/music90s/cd-collage.png',
       objectFallback: OBJECTS_FALLBACK.cd,
     },
     secondary: [
-      { src: '/optimized/music90s/results/11-13/layer-815adfaf-1f22-427a-ba4c-44572ac3bd9a.webp', fallback: '/optimized/music90s/results/11-13/layer-815adfaf-1f22-427a-ba4c-44572ac3bd9a.png' },
-      { src: '/optimized/music90s/results/11-13/layer-b018ad77-d036-4b39-a3c5-fb14733ac4cb.webp', fallback: '/optimized/music90s/results/11-13/layer-b018ad77-d036-4b39-a3c5-fb14733ac4cb.png' },
+      { src: '/optimized/music90s/results/11-13/hero.webp', fallback: '/optimized/music90s/results/11-13/hero.png' },
+      { src: '/optimized/music90s/results/11-13/layer-ec05a073-eff7-4692-bc18-24a16d2481c8.webp', fallback: '/optimized/music90s/results/11-13/layer-ec05a073-eff7-4692-bc18-24a16d2481c8.png' },
     ],
     tapes: BASE_TAPES,
     foil: { src: '/optimized/music90s/result/m90-foil.webp', fallback: '/optimized/music90s/result/m90-foil.png', variant: 'generic' },
