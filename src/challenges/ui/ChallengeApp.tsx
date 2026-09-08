@@ -4,6 +4,7 @@ import type { MiniAppAdapter } from '@/platform/types'
 import { beautifulShotsChallenge } from '../beautiful-shots/challenge'
 import { useChallengeProgress } from '../engine/useChallenge'
 import { challengeFeedbackStore } from '../engine/store'
+import { isDayPublished } from '../engine/unlock'
 import { ChallengeLanding } from './ChallengeLanding'
 import { ChallengeHome } from './ChallengeHome'
 import { ChallengeDayDetail } from './ChallengeDayDetail'
@@ -31,7 +32,6 @@ export function ChallengeApp({ adapter }: ChallengeAppProps) {
 
   const platform = adapter?.platform ?? 'browser'
 
-  // Decide initial screen after loading — sync from external store to internal screen
   useEffect(() => {
     if (loading) return
     if (progress) {
@@ -41,7 +41,6 @@ export function ChallengeApp({ adapter }: ChallengeAppProps) {
     }
   }, [loading, progress])
 
-  // Analytics for view
   useEffect(() => {
     if (loading) return
     try {
@@ -65,31 +64,30 @@ export function ChallengeApp({ adapter }: ChallengeAppProps) {
 
   const handleOpenDay = useCallback(
     (dayNum: number) => {
-      // guard locked
+      if (!isDayPublished(dayNum, definition)) return
       if (dayNum > availableDay) return
       setScreen({ kind: 'day', day: dayNum })
       try {
         getAnalytics().track('challenge_day_view', { challenge_id: definition.id, platform, day: dayNum })
       } catch {}
     },
-    [availableDay, definition.id, platform],
+    [availableDay, definition, platform],
   )
 
   const handleComplete = useCallback(
     async (mode: 'normal' | 'quick') => {
       if (screen.kind !== 'day') return
       const dayNum = screen.day
+      if (!isDayPublished(dayNum, definition)) return
       await complete(dayNum, mode)
       try {
         const ev = mode === 'quick' ? 'challenge_day_complete_quick' : 'challenge_day_complete'
         getAnalytics().track(ev, { challenge_id: definition.id, platform, day: dayNum })
       } catch {}
       setPendingCompletion({ day: dayNum, mode })
-      // Go to feedback first? Spec says feedback after completion small optional
-      // We'll go to feedback screen then completion, or direct completion if skip
       setScreen({ kind: 'feedback', day: dayNum, mode })
     },
-    [screen, complete, definition.id, platform],
+    [screen, complete, definition, platform],
   )
 
   const handleHintOpen = useCallback(
@@ -107,9 +105,14 @@ export function ChallengeApp({ adapter }: ChallengeAppProps) {
       const dayNum = screen.day
       try {
         await challengeFeedbackStore.submitFeedback(definition.id, { day: dayNum, rating, reasons })
-        getAnalytics().track('challenge_feedback', { challenge_id: definition.id, platform, day: dayNum, rating, ...(reasons ? { reasons: reasons.join(',') } : {}) })
+        getAnalytics().track('challenge_feedback', {
+          challenge_id: definition.id,
+          platform,
+          day: dayNum,
+          rating,
+          ...(reasons ? { reasons: reasons.join(',') } : {}),
+        })
       } catch {}
-      // Do not navigate here — let ChallengeFeedback show "Спасибо" and user clicks Продолжить
     },
     [screen, definition.id, platform],
   )
@@ -120,7 +123,6 @@ export function ChallengeApp({ adapter }: ChallengeAppProps) {
   }, [screen])
 
   const handleCompletionContinue = useCallback(() => {
-    // After completion, decide where to go: if there's next available incomplete, go there or home
     setScreen({ kind: 'home' })
   }, [])
 
@@ -137,7 +139,6 @@ export function ChallengeApp({ adapter }: ChallengeAppProps) {
     )
   }
 
-  // If progress exists but we are still on landing due to async, show home
   if (screen.kind === 'landing' && progress) {
     return <ChallengeHome definition={definition} progress={progress} availableDay={availableDay} onOpenDay={handleOpenDay} onOpenGrid={() => setScreen({ kind: 'grid' })} />
   }
@@ -164,18 +165,19 @@ export function ChallengeApp({ adapter }: ChallengeAppProps) {
           onBack={() => setScreen({ kind: 'home' })}
           onComplete={handleComplete}
           onHintOpen={() => handleHintOpen(dayObj.day)}
-          onQuickOpen={() => {
-            try {
-              getAnalytics().track('challenge_day_quick_open', { challenge_id: definition.id, platform, day: dayObj.day })
-            } catch {}
-          }}
         />
       )
     case 'feedback':
       return (
         <section className="challenge-screen" data-testid="challenge-feedback-screen">
           <ChallengeFeedback day={screen.day} onSubmit={handleFeedbackSubmit} onSkip={handleFeedbackSkip} />
-          <button type="button" className="button button--ghost" data-testid="feedback-skip-inline" onClick={handleFeedbackSkip} style={{ display: 'none' }}>
+          <button
+            type="button"
+            className="button button--ghost"
+            data-testid="feedback-skip-inline"
+            onClick={handleFeedbackSkip}
+            style={{ display: 'none' }}
+          >
             skip
           </button>
         </section>

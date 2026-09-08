@@ -1,24 +1,11 @@
-import { useCallback } from 'react'
-import { getAnalytics } from '@/analytics/analytics'
-
 export interface ChallengeLandingProps {
   onStart: () => void
 }
 
 export function ChallengeLanding({ onStart }: ChallengeLandingProps) {
-  const handleStart = useCallback(() => {
-    try {
-      getAnalytics().track('challenge_start', {
-        challenge_id: 'beautiful-shots',
-        platform: 'browser',
-      })
-    } catch {}
-    onStart()
-  }, [onStart])
-
   return (
     <section className="challenge-screen challenge-landing" aria-labelledby="challenge-landing-title" data-testid="challenge-landing">
-      <p className="challenge-landing__kicker">30 дней</p>
+      <p className="challenge-landing__kicker">7 дней</p>
       <h1 id="challenge-landing-title" className="challenge-landing__title">
         КРАСИВЫХ
         <br />
@@ -38,12 +25,12 @@ export function ChallengeLanding({ onStart }: ChallengeLandingProps) {
       </p>
 
       <div className="challenge-landing__bullets" aria-label="преимущества">
-        <span className="challenge-landing__bullet">30 заданий</span>
+        <span className="challenge-landing__bullet">7 заданий</span>
         <span className="challenge-landing__bullet">5–10 минут</span>
         <span className="challenge-landing__bullet">ничего покупать не нужно</span>
       </div>
 
-      <button type="button" className="button button--primary challenge-landing__cta" data-testid="challenge-start-cta" onClick={handleStart}>
+      <button type="button" className="button button--primary challenge-landing__cta" data-testid="challenge-start-cta" onClick={onStart}>
         НАЧАТЬ
       </button>
       <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--muted)' }}>Бесплатно · без регистрации</p>

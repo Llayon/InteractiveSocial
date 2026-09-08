@@ -11,7 +11,6 @@ import type { ChallengeProgress } from '@/challenges/engine/types'
 import { beautifulShotsChallenge } from '@/challenges/beautiful-shots/challenge'
 
 function makeDate(y: number, m: number, d: number, h = 12, min = 0): Date {
-  // local date
   return new Date(y, m - 1, d, h, min, 0, 0)
 }
 
@@ -44,9 +43,7 @@ describe('challenge unlock: calendar daily', () => {
   it('3. Start at 23:59 local -> Day 2 after local midnight', () => {
     const start = makeDate(2026, 9, 6, 23, 59)
     const progress = makeProgress('2026-09-06', start)
-    // still same day before midnight
     expect(getAvailableDay(progress, makeDate(2026, 9, 6, 23, 59))).toBe(1)
-    // just after midnight
     expect(getAvailableDay(progress, makeDate(2026, 9, 7, 0, 0))).toBe(2)
     expect(getAvailableDay(progress, makeDate(2026, 9, 7, 0, 1))).toBe(2)
   })
@@ -54,7 +51,6 @@ describe('challenge unlock: calendar daily', () => {
   it('4. After 5 calendar days Days 1-6 available', () => {
     const start = makeDate(2026, 9, 6, 12, 0)
     const progress = makeProgress('2026-09-06', start)
-    // Day 6 is Sept 6 +5 = Sept 11
     const day6 = makeDate(2026, 9, 11, 9, 0)
     expect(getAvailableDay(progress, day6)).toBe(6)
     const avail = getAvailableDay(progress, day6)
@@ -72,7 +68,7 @@ describe('challenge unlock: calendar daily', () => {
   it('6. Old available day stays available after days pass', () => {
     const start = makeDate(2026, 9, 6, 10, 0)
     const progress = makeProgress('2026-09-06', start)
-    const availLater = getAvailableDay(progress, makeDate(2026, 9, 10, 10, 0)) // day 5
+    const availLater = getAvailableDay(progress, makeDate(2026, 9, 10, 10, 0))
     expect(getDayState(1, progress, availLater)).toBe('available')
     expect(getDayState(2, progress, availLater)).toBe('available')
     expect(getDayState(3, progress, availLater)).toBe('available')
@@ -98,7 +94,7 @@ describe('challenge unlock: calendar daily', () => {
   it('11. available day clamp <= 30', () => {
     const start = makeDate(2026, 9, 1, 10, 0)
     const progress = makeProgress('2026-09-01', start)
-    const farFuture = makeDate(2026, 11, 1, 10, 0) // >60 days
+    const farFuture = makeDate(2026, 11, 1, 10, 0)
     expect(getAvailableDay(progress, farFuture)).toBe(30)
   })
 
@@ -112,14 +108,12 @@ describe('challenge unlock: calendar daily', () => {
 
   it('14. CTA chooses earliest available incomplete day', () => {
     const start = makeDate(2026, 9, 6, 10, 0)
-    // Day1 completed, Day2 completed, Day3 skipped (available but not completed), Day4 skipped, today day5 available
     const progress = makeProgress('2026-09-06', start, [
       { day: 1, mode: 'normal' },
       { day: 2, mode: 'normal' },
     ])
-    const avail = getAvailableDay(progress, makeDate(2026, 9, 10, 10, 0)) // day 5 => avail 5
+    const avail = getAvailableDay(progress, makeDate(2026, 9, 10, 10, 0))
     expect(avail).toBe(5)
-    // Days 1,2 completed, 3,4,5 available -> earliest incomplete is 3
     const next = getNextAvailableIncompleteDay(beautifulShotsChallenge, progress, avail)
     expect(next).toBe(3)
   })
@@ -148,7 +142,6 @@ describe('LocalStorageChallengeProgressStore', () => {
     const startDate = makeDate(2026, 9, 6, 10, 0)
     await store.startChallenge('beautiful-shots', startDate)
     await store.completeDay('beautiful-shots', 1, 'normal', makeDate(2026, 9, 6, 11, 0))
-    // Simulate reload: new instance
     const store2 = new LocalStorageChallengeProgressStore()
     const p = await store2.getProgress('beautiful-shots')
     expect(p).not.toBeNull()
@@ -173,7 +166,6 @@ describe('LocalStorageChallengeProgressStore', () => {
     expect(p?.completed.find((c) => c.day === 1)?.mode).toBe('quick')
     await store.completeDay('beautiful-shots', 1, 'normal', makeDate(2026, 9, 6, 11, 0))
     p = await store.getProgress('beautiful-shots')
-    // Our implementation updates to normal on different mode
     expect(p?.completed.find((c) => c.day === 1)?.mode).toBe('normal')
   })
 
@@ -182,9 +174,7 @@ describe('LocalStorageChallengeProgressStore', () => {
     const store = new LocalStorageChallengeProgressStore()
     const p = await store.getProgress('beautiful-shots')
     expect(p).toBeNull()
-    // Should have cleared corrupted entry
     expect(window.localStorage.getItem('challenge-progress:beautiful-shots')).toBeNull()
-    // After corrupted, start should still work
     const fresh = await store.startChallenge('beautiful-shots', makeDate(2026, 9, 6, 10, 0))
     expect(fresh.startedAtLocalDate).toBe('2026-09-06')
   })
@@ -206,23 +196,18 @@ describe('LocalStorageChallengeProgressStore', () => {
 })
 
 describe('challenge definition', () => {
-  it('has 30 days, first 7 with real content', () => {
+  it('has duration 30 with only 7 published days', () => {
     expect(beautifulShotsChallenge.durationDays).toBe(30)
-    expect(beautifulShotsChallenge.days).toHaveLength(30)
+    expect(beautifulShotsChallenge.days).toHaveLength(7)
     expect(beautifulShotsChallenge.id).toBe('beautiful-shots')
     expect(beautifulShotsChallenge.slug).toBe('beautiful-shots')
-    // Days 1-7 have task and tips
     for (let i = 1; i <= 7; i++) {
       const d = beautifulShotsChallenge.days.find((x) => x.day === i)!
       expect(d.task.length).toBeGreaterThan(10)
       expect(d.tips).toBeDefined()
       expect(d.difficulty).toBeGreaterThanOrEqual(1)
     }
-    // 8-30 placeholders exist but have task
-    for (let i = 8; i <= 30; i++) {
-      const d = beautifulShotsChallenge.days.find((x) => x.day === i)!
-      expect(d.task).toBeTruthy()
-    }
+    expect(beautifulShotsChallenge.days.find((x) => x.day === 8)).toBeUndefined()
   })
 
   it('heroImage may be undefined without breaking', () => {

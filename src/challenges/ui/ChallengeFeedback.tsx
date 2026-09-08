@@ -6,13 +6,7 @@ export interface ChallengeFeedbackProps {
   onSkip: () => void
 }
 
-const REASONS = [
-  'не поняла задание',
-  'не нашла место',
-  'не получился свет',
-  'не знаю, как встать',
-  'не было времени',
-]
+const REASONS = ['не поняла задание', 'не нашла место', 'не получился свет', 'не знаю, как встать', 'не было времени']
 
 export function ChallengeFeedback({ day, onSubmit, onSkip }: ChallengeFeedbackProps) {
   const [rating, setRating] = useState<'easy' | 'normal' | 'hard' | null>(null)
@@ -30,8 +24,8 @@ export function ChallengeFeedback({ day, onSubmit, onSkip }: ChallengeFeedbackPr
 
   const handleSubmit = () => {
     if (!rating) return
-    const finalReasons = rating === 'hard' ? [...reasons] : undefined
-    onSubmit(rating, finalReasons)
+    const finalReasons = rating !== 'easy' ? [...reasons] : undefined
+    onSubmit(rating, finalReasons?.length ? finalReasons : undefined)
     setSubmitted(true)
   }
 
@@ -76,7 +70,7 @@ export function ChallengeFeedback({ day, onSubmit, onSkip }: ChallengeFeedbackPr
         </button>
       </div>
 
-      {rating === 'hard' && (
+      {(rating === 'normal' || rating === 'hard') && (
         <div className="challenge-feedback__reasons" data-testid="feedback-reasons">
           {REASONS.map((r) => (
             <label key={r} data-testid={`feedback-reason-${r}`}>
