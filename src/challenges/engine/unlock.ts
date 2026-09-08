@@ -15,39 +15,25 @@ export function parseLocalDate(dateString: string): Date | null {
   const day = Number(m[3])
   if (month < 1 || month > 12) return null
   if (day < 1 || day > 31) return null
-  // Local midnight
-  const d = new Date(y, month - 1, day, 12, 0, 0, 0) // noon to avoid DST edge
-  // Validate that conversion is consistent (avoid 2026-02-31 etc)
+  const d = new Date(y, month - 1, day, 12, 0, 0, 0)
   if (d.getFullYear() !== y || d.getMonth() !== month - 1 || d.getDate() !== day) return null
-  // return at noon but calendar diff only cares about date part via string
   return d
 }
 
-/**
- * Difference in calendar days between two local YYYY-MM-DD strings.
- * Result is (a - b) in days. Uses UTC noon trick to avoid DST issues.
- */
 export function differenceInCalendarDaysLocal(aLocalDate: string, bLocalDate: string): number {
   const a = parseLocalDate(aLocalDate)
   const b = parseLocalDate(bLocalDate)
   if (!a || !b) return 0
-  // Normalize both to UTC midnight via their Y/M/D components interpreted as UTC noon then diff
-  // Use Date.UTC at noon to avoid DST:
   const aUtc = Date.UTC(a.getFullYear(), a.getMonth(), a.getDate())
   const bUtc = Date.UTC(b.getFullYear(), b.getMonth(), b.getDate())
   const msPerDay = 24 * 60 * 60 * 1000
   return Math.round((aUtc - bUtc) / msPerDay)
 }
 
-export function getAvailableDay(
-  progress: ChallengeProgress | null,
-  today: Date = new Date(),
-): number {
+export function getAvailableDay(progress: ChallengeProgress | null, today: Date = new Date()): number {
   if (!progress) return 0
-  // Validate stored date
   const stored = parseLocalDate(progress.startedAtLocalDate)
   if (!stored) {
-    // Fallback: derive from startedAt instant's local date; then available is 1 at minimum
     const fallback = formatLocalDate(new Date(progress.startedAt))
     const todayStr = formatLocalDate(today)
     const diff = differenceInCalendarDaysLocal(todayStr, fallback)
@@ -65,6 +51,56 @@ export function clampDay(day: number, max: number): number {
   if (day < 1) return 1
   if (day > max) return max
   return day
+}
+
+export function isDayPublished(day: number, definition: ChallengeDefinition): boolean;
+export function isDayPublished(definition: ChallengeDefinition, day: number): boolean;
+export function isDayPublished(a: number | ChallengeDefinition, b: number | ChallengeDefinition): boolean {
+  // Support both (day, definition) and (definition, day) for backward compat with tests
+  let day: number
+  let definition: ChallengeDefinition
+  if (typeof a === 'number' && typeof b === 'object' && b !== null && 'days' in (b as Record<string, unknown>)) {
+    day = a
+    definition = b as ChallengeDefinition
+  } else if (typeof b === 'number' && typeof a === 'object' && a !== null && 'days' in (a as Record<string, unknown>)) {
+    definition = a as ChallengeDefinition
+    day = b as number
+  } else {
+    return false
+  }
+  if (!Number.isInteger(day) || day < 1 || day > definition.durationDays) return false
+  return definition.days.some((d) => d.day === day)
+}
+
+export function isDayUnlocked(
+  day: number,
+  _progress: ChallengeProgress | null,
+  availableDay: number,
+  definition: ChallengeDefinition,
+): boolean {
+  if (!isDayPublished(day, definition)) return false
+  return day <= availableDay
+}
+
+export function isDayLocked(
+  day: number,
+  progress: ChallengeProgress | null,
+  availableDay: number,
+  definition: ChallengeDefinition,
+): boolean {
+  if (!isDayPublished(day, definition)) return true
+  const state = getDayState(day, progress, availableDay)
+  return state === 'locked'
+}
+
+export function getPublishedDayState(
+  definition: ChallengeDefinition,
+  dayNumber: number,
+  progress: ChallengeProgress | null,
+  availableDay: number,
+): ReturnType<typeof getDayState> {
+  if (!isDayPublished(dayNumber, definition)) return 'locked'
+  return getDayState(dayNumber, progress, availableDay)
 }
 
 export function getDayState(
@@ -89,6 +125,7 @@ export function getNextAvailableIncompleteDay(
   availableDay: number,
 ): number | null {
   for (let d = 1; d <= Math.min(availableDay, definition.durationDays); d++) {
+    if (!isDayPublished(d, definition)) continue
     const st = getDayState(d, progress, availableDay)
     if (st === 'available') return d
   }
@@ -100,10 +137,7 @@ export function getCompletedCount(progress: ChallengeProgress | null): number {
   return progress.completed.length
 }
 
-export function isChallengeComplete(
-  definition: ChallengeDefinition,
-  progress: ChallengeProgress | null,
-): boolean {
+export function isChallengeComplete(definition: ChallengeDefinition, progress: ChallengeProgress | null): boolean {
   if (!progress) return false
   return progress.completed.length >= definition.durationDays
 }

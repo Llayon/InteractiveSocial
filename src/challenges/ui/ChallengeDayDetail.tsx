@@ -6,25 +6,25 @@ export interface ChallengeDayDetailProps {
   onBack: () => void
   onComplete: (mode: 'normal' | 'quick') => void
   onHintOpen?: () => void
-  onQuickOpen?: () => void
 }
 
-export function ChallengeDayDetail({ day, onBack, onComplete, onHintOpen, onQuickOpen }: ChallengeDayDetailProps) {
+export function ChallengeDayDetail({ day, onBack, onComplete, onHintOpen }: ChallengeDayDetailProps) {
   const [hintOpen, setHintOpen] = useState(false)
-  const [quickOpen, setQuickOpen] = useState(false)
 
   const openHint = () => {
     setHintOpen(true)
     onHintOpen?.()
   }
-  const openQuick = () => {
-    setQuickOpen(true)
-    onQuickOpen?.()
-  }
 
   return (
     <section className="challenge-screen" data-testid="challenge-day-detail">
-      <button type="button" className="button button--ghost" style={{ alignSelf: 'flex-start' }} data-testid="challenge-day-back" onClick={onBack}>
+      <button
+        type="button"
+        className="button button--ghost"
+        style={{ alignSelf: 'flex-start' }}
+        data-testid="challenge-day-back"
+        onClick={onBack}
+      >
         ← Назад
       </button>
 
@@ -37,15 +37,7 @@ export function ChallengeDayDetail({ day, onBack, onComplete, onHintOpen, onQuic
       </div>
 
       <div className="challenge-day__hero" data-testid="challenge-day-hero">
-        {day.heroImage ? (
-          <img src={day.heroImage} alt="" loading="lazy" />
-        ) : (
-          <span>
-            место для reference image
-            <br />
-            <span style={{ fontSize: '0.75rem' }}>добавьте /public/challenges/beautiful-shots/day{String(day.day).padStart(2, '0')}.jpg</span>
-          </span>
-        )}
+        {day.heroImage ? <img src={day.heroImage} alt="" loading="lazy" /> : <span>reference image</span>}
       </div>
 
       <p className="challenge-day__task" data-testid="challenge-day-task">
@@ -102,7 +94,13 @@ export function ChallengeDayDetail({ day, onBack, onComplete, onHintOpen, onQuic
 
       {hintOpen && (
         <div className="challenge-sheet-backdrop" data-testid="challenge-hint-sheet" onClick={() => setHintOpen(false)}>
-          <div className="challenge-sheet" role="dialog" aria-modal="true" aria-labelledby="hint-title" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="challenge-sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="hint-title"
+            onClick={(e) => e.stopPropagation()}
+          >
             <h2 id="hint-title" className="challenge-sheet__title">
               Если не получается
             </h2>
@@ -128,38 +126,26 @@ export function ChallengeDayDetail({ day, onBack, onComplete, onHintOpen, onQuic
                 >
                   ЗАСЧИТАТЬ БЫСТРУЮ ВЕРСИЮ
                 </button>
-                <button type="button" className="button button--ghost" data-testid="challenge-hint-close" onClick={() => setHintOpen(false)}>
+                <button
+                  type="button"
+                  className="button button--ghost"
+                  data-testid="challenge-hint-close"
+                  onClick={() => setHintOpen(false)}
+                >
                   Закрыть
                 </button>
               </div>
             )}
             {!day.quickVersion && (
-              <button type="button" className="button button--ghost" data-testid="challenge-hint-close" onClick={() => setHintOpen(false)}>
+              <button
+                type="button"
+                className="button button--ghost"
+                data-testid="challenge-hint-close"
+                onClick={() => setHintOpen(false)}
+              >
                 Закрыть
               </button>
             )}
-            {/* Also allow explicit quick open tracking */}
-            {day.quickVersion && (
-              <button type="button" className="button button--ghost" data-testid="challenge-quick-open" onClick={openQuick} style={{ display: 'none' }} aria-hidden>
-                quick
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Quick sheet separate if desired via hint */}
-      {quickOpen && (
-        <div className="challenge-sheet-backdrop" data-testid="challenge-quick-sheet" onClick={() => setQuickOpen(false)}>
-          <div className="challenge-sheet" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
-            <h2 className="challenge-sheet__title">{day.quickVersion?.title ?? 'Быстрая версия'}</h2>
-            <p className="challenge-sheet__quick-task">{day.quickVersion?.task}</p>
-            <button type="button" className="button button--primary" data-testid="challenge-quick-complete-cta-2" onClick={() => onComplete('quick')}>
-              ЗАСЧИТАТЬ БЫСТРУЮ ВЕРСИЮ
-            </button>
-            <button type="button" className="button button--ghost" onClick={() => setQuickOpen(false)}>
-              Закрыть
-            </button>
           </div>
         </div>
       )}

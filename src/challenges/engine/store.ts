@@ -36,10 +36,8 @@ function isValidProgress(obj: unknown): obj is ChallengeProgress {
   if (typeof o.startedAt !== 'string') return false
   if (typeof o.startedAtLocalDate !== 'string') return false
   if (!Array.isArray(o.completed)) return false
-  // startedAt should be valid ISO
   const d = new Date(o.startedAt as string)
   if (Number.isNaN(d.getTime())) return false
-  // startedAtLocalDate should be YYYY-MM-DD
   if (!/^\d{4}-\d{2}-\d{2}$/.test(o.startedAtLocalDate as string)) return false
   for (const c of o.completed as unknown[]) {
     if (!c || typeof c !== 'object') return false
@@ -83,7 +81,6 @@ export class LocalStorageChallengeProgressStore implements ChallengeProgressStor
       const raw = storage.getItem(storageKey(challengeId))
       const parsed = safeParse(raw)
       if (!isValidProgress(parsed)) {
-        // corrupted -> treat as null and optionally clear
         if (raw !== null) {
           try {
             storage.removeItem(storageKey(challengeId))
@@ -91,14 +88,11 @@ export class LocalStorageChallengeProgressStore implements ChallengeProgressStor
         }
         return null
       }
-      // Ensure challengeId matches
       if (parsed.challengeId !== challengeId) return null
-      // Deduplicate completed by day, keep first occurrence
       const seen = new Map<number, ChallengeCompletedDay>()
       for (const c of parsed.completed) {
         if (!seen.has(c.day)) seen.set(c.day, c)
       }
-      // sort for deterministic
       const deduped = [...seen.values()].sort((a, b) => a.day - b.day)
       return { ...parsed, completed: deduped }
     } catch {
@@ -133,9 +127,7 @@ export class LocalStorageChallengeProgressStore implements ChallengeProgressStor
     if (!storage) return
     const current = await this.getProgress(challengeId)
     if (!current) {
-      // If no progress, auto-start then complete
       const started = await this.startChallenge(challengeId, now)
-      // Now add completion
       const completedAt = now.toISOString()
       const updated: ChallengeProgress = {
         ...started,
@@ -146,21 +138,23 @@ export class LocalStorageChallengeProgressStore implements ChallengeProgressStor
       } catch {}
       return
     }
-    // duplicate handling
     const idx = current.completed.findIndex((c) => c.day === day)
     if (idx >= 0) {
       const existing = current.completed[idx]
       if (existing.mode === mode) {
-        // exact duplicate -> no-op
         return
       }
-      // Different mode -> update to new mode (allow upgrade)
-      const updatedCompleted = [...current.completed]
-      updatedCompleted[idx] = { day, completedAt: now.toISOString(), mode }
-      const updated: ChallengeProgress = { ...current, completed: updatedCompleted.sort((a, b) => a.day - b.day) }
-      try {
-        storage.setItem(storageKey(challengeId), JSON.stringify(updated))
-      } catch {}
+      // Product boundary: only quick -> normal upgrade is allowed, normal -> quick is not downgraded
+      if (existing.mode === 'quick' && mode === 'normal') {
+        const updatedCompleted = [...current.completed]
+        updatedCompleted[idx] = { day, completedAt: now.toISOString(), mode }
+        const updated: ChallengeProgress = { ...current, completed: updatedCompleted.sort((a, b) => a.day - b.day) }
+        try {
+          storage.setItem(storageKey(challengeId), JSON.stringify(updated))
+        } catch {}
+        return
+      }
+      // normal -> quick attempted: keep original normal, no downgrade
       return
     }
     const completedAt = now.toISOString()
@@ -217,7 +211,6 @@ export class LocalStorageChallengeFeedbackStore implements ChallengeFeedbackStor
       createdAt: now.toISOString(),
     }
     const existing = await this.getFeedback(challengeId)
-    // Keep only latest per day (replace if exists)
     const filtered = existing.filter((e) => e.day !== input.day)
     const next = [...filtered, entry]
     try {
@@ -226,6 +219,5 @@ export class LocalStorageChallengeFeedbackStore implements ChallengeFeedbackStor
   }
 }
 
-// Singleton convenience for beta — local storage impl
 export const challengeProgressStore = new LocalStorageChallengeProgressStore()
 export const challengeFeedbackStore = new LocalStorageChallengeFeedbackStore()

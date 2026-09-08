@@ -1,6 +1,5 @@
-import type { ChallengeDefinition } from '../engine/types'
+import type { ChallengeDefinition, ChallengeProgress } from '../engine/types'
 import { getDayState } from '../engine/unlock'
-import type { ChallengeProgress } from '../engine/types'
 
 export interface ChallengeCompletionProps {
   definition: ChallengeDefinition
@@ -12,11 +11,17 @@ export interface ChallengeCompletionProps {
   onHome: () => void
 }
 
-export function ChallengeCompletion({ definition, progress, availableDay, completedDay, mode, onContinue, onHome }: ChallengeCompletionProps) {
+export function ChallengeCompletion({
+  definition,
+  progress,
+  availableDay,
+  completedDay,
+  mode,
+  onContinue,
+  onHome,
+}: ChallengeCompletionProps) {
   const completedCount = progress.completed.length
   const total = definition.durationDays
-  // Determine next preview logic
-  // Find next available incomplete
   let nextDayNumber: number | null = null
   for (let d = 1; d <= Math.min(availableDay, total); d++) {
     const st = getDayState(d, progress, availableDay)
@@ -26,7 +31,6 @@ export function ChallengeCompletion({ definition, progress, availableDay, comple
     }
   }
   const nextDay = nextDayNumber ? definition.days.find((d) => d.day === nextDayNumber) : null
-  // If no available incomplete but there is a locked tomorrow
   const lockedNext = !nextDay && availableDay < total ? definition.days.find((d) => d.day === availableDay + 1) : null
   const isQuick = mode === 'quick'
 
@@ -36,7 +40,7 @@ export function ChallengeCompletion({ definition, progress, availableDay, comple
         {String(completedDay).padStart(2, '0')}
       </p>
       <h1 className="challenge-completion__title">{isQuick ? 'ЗАСЧИТАНО' : 'ГОТОВО'}</h1>
-      <p className="challenge-completion__subtitle">{isQuick ? 'Быстрая версия — тоже шаг' : 'Первый кадр из 30'}</p>
+      <p className="challenge-completion__subtitle">{isQuick ? 'Быстрая версия — тоже шаг' : `Первый кадр из ${total}`}</p>
       <p className="challenge-completion__progress" data-testid="challenge-completion-progress">
         {String(completedCount).padStart(2, '0')} / {String(total).padStart(2, '0')}
       </p>
@@ -50,7 +54,7 @@ export function ChallengeCompletion({ definition, progress, availableDay, comple
           Завтра откроется: <strong>День {lockedNext.day} — {lockedNext.title}</strong>
         </div>
       ) : completedCount >= total ? (
-        <div className="challenge-completion__next">Вы прошли все 30 дней — поздравляем!</div>
+        <div className="challenge-completion__next">Вы прошли все {total} дней — поздравляем!</div>
       ) : (
         <div className="challenge-completion__next">На сегодня всё — вернитесь завтра.</div>
       )}

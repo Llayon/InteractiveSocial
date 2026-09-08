@@ -5,7 +5,7 @@ const days: ChallengeDay[] = [
     day: 1,
     title: 'Предмет в руке у окна',
     subtitle: 'Самое простое первое упражнение — без лица',
-    heroImage: undefined, // TODO: add final reference image to /public/challenges/beautiful-shots/day01.jpg
+    heroImage: undefined,
     durationMinutes: 5,
     difficulty: 1,
     task: 'Возьми крем, духи, чашку, книгу или другой обычный предмет и сними его в руке возле окна.',
@@ -31,7 +31,7 @@ const days: ChallengeDay[] = [
     day: 2,
     title: 'Одна деталь обычного утра',
     subtitle: 'Без лица · учимся видеть кадр в быте',
-    heroImage: undefined, // TODO: day02.jpg
+    heroImage: undefined,
     durationMinutes: 5,
     difficulty: 1,
     task: 'Сними одну деталь обычного утра: чашка, книга, косметика, украшение — то, что уже на столе.',
@@ -181,76 +181,9 @@ const days: ChallengeDay[] = [
       'не меняй фильтр между кадрами;',
       'выложи 3 кадра подряд — проверь, читается ли история.',
     ],
-    nextDayPreview: 'День 8 — Свет и тень (скоро)',
+    nextDayPreview: undefined,
   },
 ]
-
-// Days 8-30 placeholders — keep unlock structure, mark as dev content
-function placeholderDay(n: number): ChallengeDay {
-  const placeholders: Record<number, { title: string; subtitle?: string; task: string; preview?: string }> = {
-    8: { title: 'Свет и тень', task: 'Найди красивую тень дома (от шторы, растения) и сними предмет в ней.', preview: 'День 9 — Фактура' },
-    9: { title: 'Фактура', task: 'Сними крупно фактуру: лён, дерево, керамика — на расстоянии ладони.', preview: 'День 10 — Утро без спешки' },
-    10: { title: 'Утро без спешки', task: 'Сними свой медленный утренний ритуал в одном кадре без лица.', preview: 'День 11 — Цвет' },
-    11: { title: 'Цвет как герой', task: 'Выбери один цвет дома и собери кадр вокруг него.', preview: 'День 12 — Геометрия' },
-    12: { title: 'Геометрия дома', task: 'Найди линию или угол (дверь, пол, подоконник) и построй кадр от неё.', preview: 'День 13 — Руки крупно' },
-    13: { title: 'Руки крупно', task: 'Сними руки крупно с предметом — кольца, крем, чашка.', preview: 'День 14 — Отражение' },
-    14: { title: 'Отражение', task: 'Найди отражение кроме зеркала: окно вечером, чайник, очки.', preview: 'День 15 — Портрет с предметом' },
-    15: { title: 'Портрет с предметом', task: 'Сними портрет, где предмет — часть истории (книга, цветы, чашка).', preview: 'День 16 — Силуэт' },
-    16: { title: 'Силуэт у окна', task: 'Сними силуэт против света — только контур, без деталей лица.', preview: 'День 17 — Деталь образа' },
-    17: { title: 'Деталь образа', task: 'Сними деталь образа крупно: воротник, серьга, туфли у порога.', preview: 'День 18 — Кухонный свет' },
-    18: { title: 'Кухонный свет', task: 'Сними на кухне при боковом свете: пар, фрукт, доска.', preview: 'День 19 — Текстуры' },
-    19: { title: 'Ткань и складки', task: 'Сними ткань в движении: платье, рубашка, постель утром.', preview: 'День 20 — Вечерний портрет' },
-    20: { title: 'Вечерний портрет', task: 'Сними портрет при тёплом вечернем свете (лампа сбоку).', preview: 'День 21 — Твоё место' },
-    21: { title: 'Твоё место', task: 'Сними место, где тебе спокойно: кресло, угол, подоконник.', preview: 'День 22 — Три предмета' },
-    22: { title: 'Три предмета', task: 'Собери натюрморт из трёх предметов на подоконнике.', preview: 'День 23 — Движение волос' },
-    23: { title: 'Движение волос', task: 'Сними движение волос — поворот головы, ветер от окна.', preview: 'День 24 — Тень на стене' },
-    24: { title: 'Тень на стене', task: 'Сними тень предмета или свою тень на стене при боковом свете.', preview: 'День 25 — Завтрак' },
-    25: { title: 'Завтрак как кадр', task: 'Сними завтрак сверху, как для журнала — один ракурс, чистый свет.', preview: 'День 26 — Руки и свет' },
-    26: { title: 'Руки и свет', task: 'Сними руки в световом пятне у окна — кольцо, часы, книга.', preview: 'День 27 — Город за окном' },
-    27: { title: 'Город за окном', task: 'Включи окно в кадр как фон истории — ты внутри, город снаружи.', preview: 'День 28 — Автопортрет' },
-    28: { title: 'Автопортрет', task: 'Сними автопортрет на таймер без зеркала — телефон на полке, ты в комнате.', preview: 'День 29 — Любимый кадр' },
-    29: { title: 'Любимый кадр — повтори', task: 'Повтори свой любимый день из первых семи — уже по-новому.', preview: 'День 30 — Финал' },
-    30: { title: 'Финал: твой взгляд', task: 'Сними кадр, который описывает тебя сейчас — без правил, только чувство.', preview: undefined },
-  }
-  const p = placeholders[n]
-  if (!p) {
-    return {
-      day: n,
-      title: `День ${n}`,
-      durationMinutes: 7,
-      difficulty: 2,
-      task: 'Задание в разработке — скоро здесь будет новый кадр.',
-      tips: {},
-      troubleshooting: ['сделай паузу — контент готовится'],
-      nextDayPreview: n < 30 ? `День ${n + 1}` : undefined,
-    }
-  }
-  return {
-    day: n,
-    title: p.title,
-    subtitle: p.subtitle ?? 'Скоро — placeholder контент',
-    heroImage: undefined, // TODO: add image
-    durationMinutes: 7,
-    difficulty: n % 3 === 0 ? 2 : 1,
-    task: p.task + ' (placeholder — финальный контент в разработке)',
-    tips: {
-      light: 'Используй боковой свет у окна — как в днях 1–7.',
-      camera: 'Попробуй 1× и 2×, выбери лучший вариант.',
-      composition: 'Оставь воздух, убери лишнее.',
-    },
-    quickVersion: {
-      title: 'Быстрая версия',
-      task: 'Один кадр у окна, естественный свет, без спешки.',
-    },
-    troubleshooting: ['снимай у окна', 'упрости фон', 'сделай 10 кадров'],
-    nextDayPreview: p.preview,
-  }
-}
-
-const allDays: ChallengeDay[] = [...days]
-for (let i = 8; i <= 30; i++) {
-  allDays.push(placeholderDay(i))
-}
 
 export const beautifulShotsChallenge: ChallengeDefinition = {
   id: 'beautiful-shots',
@@ -259,7 +192,7 @@ export const beautifulShotsChallenge: ChallengeDefinition = {
   subtitle: 'Красивые фотографии из обычной жизни',
   durationDays: 30,
   unlockStrategy: 'calendar-daily',
-  days: allDays,
+  days,
 }
 
 export function getBeautifulShotsDay(day: number): ChallengeDay | undefined {
