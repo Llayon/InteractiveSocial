@@ -7,16 +7,17 @@ import { detectPlatform, isMockEmulatingMax } from './detect.js'
 import type { MiniAppAdapter, PlatformKind } from './types.js'
 
 export function createPlatformAdapter(mode: PlatformKind = detectPlatform()): MiniAppAdapter {
-  // Mock is special: check if it should emulate MAX
+  // E2E mock that emulates MAX must return a MAX mock adapter even when detectPlatform() returns 'max'
+  // (detectPlatform returns 'max' for ?mock=1&platform=max to keep platform === 'max' in App).
+  if (isMockEmulatingMax()) {
+    const params = new URLSearchParams(window.location.search)
+    return createMaxMock({
+      startParam: params.get('tgWebAppStartParam') ?? params.get('startapp') ?? params.get('start_param'),
+      failShare: params.get('share') === 'fail',
+      unsupported: params.get('share') === 'unsupported',
+    })
+  }
   if (mode === 'mock') {
-    if (isMockEmulatingMax()) {
-      const params = new URLSearchParams(window.location.search)
-      return createMaxMock({
-        startParam: params.get('tgWebAppStartParam') ?? params.get('startapp') ?? params.get('start_param'),
-        failShare: params.get('share') === 'fail',
-        unsupported: params.get('share') === 'unsupported',
-      })
-    }
     const params = new URLSearchParams(window.location.search)
     return createMockTelegram({
       startParam: params.get('tgWebAppStartParam') ?? params.get('startapp'),

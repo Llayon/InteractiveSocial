@@ -20,8 +20,11 @@ test.describe('MAX mock journey', () => {
     await expect(page.getByTestId('result-screen')).toBeVisible({ timeout: 5000 })
     await expect(page.getByTestId('share-button')).toBeVisible()
     // Share via MAX transport (mocked /api/max/share/prepare → max_mid)
+    // For MAX, ShareButton stays idle after native (picker opened, not "Отправлено"), so status remains idle and button stays "Бросить вызов"
+    await expect(page.getByTestId('share-button')).toBeEnabled({ timeout: 10000 })
     await page.getByTestId('share-button').click()
-    await expect(page.getByTestId('share-status')).toHaveText('native', { timeout: 5000 })
+    await expect(page.getByTestId('share-status')).toHaveText('idle', { timeout: 5000 })
+    await expect(page.getByTestId('share-button')).toContainText('Бросить вызов')
     await expectNoRuntimeErrors(page, errorCollector)
   })
 
@@ -34,8 +37,10 @@ test.describe('MAX mock journey', () => {
       await page.getByTestId('answer-option').first().click()
     }
     await expect(page.getByTestId('result-screen')).toBeVisible({ timeout: 5000 })
+    await expect(page.getByTestId('share-button')).toBeEnabled({ timeout: 10000 })
     await page.getByTestId('share-button').click()
-    await expect(page.getByTestId('share-status')).toHaveText('native', { timeout: 5000 })
+    await expect(page.getByTestId('share-status')).toHaveText('idle', { timeout: 5000 })
+    await expect(page.getByTestId('share-button')).not.toContainText('Отправлено')
     await expectNoRuntimeErrors(page, errorCollector)
   })
 
