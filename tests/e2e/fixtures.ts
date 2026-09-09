@@ -103,6 +103,10 @@ export const test = base.extend<{ errorCollector: ErrorCollector }>({
     await page.route('**/api/diagnostics/boot', (route) =>
       route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) }),
     )
+    // Analytics relay — fire-and-forget, must not surface as 404/5xx console.error in E2E
+    await page.route('**/api/analytics', (route) =>
+      route.fulfill({ status: 204, body: '' }),
+    )
 
     page.on('pageerror', (error) => errors.push(`pageerror: ${error.message}`))
     page.on('console', (msg) => {

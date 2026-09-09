@@ -67,6 +67,12 @@ describe('validateAnalyticsPayload', () => {
     const r = validateAnalyticsPayload({ event: 'quiz_start', properties: props })
     expect(r.ok).toBe(false)
   })
+  it('rejects prototype pollution keys', () => {
+    const polluted = JSON.parse('{"event":"quiz_start","properties":{"__proto__":{"polluted":true}}}')
+    const r = validateAnalyticsPayload(polluted)
+    expect(r.ok).toBe(false)
+    if (!r.ok) expect(r.status).toBe(400)
+  })
 })
 
 describe('sanitizeProperties privacy', () => {
@@ -129,8 +135,8 @@ describe('POST /api/analytics handler', () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ status: 1 }), { status: 200 })) as unknown as typeof fetch)
   })
 
-  it('valid POST valid event → forwarded (204)', async () => {
-    process.env.POSTHOG_API_KEY = 'test_key'
+  it('valid POST valid event → forwarded (204) with correct PostHog payload', async () => {
+    process.env.POSTHOG_PROJECT_TOKEN = 'test_key'
     process.env.POSTHOG_HOST = 'https://us.i.posthog.com'
     const fetchMock = vi.fn(async () => new Response('1', { status: 200 }))
     vi.stubGlobal('fetch', fetchMock as unknown as typeof fetch)
@@ -144,11 +150,28 @@ describe('POST /api/analytics handler', () => {
     const url = call[0]
     const init = call[1]
     expect(url).toContain('us.i.posthog.com')
+    expect(url).toContain('/i/v0/e/')
     const payload = JSON.parse(init?.body as string)
     expect(payload.event).toBe('quiz_start')
     expect(payload.distinct_id).toBe('anon-123')
     expect(payload.properties.quiz_id).toBe('music90s')
     expect(payload.properties.$ip).toBe(null)
+    expect(payload.properties.$geoip_disable).toBe(true)
+    expect(payload.properties.$process_person_profile).toBe(false)
+    expect(payload.api_key).toBe('test_key')
+  })
+
+  it('uses EU host when configured', async () => {
+    process.env.POSTHOG_PROJECT_TOKEN = 'test_key'
+    process.env.POSTHOG_HOST = 'https://eu.i.posthog.com'
+    const fetchMock = vi.fn(async () => new Response('1', { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock as unknown as typeof fetch)
+    const req = mockReq('POST', { event: 'app_open', properties: { anonymous_id: 'a', platform: 'browser' } })
+    const res = mockRes()
+    await handler(req, res)
+    const call = (fetchMock.mock.calls[0] as unknown as [string, RequestInit])
+    expect(call[0]).toContain('eu.i.posthog.com')
+    expect(call[0]).toContain('/i/v0/e/')
   })
 
   it('GET → 405', async () => {
@@ -190,30 +213,32 @@ describe('POST /api/analytics handler', () => {
     expect(res.statusCode).toBe(400)
   })
 
-  it('upstream PostHog failure → controlled response (still 204, not 500)', async () => {
-    process.env.POSTHOG_API_KEY = 'test_key'
+  it('upstream PostHog failure → 502 (not 204)', async () => {
+    process.env.POSTHOG_PROJECT_TOKEN = 'test_key'
     const failingFetch = vi.fn(async () => new Response('error', { status: 500 }))
     vi.stubGlobal('fetch', failingFetch as unknown as typeof fetch)
     const req = mockReq('POST', { event: 'quiz_complete', properties: { quiz_id: 'music90s', anonymous_id: 'anon-1' } })
     const res = mockRes()
     await handler(req, res)
-    // Should still ack client with 204, not propagate 500
-    expect(res.statusCode).toBe(204)
+    expect(res.statusCode).toBe(502)
+    expect(res.body).toMatchObject({ ok: false })
   })
 
-  it('missing POSTHOG_API_KEY → 204 but not forwarded (no crash)', async () => {
+  it('missing POSTHOG_PROJECT_TOKEN → 503 analytics_not_configured', async () => {
+    delete process.env.POSTHOG_PROJECT_TOKEN
     delete process.env.POSTHOG_API_KEY
     const fetchMock = vi.fn(async () => new Response('1', { status: 200 }))
     vi.stubGlobal('fetch', fetchMock as unknown as typeof fetch)
     const req = mockReq('POST', { event: 'quiz_start', properties: { quiz_id: 'music90s' } })
     const res = mockRes()
     await handler(req, res)
-    expect(res.statusCode).toBe(204)
+    expect(res.statusCode).toBe(503)
+    expect(res.body).toMatchObject({ ok: false, error: 'analytics_not_configured' })
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
-  it('does not return PostHog raw response to client', async () => {
-    process.env.POSTHOG_API_KEY = 'test_key'
+  it('does not return PostHog raw response to client on success', async () => {
+    process.env.POSTHOG_PROJECT_TOKEN = 'test_key'
     vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ raw: 'posthog' }), { status: 200 })) as unknown as typeof fetch)
     const req = mockReq('POST', { event: 'result_view', properties: { quiz_id: 'music90s' } })
     const res = mockRes()
@@ -223,7 +248,7 @@ describe('POST /api/analytics handler', () => {
   })
 
   it('sanitizes forbidden fields before forwarding', async () => {
-    process.env.POSTHOG_API_KEY = 'test_key'
+    process.env.POSTHOG_PROJECT_TOKEN = 'test_key'
     const fetchMock = vi.fn(async () => new Response('1', { status: 200 }))
     vi.stubGlobal('fetch', fetchMock as unknown as typeof fetch)
     const req = mockReq('POST', {
@@ -249,7 +274,7 @@ describe('POST /api/analytics handler', () => {
   })
 
   it('uses distinct_id from anonymous_id', async () => {
-    process.env.POSTHOG_API_KEY = 'test_key'
+    process.env.POSTHOG_PROJECT_TOKEN = 'test_key'
     const fetchMock = vi.fn(async () => new Response('1', { status: 200 }))
     vi.stubGlobal('fetch', fetchMock as unknown as typeof fetch)
     const req = mockReq('POST', { event: 'app_open', properties: { anonymous_id: 'my-anon', session_id: 'my-sess', platform: 'browser' } })
@@ -260,8 +285,8 @@ describe('POST /api/analytics handler', () => {
     expect(payload.distinct_id).toBe('my-anon')
   })
 
-  it('sets $ip null for privacy', async () => {
-    process.env.POSTHOG_API_KEY = 'test_key'
+  it('sets $ip null and disables person profiles/GeoIP for privacy', async () => {
+    process.env.POSTHOG_PROJECT_TOKEN = 'test_key'
     const fetchMock = vi.fn(async () => new Response('1', { status: 200 }))
     vi.stubGlobal('fetch', fetchMock as unknown as typeof fetch)
     const req = mockReq('POST', { event: 'app_open', properties: { anonymous_id: 'a', platform: 'max' } })
@@ -270,10 +295,12 @@ describe('POST /api/analytics handler', () => {
     const call = (fetchMock.mock.calls[0] as unknown as [string, RequestInit])
     const payload = JSON.parse(call[1].body as string)
     expect(payload.properties.$ip).toBe(null)
+    expect(payload.properties.$geoip_disable).toBe(true)
+    expect(payload.properties.$process_person_profile).toBe(false)
   })
 
   it('accepts arbitrary safe properties for future run_id etc without schema migration', async () => {
-    process.env.POSTHOG_API_KEY = 'test_key'
+    process.env.POSTHOG_PROJECT_TOKEN = 'test_key'
     const fetchMock = vi.fn(async () => new Response('1', { status: 200 }))
     vi.stubGlobal('fetch', fetchMock as unknown as typeof fetch)
     const req = mockReq('POST', {
@@ -298,5 +325,15 @@ describe('POST /api/analytics handler', () => {
     const payload = JSON.parse(call[1].body as string)
     expect(payload.properties.run_id).toBe('run-123')
     expect(payload.properties.elapsed_ms).toBe(1234)
+  })
+
+  it('upstream timeout → 502', async () => {
+    process.env.POSTHOG_PROJECT_TOKEN = 'test_key'
+    const timeoutFetch = vi.fn(async () => { throw new DOMException('Aborted', 'AbortError') })
+    vi.stubGlobal('fetch', timeoutFetch as unknown as typeof fetch)
+    const req = mockReq('POST', { event: 'quiz_start', properties: { quiz_id: 'music90s', anonymous_id: 'anon' } })
+    const res = mockRes()
+    await handler(req, res)
+    expect(res.statusCode).toBe(502)
   })
 })

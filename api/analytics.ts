@@ -67,6 +67,16 @@ function getDepth(value: unknown, current = 0): number {
   return current
 }
 
+function hasPollutedKeys(value: unknown): boolean {
+  if (Array.isArray(value)) return value.some(hasPollutedKeys)
+  if (!isPlainObject(value)) return false
+  for (const key of Object.keys(value)) {
+    if (key === '__proto__' || key === 'constructor' || key === 'prototype') return true
+    if (hasPollutedKeys((value as Record<string, unknown>)[key])) return true
+  }
+  return false
+}
+
 export function sanitizeProperties(properties: Record<string, unknown>): Record<string, unknown> {
   const out: Record<string, unknown> = {}
   for (const [key, value] of Object.entries(properties)) {
@@ -87,6 +97,9 @@ export function sanitizeProperties(properties: Record<string, unknown>): Record<
 
 export function validateAnalyticsPayload(body: unknown): { ok: true; event: string; properties: Record<string, unknown> } | { ok: false; error: string; status: number } {
   if (!isPlainObject(body)) {
+    return { ok: false, error: 'invalid_request', status: 400 }
+  }
+  if (hasPollutedKeys(body)) {
     return { ok: false, error: 'invalid_request', status: 400 }
   }
 
@@ -111,6 +124,10 @@ export function validateAnalyticsPayload(body: unknown): { ok: true; event: stri
     return { ok: false, error: 'invalid_properties', status: 400 }
   } else {
     props = properties as Record<string, unknown>
+  }
+
+  if (hasPollutedKeys(props)) {
+    return { ok: false, error: 'invalid_request', status: 400 }
   }
 
   if (Object.keys(props).length > MAX_PROPERTIES_KEYS) {
@@ -147,15 +164,16 @@ export function validateAnalyticsPayload(body: unknown): { ok: true; event: stri
 }
 
 export function getPostHogConfig(): { apiKey: string | null; host: string } {
-  const apiKey = process.env.POSTHOG_API_KEY?.trim() || null
+  const apiKey = process.env.POSTHOG_PROJECT_TOKEN?.trim() || null
   const hostRaw = process.env.POSTHOG_HOST?.trim() || 'https://us.i.posthog.com'
   const host = hostRaw.replace(/\/+$/, '')
   return { apiKey, host }
 }
 
 function getCaptureUrl(host: string): string {
-  if (host.includes('/capture') || host.includes('/i/v0/e')) return host
-  return `${host}/capture/`
+  if (host.includes('/i/v0/e')) return host.endsWith('/') ? host : `${host}/`
+  if (host.includes('/capture')) return host.endsWith('/') ? host : `${host}/`
+  return `${host}/i/v0/e/`
 }
 
 export async function forwardToPostHog(
@@ -165,8 +183,8 @@ export async function forwardToPostHog(
 ): Promise<{ ok: boolean; status: number }> {
   const { apiKey, host } = getPostHogConfig()
   if (!apiKey) {
-    console.warn('[analytics] not configured: POSTHOG_API_KEY missing — event not forwarded')
-    return { ok: false, status: 204 }
+    console.warn('[analytics] not configured: POSTHOG_PROJECT_TOKEN missing — event not forwarded')
+    return { ok: false, status: 503 }
   }
 
   const captureUrl = getCaptureUrl(host)
@@ -181,9 +199,12 @@ export async function forwardToPostHog(
     distinct_id: safeDistinctId,
     properties: {
       ...sanitized,
-      // Privacy: explicitly disable IP capture so Vercel server IP is not stored as user IP
-      $ip: null,
+      // Privacy: disable Person Profiles for anonymous product analytics and prevent GeoIP/IP capture
+      // Official docs: https://posthog.com/docs/api/capture — $process_person_profile:false
+      // GeoIP disable: $geoip_disable:true (see posthog-plugin-geoip README)
+      $process_person_profile: false,
       $geoip_disable: true,
+      $ip: null,
     },
     timestamp: new Date().toISOString(),
   }
@@ -266,16 +287,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
       (properties as Record<string, unknown>).anonymousId as string) ||
     'anonymous'
 
-  // Fire posthog forward but never block client UX on failure
+  // Fire posthog forward — surface infrastructure errors to caller (client still swallows)
+  let forwardResult: { ok: boolean; status: number } | null = null
   try {
-    await forwardToPostHog(event, properties, distinctId)
+    forwardResult = await forwardToPostHog(event, properties, distinctId)
   } catch {
-    // swallow: analytics must never throw to client
     console.warn(`[analytics] forward exception event=${event}`)
+    res.status(502).json({ ok: false, error: 'posthog_error' })
+    return
   }
 
-  // Always ack client as success (fire-and-forget). Do not expose PostHog response.
-  // 204 has no body; use 200 with tiny JSON for broader client compatibility if needed
-  // We use 204 as primary per spec.
+  if (!forwardResult.ok) {
+    if (forwardResult.status === 503) {
+      res.status(503).json({ ok: false, error: 'analytics_not_configured' })
+      return
+    }
+    res.status(502).json({ ok: false, error: 'posthog_error' })
+    return
+  }
+
   res.status(204).end()
 }

@@ -3,26 +3,27 @@
 ## Overview
 
 ```
-Mini App → src/analytics/httpProvider.ts → POST /api/analytics → PostHog Capture API
+Mini App → src/analytics/httpProvider.ts → POST /api/analytics → PostHog Capture API (official https://<host>/i/v0/e/)
 ```
 
 - Client never calls PostHog directly.
 - Same-origin `POST /api/analytics` only.
 - Fire-and-forget: `fetch(..., { keepalive: true })`, analytics failure never blocks UX.
-- Privacy: no Telegram/MAX user ids, no names, no tokens.
+- Privacy: no Telegram/MAX user ids, no names, no tokens. Person Profiles disabled.
+- Verified against official docs: https://posthog.com/docs/api/capture
 
 ## Environment
 
 Server-only (Vercel Functions, never `VITE_`):
 
 ```text
-POSTHOG_API_KEY=               # PostHog project write key (required)
-POSTHOG_HOST=https://us.i.posthog.com  # optional — defaults to US Cloud
+POSTHOG_PROJECT_TOKEN=               # PostHog project token (ingestion write key, api_key) — required
+POSTHOG_HOST=https://us.i.posthog.com  # optional — defaults to US Cloud; EU: https://eu.i.posthog.com
 ```
 
-- `POSTHOG_API_KEY` must be set in Vercel Production/Preview; if missing, the relay logs a warning and still returns 204 so client UX is unaffected (event is dropped).
-- `POSTHOG_HOST` defaults to `https://us.i.posthog.com` when unset. For EU Cloud use `https://eu.i.posthog.com`.
-- Never prefix with `VITE_` — the key must not enter the client bundle.
+- `POSTHOG_PROJECT_TOKEN` must be set in Vercel Production/Preview; if missing, the relay returns 503 (`analytics_not_configured`) — client swallows it, UX unaffected but infrastructure failure is visible to monitoring.
+- `POSTHOG_HOST` defaults to `https://us.i.posthog.com` when unset. For EU Cloud use `https://eu.i.posthog.com` (relay appends `/i/v0/e/` → `https://eu.i.posthog.com/i/v0/e/`). For self-hosted use your domain.
+- Never prefix with `VITE_` — the token must not enter the client bundle, though project token is not a secret personal API key architecturally the client still only knows `/api/analytics`.
 
 Client (optional override):
 
@@ -35,11 +36,11 @@ VITE_ANALYTICS_PROVIDER=console|http  # dev only
 
 ## Anonymous identity
 
-- `anonymous_id` — per-browser install id. Generated via `crypto.randomUUID()`, persisted in `localStorage` at `interactive_social_analytics_id`. If storage is unavailable, an ephemeral per-page id is used. No Telegram/MAX identifier.
-- `session_id` — per app open. Generated via `crypto.randomUUID()` at bootstrap, ephemeral (not persisted). All events in one Mini App open share the same `session_id`.
-- `run_id` — per quiz run. Not implemented in this pass; the backend accepts it as an arbitrary safe property so a later merge can add it without migration.
+- `anonymous_id` — per-browser install id. `crypto.randomUUID()` persisted in `localStorage:interactive_social_analytics_id`. If storage unavailable, ephemeral per-page id. `!==` Telegram/MAX user id.
+- `session_id` — per app open. `crypto.randomUUID()` at bootstrap, ephemeral (not persisted). All events in one open share same `session_id`.
+- `run_id` — per quiz run. Not implemented in this pass; backend accepts it as arbitrary safe property so later merge can add without migration.
 
-All three are attached via `baseContext` in `bootstrap()` so every `getAnalytics().track(...)` automatically includes them.
+All three attached via `baseContext` in `bootstrap()` so every `getAnalytics().track(...)` automatically includes them.
 
 ## Events
 
@@ -74,23 +75,27 @@ is sent as:
 }
 ```
 
-relay converts to PostHog:
+relay converts to PostHog (official single-event ingestion at `/i/v0/e/`):
 
 ```json
 {
-  "api_key": "<POSTHOG_API_KEY>",
+  "api_key": "<POSTHOG_PROJECT_TOKEN>",
   "event": "quiz_start",
   "distinct_id": "<anonymous_id>",
   "properties": {
     "quiz_id": "music90s",
     "platform": "max",
-    "$ip": null,
-    "$geoip_disable": true
+    "$process_person_profile": false,
+    "$geoip_disable": true,
+    "$ip": null
   }
 }
 ```
 
-`$ip: null` ensures the Vercel server IP is not stored as the user IP. Project-level "Discard client IP data" should also be enabled in PostHog for GDPR compliance.
+- `distinct_id = anonymous_id` (never platform user id).
+- `$process_person_profile: false` disables Person Profiles — we only need aggregate product analytics per official anonymous event capture docs.
+- `$geoip_disable: true` + `$ip: null` ensure Vercel server IP is not stored as user IP and GeoIP enrichment is skipped (see posthog-plugin-geoip README). Project-level "Discard client IP data" should also be enabled for GDPR.
+- `api_key` is the project token (field name remains `api_key` per official payload, env is `POSTHOG_PROJECT_TOKEN`).
 
 ## API
 
@@ -106,26 +111,26 @@ Request:
 ```
 
 - `event` — required, non-empty string ≤ 100 chars.
-- `properties` — optional plain object (not array), ≤ 32 KB total payload, ≤ 100 keys, depth ≤ 5.
+- `properties` — optional plain object (not array), ≤ 32 KB total payload, ≤ 100 keys, depth ≤ 5, no `__proto__`/`constructor`/`prototype`.
 - Forbidden keys (`telegram_user_id`, `username`, `initData`, `token`, `chat_id`, `question_text`, etc.) are stripped before forwarding.
 
-Responses:
+Responses (sequential contract):
 
-- `204` — accepted (forwarded or intentionally dropped when not configured). Never returns PostHog raw response.
-- `400` — malformed input, empty event, array properties, etc.
+- `204` — accepted and PostHog ingestion succeeded.
+- `400` — malformed input, empty event, array properties, prototype pollution, giant strings, etc.
 - `405` — non-POST method.
-- `413` — payload too large.
+- `413` — payload too large (>32KB).
+- `503` — `POSTHOG_PROJECT_TOKEN` not configured (analytics_not_configured).
+- `502` — PostHog timeout/down/non-2xx (posthog_error). AbortController timeout ~4s, bounded.
 
-Upstream PostHog failures are logged server-side (`[analytics] forward failed …`) but still return `204` to the client.
+Client provider swallows 5xx — `getAnalytics().track(...)` never throws, no toast, no retry, no navigation block. Infrastructure 5xx is visible to server monitoring but never breaks quiz UX.
 
 ## Validation / Abuse protection
 
 - Only `POST`.
-- Event must be string 1–100 chars.
-- Properties must be plain object.
-- Total payload ≤ 32 KB.
-- Keys ≤ 100, depth ≤ 5, string values ≤ 4096.
-- No array root, no control characters in event name.
+- Event string 1–100 chars, no control chars.
+- Properties plain object, not array.
+- Total payload ≤ 32 KB, keys ≤ 100, depth ≤ 5, string values ≤ 4096, no prototype pollution.
 - Same-origin `fetch` only; no CORS open.
 
 Not a full rate limiter — sufficient for this public but low-abuse surface.
@@ -136,22 +141,22 @@ Safe logs only:
 
 ```text
 [analytics] forwarded event=quiz_complete
-[analytics] posthog forward failed status=…
-[analytics] not configured: POSTHOG_API_KEY missing …
+[analytics] posthog forward failed status=502 event=quiz_complete
+[analytics] not configured: POSTHOG_PROJECT_TOKEN missing …
 ```
 
-Never logs `req.body`.
+Never logs `req.body` or full properties.
 
 ## Local verification
 
-Without `POSTHOG_API_KEY` the app still starts; events are dropped with a warning and 204. For unit tests, PostHog is mocked — no real key required.
+Without `POSTHOG_PROJECT_TOKEN` relay returns 503; app still starts (client swallows). For unit tests PostHog is mocked — no real token required.
 
 To verify locally with a real project:
 
 ```text
-POSTHOG_API_KEY=phc_… POSTHOG_HOST=https://us.i.posthog.com pnpm dev
+POSTHOG_PROJECT_TOKEN=phc_… POSTHOG_HOST=https://us.i.posthog.com pnpm dev
 # then in browser console: fetch('/api/analytics', {method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({event:'quiz_start', properties:{quiz_id:'music90s', platform:'browser', anonymous_id:'test', session_id:'test'}})})
-# → 204 and event appears in PostHog Live Events
+# → 204 (or 502 if token/host wrong) and event appears in PostHog Live Events when 204
 ```
 
 ## Merge safety
@@ -159,7 +164,7 @@ POSTHOG_API_KEY=phc_… POSTHOG_HOST=https://us.i.posthog.com pnpm dev
 This pass does not modify:
 
 - `src/content/quizzes/music90s/quiz.ts`
-- question bank / selector / result ranges / scoring
+- question bank / selector / result ranges / scoring (42 bank, 18/run, denominator 18 intact)
 - result visuals / landing / share transport
 
 A later merge will add `category`, `position`, `is_correct`, `run_id` to `question_answered` without backend schema migration — the relay already accepts arbitrary safe properties.
