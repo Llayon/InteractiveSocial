@@ -60,6 +60,10 @@ export interface AnalyticsContext {
   source?: string
   platform?: string
   entry_source?: string
+  /** Canonical acquisition dimensions — cross-platform attribution */
+  acquisition_channel?: string
+  acquisition_source?: string
+  campaign_id?: string
   score?: number
   question_count?: number
   challenge_id?: string

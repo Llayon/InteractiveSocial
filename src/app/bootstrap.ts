@@ -1,6 +1,7 @@
 import { consoleProvider, getAnalytics, initAnalytics } from '@/analytics/analytics'
 import type { AnalyticsProvider } from '@/analytics/analytics'
-import { deriveSource } from '@/analytics/events'
+import { resolveAcquisitionAttribution } from '@/analytics/attribution'
+import { deriveEntrySource, deriveSource } from '@/analytics/events'
 import { createSessionId, getOrCreateAnonymousId } from '@/analytics/identity'
 import { compositeProvider, httpAnalyticsProvider } from '@/analytics/httpProvider'
 import type { MiniAppAdapter } from '@/platform/types'
@@ -57,12 +58,21 @@ export function bootstrap(options: BootstrapOptions): void {
 
   const provider = resolveAnalyticsProvider()
 
+  const attribution = resolveAcquisitionAttribution({
+    startParam: startParam ?? null,
+    platform: adapter.platform,
+  })
+
   initAnalytics({
     provider,
     baseContext: {
       platform: adapter.platform,
       start_param: startParam,
       source: deriveSource(startParam),
+      entry_source: deriveEntrySource(startParam ?? null),
+      acquisition_channel: attribution.acquisition_channel,
+      acquisition_source: attribution.acquisition_source,
+      ...(attribution.campaign_id ? { campaign_id: attribution.campaign_id } : {}),
       ...(anonymousId ? { anonymous_id: anonymousId } : {}),
       ...(sessionId ? { session_id: sessionId } : {}),
     },
