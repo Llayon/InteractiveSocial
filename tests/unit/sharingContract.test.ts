@@ -64,7 +64,7 @@ function makeTelegram(overrides: Partial<TelegramAdapter> = {}): TelegramAdapter
 
 describe('buildFallbackShareUrl returns a t.me deep link, never a raw Vercel URL', () => {
   beforeEach(() => {
-    vi.stubEnv('VITE_TELEGRAM_BOT_USERNAME', 'takeiteasybefore')
+    vi.stubEnv('VITE_TELEGRAM_BOT_USERNAME', 'tginteractivebot')
     vi.stubEnv('VITE_TELEGRAM_APP_SHORT_NAME', 'app')
   })
 
@@ -75,7 +75,7 @@ describe('buildFallbackShareUrl returns a t.me deep link, never a raw Vercel URL
   it('returns a t.me deep link with the share_ start_param when bot username is configured', () => {
     const { url, usable } = buildFallbackShareUrl('quiet')
     expect(usable).toBe(true)
-    expect(url).toBe('https://t.me/takeiteasybefore/app?startapp=share_quiet')
+    expect(url).toBe('https://t.me/tginteractivebot/app?startapp=share_quiet')
     expect(url).not.toContain('vercel.app')
   })
 })
@@ -211,7 +211,7 @@ describe('shareResult: native share outcome contract', () => {
     const interiorResult = interiorCharacterQuiz.results[0]
     const fetchSpy = vi.fn()
     vi.stubGlobal('fetch', fetchSpy)
-    vi.stubEnv('VITE_TELEGRAM_BOT_USERNAME', 'takeiteasybefore')
+    vi.stubEnv('VITE_TELEGRAM_BOT_USERNAME', 'tginteractivebot')
     const { analytics, events } = makeAnalytics()
     const telegram = makeTelegram({ mode: 'browser' })
     const outcome = await shareResult({

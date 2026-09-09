@@ -22,7 +22,7 @@ Client public (baked at build):
 
 ```text
 VITE_MAX_BOT_USERNAME=se14154487_bot
-VITE_TELEGRAM_BOT_USERNAME=...
+VITE_TELEGRAM_BOT_USERNAME=tginteractivebot
 ```
 
 `MAX_BOT_TOKEN` must never appear in `dist/` — verified via `scripts/check-max-token-not-in-bundle.mjs`.
