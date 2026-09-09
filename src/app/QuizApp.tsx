@@ -2,6 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { getAnalytics } from '@/analytics/analytics'
 import { deriveEntrySource, isChallengeAttributedParam } from '@/analytics/events'
+import {
+  computeElapsedMs,
+  generateRunId,
+  getQuestionAnalyticsCategory,
+  nowMs,
+} from '@/analytics/questionAnalytics'
 import { resolveQuizFromLaunch } from '@/content/quizzes/resolveQuiz'
 import { Landing } from '@/features/landing/Landing'
 import { Quiz } from '@/features/quiz/Quiz'
@@ -74,8 +80,13 @@ export function QuizApp({ telegram, adapter }: QuizAppProps) {
     [quiz],
   )
   const [completionId, setCompletionId] = useState<string>(() => generateCompletionId())
+  const [runId, setRunId] = useState<string>(() => generateRunId())
   const [maxSelfMid, setMaxSelfMid] = useState<string | null>(null)
   const [maxDeliverPending, setMaxDeliverPending] = useState(false)
+
+  // Timing + deduplication for question-level analytics
+  const questionStartMsRef = useRef<Map<string, number>>(new Map())
+  const answeredKeysRef = useRef<Set<string>>(new Set())
 
   useEffect(() => {
     if (screen === 'landing') {
@@ -102,6 +113,31 @@ export function QuizApp({ telegram, adapter }: QuizAppProps) {
     }
   }, [screen, attempt, analytics, quiz.id, quiz.questions.length, platformAdapter])
 
+  // question_view — deduplicated per run/position/question, starts elapsed timer
+  useEffect(() => {
+    if (screen !== 'quiz') return
+    if (state.phase !== 'active') return
+    const q = quiz.questions[state.currentIndex]
+    if (!q) return
+    const position = state.currentIndex + 1
+    const viewKey = `question_view:${runId}:${position}:${q.id}`
+    const platform = platformAdapter?.platform ?? 'browser'
+    const category = getQuestionAnalyticsCategory(quiz, q)
+    analytics.trackOnce(viewKey, 'question_view', {
+      quiz_id: quiz.id,
+      run_id: runId,
+      question_id: q.id,
+      position,
+      question_count: quiz.questions.length,
+      platform,
+      ...(category ? { category } : {}),
+    })
+    const timerKey = `${runId}:${q.id}`
+    if (!questionStartMsRef.current.has(timerKey)) {
+      questionStartMsRef.current.set(timerKey, nowMs())
+    }
+  }, [screen, state.phase, state.currentIndex, quiz, runId, analytics, platformAdapter])
+
   useEffect(() => {
     if (screen === 'landing') {
       try {
@@ -122,14 +158,15 @@ export function QuizApp({ telegram, adapter }: QuizAppProps) {
     platformAdapter?.haptic('light')
     const platform = platformAdapter?.platform ?? 'browser'
     const startParam = platformAdapter?.getStartParam() ?? undefined
-    analytics.trackOnce(`quiz_start:${attempt}:${quiz.id}`, 'quiz_start', {
+    analytics.trackOnce(`quiz_start:${runId}`, 'quiz_start', {
       quiz_id: quiz.id,
+      run_id: runId,
       platform,
       question_count: quiz.questions.length,
       entry_source: deriveEntrySource(startParam ?? null),
       ...(startParam ? { start_param: startParam } : {}),
     })
-  }, [analytics, attempt, dispatch, quiz.id, quiz.questions.length, platformAdapter])
+  }, [analytics, dispatch, quiz.id, quiz.questions.length, platformAdapter, runId])
 
   const lastTrackedAnswer = useRef<string>('')
   const replayedQuestions = useRef<Set<string>>(new Set())
@@ -153,26 +190,42 @@ export function QuizApp({ telegram, adapter }: QuizAppProps) {
       platformAdapter?.haptic('light')
 
       const position = quiz.questions.findIndex((q) => q.id === selected.questionId)
-      const dedupeKey = `${attempt}:${selected.questionId}:${selected.answerId}`
-      if (position >= 0 && lastTrackedAnswer.current !== dedupeKey) {
-        lastTrackedAnswer.current = dedupeKey
-        const isAudio = quiz.questions.find((qq) => qq.id === selected.questionId)?.content?.kind === 'audio-preview'
-        const payload = questionAnsweredTelemetry(
-          quiz,
-          selected.questionId,
-          selected.answerId,
-          position + 1,
-          isAudio ? { replayed: replayedQuestions.current.has(selected.questionId) } : undefined,
-        )
-        analytics.track('question_answered', {
-          quiz_id: quiz.id,
-          question_id: selected.questionId,
-          answer_id: selected.answerId,
-          ...payload,
-        })
-      }
+      // deduplicate per run/position/question — ignore answerId variations, one event per question exposure
+      const dedupeKey = `question_answered:${runId}:${position + 1}:${selected.questionId}`
+      if (position < 0 || answeredKeysRef.current.has(dedupeKey)) return
+      // also keep legacy per-answer dedupe for extra safety on double tap
+      const legacyKey = `${attempt}:${selected.questionId}:${selected.answerId}`
+      if (lastTrackedAnswer.current === legacyKey) return
+      lastTrackedAnswer.current = legacyKey
+      answeredKeysRef.current.add(dedupeKey)
+
+      const q = quiz.questions.find((qq) => qq.id === selected.questionId)
+      const category = q ? getQuestionAnalyticsCategory(quiz, q) : undefined
+      const timerKey = `${runId}:${selected.questionId}`
+      const startMs = questionStartMsRef.current.get(timerKey)
+      const elapsedMs = computeElapsedMs(startMs)
+
+      const isAudio = q?.content?.kind === 'audio-preview'
+      const payload = questionAnsweredTelemetry(
+        quiz,
+        selected.questionId,
+        selected.answerId,
+        position + 1,
+        isAudio ? { replayed: replayedQuestions.current.has(selected.questionId) } : undefined,
+      )
+      analytics.track('question_answered', {
+        quiz_id: quiz.id,
+        question_id: selected.questionId,
+        answer_id: selected.answerId,
+        question_count: quiz.questions.length,
+        position: position + 1,
+        ...payload,
+        ...(category ? { category } : {}),
+        run_id: runId,
+        elapsed_ms: elapsedMs,
+      })
     },
-    [analytics, attempt, dispatch, quiz, platformAdapter],
+    [analytics, attempt, dispatch, quiz, platformAdapter, runId],
   )
 
   const handleSkip = useCallback(
@@ -196,7 +249,7 @@ export function QuizApp({ telegram, adapter }: QuizAppProps) {
   const revealFinishedRef = useRef<string>('')
   useEffect(() => {
     if (state.phase !== 'completed') return
-    const key = `${attempt}:${completionId}`
+    const key = `${attempt}:${completionId}:${runId}`
     if (revealFinishedRef.current === key) return
     revealFinishedRef.current = key
 
@@ -207,16 +260,18 @@ export function QuizApp({ telegram, adapter }: QuizAppProps) {
 
     const platform = platformAdapter?.platform ?? 'browser'
     const startParam = platformAdapter?.getStartParam() ?? undefined
-    analytics.trackOnce(`result_view:${attempt}:${quiz.id}:${outcome.resultId}`, 'result_view', {
+    analytics.trackOnce(`result_view:${runId}:${quiz.id}:${outcome.resultId}`, 'result_view', {
       quiz_id: quiz.id,
+      run_id: runId,
       result_id: outcome.resultId,
       platform,
       ...(score !== undefined ? { score } : {}),
       question_count: quiz.questions.length,
       entry_source: deriveEntrySource(startParam ?? null),
     })
-    analytics.trackOnce(`quiz_complete:${attempt}:${quiz.id}`, 'quiz_complete', {
+    analytics.trackOnce(`quiz_complete:${runId}`, 'quiz_complete', {
       quiz_id: quiz.id,
+      run_id: runId,
       platform,
       question_count: quiz.questions.length,
       entry_source: deriveEntrySource(startParam ?? null),
@@ -296,13 +351,20 @@ export function QuizApp({ telegram, adapter }: QuizAppProps) {
         }
       }
     }
-  }, [state.phase, state.answers, analytics, attempt, completionId, quiz, platformAdapter])
+  }, [state.phase, state.answers, analytics, attempt, completionId, quiz, platformAdapter, runId])
 
   const handleRestart = useCallback(() => {
     dispatch({ type: 'restart' })
     setAttempt((a) => a + 1)
     const newCid = generateCompletionId()
     setCompletionId(newCid)
+    const newRunId = generateRunId()
+    setRunId(newRunId)
+    // reset per-run dedup and timing maps
+    answeredKeysRef.current.clear()
+    lastTrackedAnswer.current = ''
+    // clear timers for new run (old runId keys remain but are keyed by runId so not reused; still clear to avoid leak)
+    questionStartMsRef.current.clear()
     setMaxSelfMid(null)
     setMaxDeliverPending(false)
     try {

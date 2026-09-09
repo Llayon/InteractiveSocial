@@ -6,6 +6,7 @@ export type AnalyticsEvent =
   | 'quiz_view'
   | 'quiz_landing_view'
   | 'quiz_start'
+  | 'question_view'
   | 'question_answered'
   | 'quiz_complete'
   | 'result_view'
@@ -69,15 +70,35 @@ export interface AnalyticsContext {
   anonymous_id?: string
   /** Per-app-open session id — ephemeral, not persisted */
   session_id?: string
-  /** Per-quiz-run id — supplied when available, accepted without schema migration */
+  /** Per-quiz-run id — one attempt of a quiz, stable within run, new on restart */
   run_id?: string
-  /** Allow arbitrary safe dimensions (category, position, is_correct, elapsed_ms, etc.) */
+  /** Generic question-level dimensions — present where semantics are unambiguous */
+  category?: string
+  position?: number
+  is_correct?: boolean
+  elapsed_ms?: number
+  /** Allow additional safe dimensions (future run_id enrichments etc.) */
   [key: string]: unknown
 }
 
 export interface QuestionAnsweredPayload extends AnalyticsContext {
-  primary_result: string
-  secondary_result: string
+  primary_result?: string
+  secondary_result?: string
+  category?: string
+  position?: number
+  is_correct?: boolean
+  elapsed_ms?: number
+  run_id?: string
+  question_count?: number
+}
+
+export interface QuestionViewPayload extends AnalyticsContext {
+  quiz_id: string
+  question_id: string
+  position: number
+  question_count: number
+  run_id: string
+  category?: string
 }
 
 export interface QuizCompletePayload extends AnalyticsContext {

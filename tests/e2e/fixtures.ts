@@ -12,7 +12,21 @@ export interface ErrorCollector {
   list: () => string[]
 }
 
-export const test = base.extend<{ errorCollector: ErrorCollector }>({
+export interface AnalyticsCollector {
+  events: () => Array<{ event: string; properties: Record<string, unknown> }>
+  list: () => Array<{ event: string; properties: Record<string, unknown> }>
+  clear: () => void
+}
+
+const analyticsStore = new WeakMap<Page, Array<{ event: string; properties: Record<string, unknown> }>>()
+
+export const test = base.extend<{ errorCollector: ErrorCollector; analyticsCollector: AnalyticsCollector }>({
+  analyticsCollector: async ({ page }, use) => {
+    const events = analyticsStore.get(page) ?? []
+    // ensure store exists even if errorCollector not yet initialized (fallback)
+    if (!analyticsStore.has(page)) analyticsStore.set(page, events)
+    await use({ events: () => events, list: () => events, clear: () => { events.length = 0 } })
+  },
   errorCollector: async ({ page }, use) => {
     const errors: string[] = []
 
@@ -104,9 +118,27 @@ export const test = base.extend<{ errorCollector: ErrorCollector }>({
       route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) }),
     )
     // Analytics relay — fire-and-forget, must not surface as 404/5xx console.error in E2E
-    await page.route('**/api/analytics', (route) =>
-      route.fulfill({ status: 204, body: '' }),
-    )
+    // Also captures payloads for analytics-collector tests
+    let analyticsEvents = analyticsStore.get(page)
+    if (!analyticsEvents) {
+      analyticsEvents = []
+      analyticsStore.set(page, analyticsEvents)
+    }
+    await page.route('**/api/analytics', async (route) => {
+      try {
+        const post = route.request().postData()
+        if (post) {
+          const body = JSON.parse(post) as { event?: unknown; properties?: unknown }
+          if (body && typeof body.event === 'string') {
+            analyticsEvents.push({
+              event: body.event,
+              properties: (body.properties as Record<string, unknown>) ?? {},
+            })
+          }
+        }
+      } catch {}
+      await route.fulfill({ status: 204, body: '' })
+    })
 
     page.on('pageerror', (error) => errors.push(`pageerror: ${error.message}`))
     page.on('console', (msg) => {
