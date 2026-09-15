@@ -12,6 +12,8 @@ export interface Music90ResultLayoutProps {
   assetSet?: Music90AssetSet
   /** Share CTA block — caller passes <ShareButton .../> to keep transport logic untouched */
   shareSlot: React.ReactNode
+  /** Secondary comment-share CTA — caller passes <CommentShareButton .../> or null */
+  commentShareSlot?: React.ReactNode
   /** Channel funnel props — passed from Result.tsx boundary */
   promoIntro?: string | null
   promoCta?: string | null
@@ -33,6 +35,7 @@ export function Music90ResultLayout({
   score,
   assetSet,
   shareSlot,
+  commentShareSlot,
   promoIntro,
   promoCta,
   channelUrl,
@@ -74,6 +77,8 @@ export function Music90ResultLayout({
       </div>
 
       {shareSlot}
+
+      {commentShareSlot}
 
       {showPromo && promoIntro && promoCta && channelUrl && (
         <>

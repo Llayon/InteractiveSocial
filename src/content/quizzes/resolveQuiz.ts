@@ -42,7 +42,10 @@ const defaultRegistry: QuizLaunchRegistry = {
  *   1. Telegram start param `quiz_<quizId>`
  *   2. Shared-link start params — v2 codes (`s2_…`) resolved via the code
  *      registry, legacy `share_<result>` via the result-owner scan
- *   3. Browser `?quiz=<quizId>` (dev / plain web)
+ *   3. Wife/campaign start params — `post_*`, `channel_*`, `quiz_launch` with
+ *      campaign `music90s_*` → music90s, etc. (so t.me/...?startapp=post_music90s_launch
+ *      correctly opens music90s while still counting as wife_post attribution).
+ *   4. Browser `?quiz=<quizId>` (dev / plain web)
  * Unknown ids never throw: they fall back to the default quiz with a
  * console warning so a malformed link can never blank the app.
  */
@@ -73,6 +76,12 @@ export function resolveQuizFromLaunch(
       if (owner) return owner
       console.warn('[quiz] share param references unknown result: %s', startParam)
     }
+
+    // Campaign / wife attribution params: post_*, channel_*, quiz_launch etc.
+    // These carry campaign_id like music90s_launch but must still route to the correct quiz.
+    // We infer quiz by matching campaign prefix against known quiz ids.
+    const campaignQuiz = resolveQuizFromCampaignParam(startParam, registry)
+    if (campaignQuiz) return campaignQuiz
   }
 
   const requested = new URLSearchParams(ctx.search).get('quiz')
@@ -100,6 +109,72 @@ function parseV2ShareParam(startParam: string): { quizCode: string; resultCode: 
 function parseResultIdFromShareParam(startParam: string): string | null {
   const match = /^share_([a-z][a-z0-9_]{0,63})(?:-[0-9]+)?$/.exec(startParam)
   return match?.[1] ?? null
+}
+
+/**
+ * Infer quiz from wife/campaign params like post_music90s_launch, channel_music90s_launch,
+ * channel_tg_music90s_launch, quiz_music90s_launch, or bare post/channel campaign.
+ * Returns null if campaign does not map to a known quiz id.
+ */
+function resolveQuizFromCampaignParam(
+  startParam: string,
+  registry: QuizLaunchRegistry,
+): Quiz | null {
+  let campaign: string | null = null
+
+  if (startParam === 'post' || startParam.startsWith('post_')) {
+    campaign = startParam === 'post' ? null : startParam.slice('post_'.length)
+  } else if (startParam === 'channel' || startParam.startsWith('channel')) {
+    if (startParam === 'channel') campaign = null
+    else if (startParam.startsWith('channel_')) {
+      campaign = startParam.slice('channel_'.length)
+      // strip legacy tg_/max_ prefix so channel_tg_music90s_launch → music90s_launch
+      if (campaign.startsWith('tg_')) campaign = campaign.slice(3)
+      else if (campaign.startsWith('max_')) campaign = campaign.slice(4)
+    } else {
+      campaign = null
+    }
+  } else if (startParam === 'quiz' || startParam.startsWith('quiz_')) {
+    // quiz_music90s or quiz_music90s_launch etc. — try to extract quiz id prefix
+    // For quiz_ the remainder is already handled above for exact match; this is fallback for campaign variants
+    campaign = startParam === 'quiz' ? null : startParam.slice('quiz_'.length)
+  } else if (startParam.startsWith('quiz_launch')) {
+    campaign = null
+  }
+
+  if (!campaign) return null
+
+  // Normalize campaign to lowercase for matching
+  const lower = campaign.toLowerCase()
+
+  // Direct match or prefix match against known quiz ids.
+  // We check longest quiz ids first to avoid prefix collision (e.g. music90s vs music).
+  const candidates = (() => {
+    try {
+      // Prefer registry enumeration if available; fallback to direct lookups
+      const ids = ['music90s', 'guess90s', 'interior-character']
+      return ids
+        .map((id) => registry.findQuizById(id))
+        .filter((q): q is NonNullable<typeof q> => Boolean(q))
+        .map((q) => q.id)
+    } catch {
+      return []
+    }
+  })()
+
+  // Sort by length desc for longest-prefix wins
+  candidates.sort((a, b) => b.length - a.length)
+
+  for (const quizId of candidates) {
+    if (lower === quizId || lower.startsWith(quizId + '_') || lower.startsWith(quizId + '-')) {
+      const quiz = registry.findQuizById(quizId)
+      if (quiz) return quiz
+    }
+  }
+
+  // Also handle campaign that is exactly quiz launch id like music90s_launch where quizId=music90s
+  // Already covered above via prefix, but keep fallback for non-standard separators
+  return null
 }
 
 /** The quiz every fallback resolves to (default quiz of the registry). */

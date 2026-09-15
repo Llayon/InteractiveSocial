@@ -511,6 +511,29 @@
   width: 100%;
 }
 
+.comment-share {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-left: var(--space-m);
+  padding-right: var(--space-m);
+}
+
+.comment-share__cta {
+  width: 100%;
+}
+
+.comment-share__hint {
+  margin: 0;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.comment-share__hint--error {
+  color: var(--danger, #b3261e);
+}
+
 /* ---------- desktop / Telegram Web adaptation ---------- */
 
 /*

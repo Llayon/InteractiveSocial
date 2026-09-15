@@ -726,7 +726,7 @@ export const questions: Question[] = [
     category: 'song',
     difficulty: 'medium',
     layout: 'choice',
-    title: 'Как официально называется прорывной хит Земфиры 1999 года со строчками про «трещинки» и обещанием «убить соседей, что мешают спать»?',
+    title: 'Как называется хит Земфиры 1999 года, где звучат «вороны-москвички» и «корабли в моей гавани»?',
     correctAnswerId: 'a',
     feedback: {
       correct: 'Без шансов для ошибки.',
@@ -734,8 +734,8 @@ export const questions: Question[] = [
     },
     answers: [
       { id: 'a', title: '«Ариведерчи»' },
-      { id: 'b', title: '«Трещинки»' },
-      { id: 'c', title: '«Соседи»' },
+      { id: 'b', title: '«Почему»' },
+      { id: 'c', title: '«Хочешь?»' },
       { id: 'd', title: '«Ромашки»' },
     ],
   },
@@ -814,6 +814,15 @@ export const music90sQuiz: Quiz = {
   share: {
     assetPrefix: 'm90',
     assetVersion: 'v4',
+  },
+  commentShare: {
+    cta: 'Показать результат в комментариях',
+    copiedLabel: 'Результат скопирован — вставьте его в комментариях',
+    posts: {
+      music90s_launch: {
+        telegramPostUrl: 'https://t.me/takeiteasybefore/2435',
+      },
+    },
   },
   copy: {
     eyebrow: 'музыкальный тест',

@@ -5,6 +5,8 @@ import { resolvePromotionDestination } from '@/features/quiz/promotion'
 import { getEffectiveTotal, getResultById, type QuizOutcome } from '@/features/quiz/scoring'
 import type { Quiz } from '@/features/quiz/schema'
 import { ShareButton } from '@/features/share/ShareButton'
+import { CommentShareButton } from '@/features/share/CommentShareButton'
+import { resolveCommentShare } from '@/features/share/commentShare'
 import type { MiniAppAdapter } from '@/platform/types'
 import type { TelegramAdapter } from '@/platform/telegram'
 import { ResultCard } from './ResultCard'
@@ -91,6 +93,36 @@ export function ResultScreen({ quiz, outcome, telegram, adapter, onRestart, comp
 
   const isMusic90sScore = quiz.id === 'music90s' && result.presentation.kind === 'score'
 
+  // Generic comment-share CTA: config + campaign attribution determine visibility.
+  // Authority is resolveAcquisitionAttribution (via resolveCommentShare) fed by
+  // real runtime inputs platformAdapter.platform + platformAdapter.getStartParam().
+  // No manual post_* parsing here.
+  const startParamForAttribution = platformAdapter?.getStartParam() ?? null
+  const commentShare =
+    score !== undefined
+      ? resolveCommentShare({ quiz, platform, startParam: startParamForAttribution })
+      : { visible: false as const }
+  const commentShareNode =
+    commentShare.visible &&
+    score !== undefined &&
+    commentShare.campaignId &&
+    commentShare.telegramPostUrl &&
+    commentShare.cta &&
+    commentShare.copiedLabel ? (
+      <CommentShareButton
+        quizId={quiz.id}
+        resultId={result.id}
+        resultTitle={result.title}
+        score={score}
+        total={getEffectiveTotal(quiz)}
+        campaignId={commentShare.campaignId}
+        telegramPostUrl={commentShare.telegramPostUrl}
+        cta={commentShare.cta}
+        copiedLabel={commentShare.copiedLabel}
+        platform={platform}
+      />
+    ) : null
+
   if (isMusic90sScore) {
     const assetSet = getMusic90AssetSet(result.id)
     return (
@@ -123,6 +155,7 @@ export function ResultScreen({ quiz, outcome, telegram, adapter, onRestart, comp
               maxPending={maxPending}
             />
           }
+          commentShareSlot={commentShareNode}
         />
       </section>
     )
@@ -146,6 +179,7 @@ export function ResultScreen({ quiz, outcome, telegram, adapter, onRestart, comp
           maxMid={maxMid}
           maxPending={maxPending}
         />
+        {commentShareNode}
         {showPromo && promo && channelUrl && (
           <>
             <p className="result__promo-note" data-testid="channel-promo-note">

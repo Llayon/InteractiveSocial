@@ -246,6 +246,24 @@ export const quizShareConfigSchema = z.object({
 })
 
 export type QuizShareConfig = z.infer<typeof quizShareConfigSchema>
+
+/* ------------------------------------------------------------------ *
+ * Comment share — optional generic config for "show result in comments"
+ * ------------------------------------------------------------------ */
+
+export const commentSharePostSchema = z.object({
+  telegramPostUrl: z.string().url(),
+})
+
+export type CommentSharePost = z.infer<typeof commentSharePostSchema>
+
+export const commentShareSchema = z.object({
+  cta: z.string().min(1),
+  copiedLabel: z.string().min(1),
+  posts: z.record(z.string().min(1), commentSharePostSchema),
+})
+
+export type CommentShareConfig = z.infer<typeof commentShareSchema>
 /* ------------------------------------------------------------------ *
  * Quiz
  * ------------------------------------------------------------------ */
@@ -264,6 +282,7 @@ export const quizSchema = z.object({
   restartCta: z.string().min(1),
   channelPromotion: channelPromotionSchema.optional(),
   share: quizShareConfigSchema.optional(),
+  commentShare: commentShareSchema.optional(),
   /**
    * Quiz-aware copy consumed by shared/transport plumbing (landing eyebrow,
    * prepared share caption, delivered own-card line). Only what the second

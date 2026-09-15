@@ -49,6 +49,11 @@ export type AnalyticsEvent =
   | 'preview_play_error'
   | 'preview_timeout'
   | 'preview_skip'
+  | 'comment_share_impression'
+  | 'comment_share_click'
+  | 'comment_copy_success'
+  | 'comment_copy_failed'
+  | 'comment_post_open'
 
 export interface AnalyticsContext {
   quiz_id?: string
