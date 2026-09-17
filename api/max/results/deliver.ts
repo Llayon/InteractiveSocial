@@ -35,7 +35,7 @@ async function sendMaxPhoto(
   deepLink: string,
   cardAsset: string,
   opts?: { quizId?: string; resultId?: string; secondaryButton?: MaxSecondaryButton | null },
-): Promise<{ ok: boolean; mid?: string; via?: string; errorCode?: string }> {
+): Promise<{ ok: boolean; mid?: string; via?: string; errorCode?: string; status?: number }> {
   // Unified media: create attachment via token or URL with preflight
   let imageAttachment: Awaited<ReturnType<typeof createMaxImageAttachment>> | null = null
   try {
@@ -81,10 +81,10 @@ async function sendMaxPhoto(
       resultId: opts?.resultId,
     })
     const hasMid = typeof r.mid === 'string' && r.mid.length > 0
-    return { ok: Boolean(r.ok && hasMid), mid: r.mid, via: 'url-retry', errorCode: hasMid ? r.errorCode : (r.errorCode ?? 'max_mid_missing') }
+    return { ok: Boolean(r.ok && hasMid), mid: r.mid, via: 'url-retry', errorCode: hasMid ? r.errorCode : (r.errorCode ?? 'max_mid_missing'), status: r.status }
   }
   const hasMid = typeof r.mid === 'string' && r.mid.length > 0
-  return { ok: Boolean(r.ok && hasMid), mid: r.mid, via: imageAttachment?.via, errorCode: hasMid ? r.errorCode : (r.errorCode ?? 'max_mid_missing') }
+  return { ok: Boolean(r.ok && hasMid), mid: r.mid, via: imageAttachment?.via, errorCode: hasMid ? r.errorCode : (r.errorCode ?? 'max_mid_missing'), status: r.status }
 }
 
 /**
@@ -100,7 +100,9 @@ async function sendMaxPhoto(
  * 5. if same-quiz attribution → notify sharer (platform-scoped, no cross-post to Telegram)
  * 6. attempt-aware idempotency via completionId
  *
- * Response: { ok:true, deliveredSelf, deliveredSharer, selfMid: string|null }
+ * Response: { ok:true, deliveredSelf, deliveredSharer, selfMid: string|null,
+ *   selfErrorCode?: string, selfStatus?: number, selfVia?: string }
+ * Safe diagnostics only — no response body, PII, or token leakage.
  */
 export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
   if (req.method !== 'POST') {
@@ -195,6 +197,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   let selfMid: string | null = null
   let selfVia: string | undefined
   let selfError: string | undefined
+  let selfStatus: number | undefined
   if (deliveredSelfCache.has(selfKey)) {
     const cachedMid = deliveredSelfCache.get(selfKey) ?? null
     if (cachedMid) {
@@ -226,6 +229,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     selfMid = resultSend.mid ?? null
     selfVia = resultSend.via
     selfError = resultSend.errorCode
+    selfStatus = resultSend.status
     if (deliveredSelf && selfMid) deliveredSelfCache.set(selfKey, selfMid)
     if (deliveredSelf) {
       console.info(`[max-deliver] target=self user=${userId} quiz=${quiz.id} result=${result.id} asset=${cardAsset} host=${host} version=${version} media=${selfVia ?? 'none'} ok=true deliveredSelf=true mid=present completionId=${completionId ?? 'none'}`)
@@ -282,5 +286,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     }
   }
 
-  res.status(200).json({ ok: true, deliveredSelf, deliveredSharer, selfMid })
+  res.status(200).json({
+    ok: true,
+    deliveredSelf,
+    deliveredSharer,
+    selfMid,
+    ...(selfError ? { selfErrorCode: selfError } : {}),
+    ...(typeof selfStatus === 'number' ? { selfStatus } : {}),
+    ...(selfVia ? { selfVia } : {}),
+  })
 }

@@ -18,7 +18,7 @@ import { ResultScreen } from '@/features/result/Result'
 import { deliverCompletedResult, deliverCompletedResultForPlatform } from '@/features/share/deliver'
 import type { MiniAppAdapter } from '@/platform/types'
 import type { TelegramAdapter } from '@/platform/telegram'
-import { maxShareTransport } from '@/platform/share/ShareTransport'
+import { maxShareTransport, type MaxShareReadiness } from '@/platform/share/ShareTransport'
 import { initialScreen, screenAfterQuizStart, screenForCompletedQuiz, type Screen } from './routes'
 import { MUSIC90_QUESTIONS_PER_RUN, selectMusic90Questions } from '@/content/quizzes/music90s/select'
 
@@ -83,6 +83,7 @@ export function QuizApp({ telegram, adapter }: QuizAppProps) {
   const [runId, setRunId] = useState<string>(() => generateRunId())
   const [maxSelfMid, setMaxSelfMid] = useState<string | null>(null)
   const [maxDeliverPending, setMaxDeliverPending] = useState(false)
+  const [maxReadiness, setMaxReadiness] = useState<MaxShareReadiness>('preparing')
 
   // Timing + deduplication for question-level analytics
   const questionStartMsRef = useRef<Map<string, number>>(new Map())
@@ -290,6 +291,7 @@ export function QuizApp({ telegram, adapter }: QuizAppProps) {
           const cid = completionId
           setMaxDeliverPending(true)
           setMaxSelfMid(null)
+          setMaxReadiness('preparing')
           void (async () => {
             try {
               const res = await deliverCompletedResultForPlatform('max', quiz.id, outcome.resultId, raw, score, cid)
@@ -310,13 +312,20 @@ export function QuizApp({ telegram, adapter }: QuizAppProps) {
                 })
                 analytics.track('max_share_mid_ready', { quiz_id: quiz.id, result_id: outcome.resultId, platform: 'max' })
                 setMaxDeliverPending(false)
+                setMaxReadiness('media-ready')
               } else {
-                const reason = res.ok ? 'no_mid' : (res as { code: string }).code
+                const reason = res.ok
+                  ? (res.selfErrorCode ?? 'no_mid')
+                  : (res as { code: string }).code
+                const deliverStatus = res.ok ? (res as { selfStatus?: number }).selfStatus : undefined
+                const deliverVia = res.ok ? (res as { selfVia?: string }).selfVia : undefined
                 analytics.track('max_result_delivery_failed', {
                   quiz_id: quiz.id,
                   result_id: outcome.resultId,
                   platform: 'max',
                   reason,
+                  ...(deliverStatus !== undefined ? { status: deliverStatus } : {}),
+                  ...(deliverVia ? { media_via: deliverVia } : {}),
                 } as unknown as Record<string, unknown>)
                 try {
                   const fallbackMid = await maxShareTransport.prePrepare(quiz.id, outcome.resultId, raw, score, cid)
@@ -328,8 +337,14 @@ export function QuizApp({ telegram, adapter }: QuizAppProps) {
                       platform: 'max',
                       fallback: true,
                     } as unknown as Record<string, unknown>)
+                    setMaxReadiness('media-ready')
+                  } else {
+                    // No mid (e.g. dialog.not.found) — text/link fallback keeps CTA working.
+                    setMaxReadiness('fallback-ready')
                   }
-                } catch {}
+                } catch {
+                  setMaxReadiness('fallback-ready')
+                }
                 setMaxDeliverPending(false)
               }
             } catch {
@@ -341,8 +356,15 @@ export function QuizApp({ telegram, adapter }: QuizAppProps) {
               } as unknown as Record<string, unknown>)
               try {
                 const fallbackMid = await maxShareTransport.prePrepare(quiz.id, outcome.resultId, raw, score, cid)
-                if (fallbackMid) setMaxSelfMid(fallbackMid)
-              } catch {}
+                if (fallbackMid) {
+                  setMaxSelfMid(fallbackMid)
+                  setMaxReadiness('media-ready')
+                } else {
+                  setMaxReadiness('fallback-ready')
+                }
+              } catch {
+                setMaxReadiness('fallback-ready')
+              }
               setMaxDeliverPending(false)
             }
           })()
@@ -367,6 +389,7 @@ export function QuizApp({ telegram, adapter }: QuizAppProps) {
     questionStartMsRef.current.clear()
     setMaxSelfMid(null)
     setMaxDeliverPending(false)
+    setMaxReadiness('preparing')
     try {
       maxShareTransport.clearCache()
     } catch {}
@@ -412,6 +435,7 @@ export function QuizApp({ telegram, adapter }: QuizAppProps) {
             completionId={completionId}
             maxMid={maxSelfMid}
             maxPending={maxDeliverPending}
+            maxReadiness={maxReadiness}
           />
         </div>
       )

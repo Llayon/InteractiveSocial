@@ -8,6 +8,14 @@ import { getMaxWebApp } from '@/platform/max/bridge'
 
 export type ShareOutcome = 'native' | 'fallback' | 'failed'
 
+/**
+ * Explicit MAX share readiness — replaces ambiguous maxMid/maxPending pair.
+ * - preparing: auto-delivery still in flight, button temporarily disabled
+ * - media-ready: mid available, button uses shareMaxContent({mid})
+ * - fallback-ready: no mid (e.g. dialog.not.found), button uses text/link fallback
+ */
+export type MaxShareReadiness = 'preparing' | 'media-ready' | 'fallback-ready'
+
 export interface ShareTransport {
   shareResult(options: {
     adapter: MiniAppAdapter
@@ -19,6 +27,8 @@ export interface ShareTransport {
     total?: number
     quizTitle?: string
     completionId?: string
+    /** When true, skip bot-card prepare entirely and go straight to text/link fallback. */
+    forceFallback?: boolean
   }): Promise<ShareOutcome>
 }
 
@@ -323,8 +333,9 @@ class MaxShareTransport implements ShareTransport {
     total?: number
     quizTitle?: string
     completionId?: string
+    forceFallback?: boolean
   }): Promise<ShareOutcome> {
-    const { adapter, analytics, quizId, resultId, result, score, total, quizTitle, completionId } = options
+    const { adapter, analytics, quizId, resultId, result, score, total, quizTitle, completionId, forceFallback } = options
     const v2StartParam = (() => {
       const raw = adapter.getStartParam?.() ?? null
       return typeof raw === 'string' && /^s2_[a-z0-9]{1,12}_[a-z0-9]{1,12}_\d{1,15}$/.test(raw) ? raw : null
@@ -332,7 +343,14 @@ class MaxShareTransport implements ShareTransport {
     const onAnalytics = (event: AnalyticsEvent, payload: Record<string, unknown>) => analytics.track(event, { ...payload, platform: 'max' })
 
     analytics.track('share_click', { quiz_id: quizId, result_id: resultId, platform: 'max', ...(score === undefined ? {} : { score }) })
-    try { console.info(`[max-share] click platform=max quizId=${quizId} resultId=${resultId} score=${score ?? 'n/a'} completionId=${completionId ?? 'none'}`) } catch {}
+    try { console.info(`[max-share] click platform=max quizId=${quizId} resultId=${resultId} score=${score ?? 'n/a'} completionId=${completionId ?? 'none'} forceFallback=${forceFallback ? 'true' : 'false'}`) } catch {}
+
+    // Fallback-ready path: delivery already failed (e.g. dialog.not.found).
+    // Do NOT send another bot card — go straight to text/link share.
+    if (forceFallback) {
+      try { console.info(`[max-share] force_fallback_text quizId=${quizId} resultId=${resultId}`) } catch {}
+      return fallbackShare(quizId, v2StartParam, quizTitle, total, result, 'max', score, onAnalytics)
+    }
 
     if (adapter.platform === 'browser') {
       analytics.track('max_prepare_failed', { quiz_id: quizId, result_id: resultId, reason: 'native_unsupported', platform: 'max' })

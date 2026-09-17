@@ -25,10 +25,12 @@ export interface ResultScreenProps {
   /** MAX selfMid cached from automatic delivery (null while pending) */
   maxMid?: string | null
   maxPending?: boolean
+  /** Explicit MAX share readiness (preferred over maxMid/maxPending when present) */
+  maxReadiness?: import('@/platform/share/ShareTransport').MaxShareReadiness
 }
 
 /** Result screen: editorial reveal + share loop + author promo + restart. */
-export function ResultScreen({ quiz, outcome, telegram, adapter, onRestart, completionId, maxMid, maxPending }: ResultScreenProps) {
+export function ResultScreen({ quiz, outcome, telegram, adapter, onRestart, completionId, maxMid, maxPending, maxReadiness }: ResultScreenProps) {
   const result = getResultById(quiz, outcome.resultId)
   if (!result) {
     throw new Error(`Cannot render unknown result "${outcome.resultId}"`)
@@ -153,6 +155,7 @@ export function ResultScreen({ quiz, outcome, telegram, adapter, onRestart, comp
               completionId={completionId}
               maxMid={maxMid}
               maxPending={maxPending}
+              maxReadiness={maxReadiness}
             />
           }
           commentShareSlot={commentShareNode}
@@ -178,6 +181,7 @@ export function ResultScreen({ quiz, outcome, telegram, adapter, onRestart, comp
           completionId={completionId}
           maxMid={maxMid}
           maxPending={maxPending}
+          maxReadiness={maxReadiness}
         />
         {commentShareNode}
         {showPromo && promo && channelUrl && (

@@ -4,7 +4,7 @@ import { getAnalytics } from '@/analytics/analytics'
 import type { Result } from '@/features/quiz/schema'
 import type { MiniAppAdapter } from '@/platform/types'
 import type { TelegramAdapter } from '@/platform/telegram'
-import { getShareTransport, type ShareOutcome } from '@/platform/share/ShareTransport'
+import { getShareTransport, type MaxShareReadiness, type ShareOutcome } from '@/platform/share/ShareTransport'
 
 export interface ShareButtonProps {
   quizId: string
@@ -23,6 +23,14 @@ export interface ShareButtonProps {
   completionId?: string
   maxMid?: string | null
   maxPending?: boolean
+  /**
+   * Explicit readiness. When provided, takes precedence over legacy
+   * maxMid/maxPending pair:
+   * - preparing → disabled, «Готовим карточку…»
+   * - media-ready → enabled, share via mid
+   * - fallback-ready → enabled, share via text/link (no mid needed)
+   */
+  maxReadiness?: MaxShareReadiness
 }
 
 const LABEL_IDLE = 'idle'
@@ -42,13 +50,17 @@ export function ShareButton({
   completionId,
   maxMid,
   maxPending,
+  maxReadiness,
 }: ShareButtonProps) {
   const platformAdapter = (adapter ?? telegram) as MiniAppAdapter | undefined
   const [status, setStatus] = useState<'idle' | 'sharing' | ShareOutcome>(LABEL_IDLE)
 
   const isMax = platformAdapter?.platform === 'max'
-  // For MAX, button readiness depends on having a shareable mid
-  const maxNotReady = Boolean(isMax && (maxPending || !maxMid))
+  // Explicit readiness wins; legacy maxMid/maxPending kept for backward compat.
+  const maxNotReady = Boolean(
+    isMax && (maxReadiness !== undefined ? maxReadiness === 'preparing' : maxPending || !maxMid),
+  )
+  const maxFallbackReady = Boolean(isMax && maxReadiness === 'fallback-ready')
 
   const handleClick = useCallback(async () => {
     if (!platformAdapter) return
@@ -77,6 +89,7 @@ export function ShareButton({
       total,
       quizTitle,
       completionId,
+      ...(maxFallbackReady ? { forceFallback: true } : {}),
     })
     // For Telegram legacy path, also keep shareResult behavior for tests that mock TelegramAdapter directly
     // If transport is Telegram and adapter was originally TelegramAdapter, behavior is equivalent.
@@ -90,7 +103,7 @@ export function ShareButton({
       return
     }
     setStatus(outcome)
-  }, [platformAdapter, quizId, resultId, score, total, quizTitle, result, completionId, isMax, maxNotReady])
+  }, [platformAdapter, quizId, resultId, score, total, quizTitle, result, completionId, isMax, maxNotReady, maxFallbackReady])
 
   // User-visible labels must distinguish native (real prepared photo
   // card on the recipient's side) from fallback (Telegram deeplink /

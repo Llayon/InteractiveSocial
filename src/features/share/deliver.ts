@@ -1,7 +1,15 @@
 import type { PlatformKind } from '@/platform/types'
 
 export type DeliverResult =
-  | { ok: true; deliveredSelf: boolean; deliveredSharer: boolean; selfMid?: string | null }
+  | {
+      ok: true
+      deliveredSelf: boolean
+      deliveredSharer: boolean
+      selfMid?: string | null
+      selfErrorCode?: string
+      selfStatus?: number
+      selfVia?: string
+    }
   | { ok: false; code: string }
 
 const DELIVER_TIMEOUT_MS = 10_000
@@ -34,12 +42,22 @@ export async function deliverCompletedResultForPlatform(
     if (!response.ok) return { ok: false, code: `http_${response.status}` }
     const json: unknown = await response.json().catch(() => null)
     if (json !== null && typeof json === 'object' && (json as { ok?: unknown }).ok === true) {
-      const j = json as { deliveredSelf?: unknown; deliveredSharer?: unknown; selfMid?: unknown }
+      const j = json as {
+        deliveredSelf?: unknown
+        deliveredSharer?: unknown
+        selfMid?: unknown
+        selfErrorCode?: unknown
+        selfStatus?: unknown
+        selfVia?: unknown
+      }
       return {
         ok: true,
         deliveredSelf: Boolean(j.deliveredSelf),
         deliveredSharer: Boolean(j.deliveredSharer),
         selfMid: typeof j.selfMid === 'string' && j.selfMid.length > 0 ? j.selfMid : null,
+        ...(typeof j.selfErrorCode === 'string' && j.selfErrorCode ? { selfErrorCode: j.selfErrorCode } : {}),
+        ...(typeof j.selfStatus === 'number' ? { selfStatus: j.selfStatus } : {}),
+        ...(typeof j.selfVia === 'string' && j.selfVia ? { selfVia: j.selfVia } : {}),
       }
     }
     return { ok: false, code: 'unexpected_response' }
