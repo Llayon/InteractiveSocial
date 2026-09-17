@@ -15,7 +15,8 @@ import { questionAnsweredTelemetry, quizCompleteTelemetry, resolveOutcome } from
 import { idleQuizState, quizReducer } from '@/features/quiz/quizReducer'
 import type { SelectedAnswer } from '@/features/quiz/schema'
 import { ResultScreen } from '@/features/result/Result'
-import { deliverCompletedResult, deliverCompletedResultForPlatform } from '@/features/share/deliver'
+import { deliverCompletedResult } from '@/features/share/deliver'
+import { runMaxAutoDelivery } from '@/features/share/maxAutoDelivery'
 import type { MiniAppAdapter } from '@/platform/types'
 import type { TelegramAdapter } from '@/platform/telegram'
 import { maxShareTransport, type MaxShareReadiness } from '@/platform/share/ShareTransport'
@@ -294,77 +295,21 @@ export function QuizApp({ telegram, adapter }: QuizAppProps) {
           setMaxReadiness('preparing')
           void (async () => {
             try {
-              const res = await deliverCompletedResultForPlatform('max', quiz.id, outcome.resultId, raw, score, cid)
-              if (res.ok && res.deliveredSelf && res.selfMid) {
-                setMaxSelfMid(res.selfMid)
-                maxShareTransport.setPreparedMid({
-                  quizId: quiz.id,
-                  resultId: outcome.resultId,
-                  score,
-                  mid: res.selfMid,
-                  completionId: cid,
-                })
-                analytics.track('max_result_delivery_success', {
-                  quiz_id: quiz.id,
-                  result_id: outcome.resultId,
-                  platform: 'max',
-                  ...(score !== undefined ? { score } : {}),
-                })
-                analytics.track('max_share_mid_ready', { quiz_id: quiz.id, result_id: outcome.resultId, platform: 'max' })
-                setMaxDeliverPending(false)
-                setMaxReadiness('media-ready')
-              } else {
-                const reason = res.ok
-                  ? (res.selfErrorCode ?? 'no_mid')
-                  : (res as { code: string }).code
-                const deliverStatus = res.ok ? (res as { selfStatus?: number }).selfStatus : undefined
-                const deliverVia = res.ok ? (res as { selfVia?: string }).selfVia : undefined
-                analytics.track('max_result_delivery_failed', {
-                  quiz_id: quiz.id,
-                  result_id: outcome.resultId,
-                  platform: 'max',
-                  reason,
-                  ...(deliverStatus !== undefined ? { status: deliverStatus } : {}),
-                  ...(deliverVia ? { media_via: deliverVia } : {}),
-                } as unknown as Record<string, unknown>)
-                try {
-                  const fallbackMid = await maxShareTransport.prePrepare(quiz.id, outcome.resultId, raw, score, cid)
-                  if (fallbackMid) {
-                    setMaxSelfMid(fallbackMid)
-                    analytics.track('max_share_mid_ready', {
-                      quiz_id: quiz.id,
-                      result_id: outcome.resultId,
-                      platform: 'max',
-                      fallback: true,
-                    } as unknown as Record<string, unknown>)
-                    setMaxReadiness('media-ready')
-                  } else {
-                    // No mid (e.g. dialog.not.found) — text/link fallback keeps CTA working.
-                    setMaxReadiness('fallback-ready')
-                  }
-                } catch {
-                  setMaxReadiness('fallback-ready')
-                }
-                setMaxDeliverPending(false)
-              }
+              // NOTE: inner name must NOT shadow outer `outcome` (TDZ crash).
+              const delivery = await runMaxAutoDelivery({
+                quizId: quiz.id,
+                resultId: outcome.resultId,
+                score,
+                initDataRaw: raw,
+                completionId: cid,
+                analytics,
+              })
+              setMaxSelfMid(delivery.mid)
+              setMaxReadiness(delivery.readiness)
             } catch {
-              analytics.track('max_result_delivery_failed', {
-                quiz_id: quiz.id,
-                result_id: outcome.resultId,
-                platform: 'max',
-                reason: 'exception',
-              } as unknown as Record<string, unknown>)
-              try {
-                const fallbackMid = await maxShareTransport.prePrepare(quiz.id, outcome.resultId, raw, score, cid)
-                if (fallbackMid) {
-                  setMaxSelfMid(fallbackMid)
-                  setMaxReadiness('media-ready')
-                } else {
-                  setMaxReadiness('fallback-ready')
-                }
-              } catch {
-                setMaxReadiness('fallback-ready')
-              }
+              // Defensive: helper is total, but never leave CTA stuck in preparing.
+              setMaxReadiness('fallback-ready')
+            } finally {
               setMaxDeliverPending(false)
             }
           })()

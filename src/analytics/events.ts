@@ -34,6 +34,7 @@ export type AnalyticsEvent =
   | 'max_prepare_success'
   | 'max_prepare_failed'
   | 'max_share_mid_ready'
+  | 'max_share_fallback_ready'
   | 'max_share_bridge_invoked'
   | 'max_share_picker_opened'
   | 'max_share_fallback_text'

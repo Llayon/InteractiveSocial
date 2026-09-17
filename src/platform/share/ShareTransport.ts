@@ -16,6 +16,22 @@ export type ShareOutcome = 'native' | 'fallback' | 'failed'
  */
 export type MaxShareReadiness = 'preparing' | 'media-ready' | 'fallback-ready'
 
+/**
+ * Terminal MAX delivery errors — proven by production logs, retry/prepare
+ * is known useless for these (e.g. no bot dialog exists).
+ * Keep this set minimal: only errors with production evidence go here.
+ * network_error / max_mid_missing / attachment errors / 5xx / timeouts
+ * stay recoverable (prePrepare may still help).
+ */
+export const TERMINAL_MAX_DELIVERY_ERRORS: ReadonlySet<string> = new Set([
+  'dialog.not.found',
+])
+
+/** Single canonical check — never hard-code terminal reason strings elsewhere. */
+export function shouldSkipMaxPrePrepare(reason?: string): boolean {
+  return typeof reason === 'string' && TERMINAL_MAX_DELIVERY_ERRORS.has(reason)
+}
+
 export interface ShareTransport {
   shareResult(options: {
     adapter: MiniAppAdapter
