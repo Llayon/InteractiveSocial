@@ -83,7 +83,7 @@ async function fallbackShare(
   platform: 'telegram' | 'max',
   score?: number,
   onAnalytics?: (event: AnalyticsEvent, payload: Record<string, unknown>) => void,
-): Promise<'fallback'> {
+): Promise<'native' | 'fallback'> {
   const { url, usable } = buildQuizLaunchLink(quizId, v2StartParam, platform)
   const text =
     score === undefined || total === undefined || !quizTitle
@@ -97,15 +97,25 @@ async function fallbackShare(
   onAnalytics?.('max_share_fallback_text', { quiz_id: quizId, result_id: result.id, platform, ...(score !== undefined ? { score } : {}), ...(total !== undefined ? { total } : {}) })
   onAnalytics?.('share_fallback_text', { quiz_id: quizId, result_id: result.id, platform }) // legacy compat
 
-  // Prefer native MAX text share if available and platform is max
+  // Prefer native MAX text share if available and platform is max.
+  // One click → exactly one native mechanism: a successful bridge call
+  // returns 'native' immediately and must NOT fall through to navigator.share.
   if (platform === 'max' && usable) {
     const wa = getMaxWebApp()
     if (wa?.shareMaxContent) {
       try {
         wa.shareMaxContent({ text, link: url })
+        try { console.info(`[max-share] bridge_invoked transport=fallback_text quizId=${quizId} resultId=${result.id}`) } catch {}
+        onAnalytics?.('max_share_bridge_invoked', {
+          quiz_id: quizId,
+          result_id: result.id,
+          platform: 'max',
+          transport: 'fallback_text',
+        })
         onAnalytics?.('share_fallback_native', { quiz_id: quizId, result_id: result.id, platform: 'max' })
+        return 'native'
       } catch {
-        // fall through
+        // bridge failed synchronously: only now continue to navigator.share / clipboard
       }
     }
   }

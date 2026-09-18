@@ -187,7 +187,12 @@ describe('MAX forensic: prepare success vs failure transport', () => {
 })
 
 describe('MAX client transport instrumentation', () => {
-  afterEach(() => vi.restoreAllMocks())
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllGlobals()
+    try { delete (globalThis as unknown as { WebApp?: unknown }).WebApp } catch {}
+    try { delete (window as unknown as { WebApp?: unknown }).WebApp } catch {}
+  })
 
   it('prepare success + mid -> shareMaxContent({mid}) native', async () => {
     const { maxShareTransport } = await import('@/platform/share/ShareTransport')
@@ -234,6 +239,11 @@ describe('MAX client transport instrumentation', () => {
   it('prepare failure -> fallback text/link observable, not native', async () => {
     const { maxShareTransport } = await import('@/platform/share/ShareTransport')
     vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ ok: false, error: 'max_failure' }), { status: 502, headers: { 'content-type': 'application/json' } })))
+    // Pure fallback: no MAX bridge, no navigator.share — isolates text/clipboard path
+    // (bridge-present fallback now correctly returns 'native', covered in max-fallback.test.ts).
+    try { delete (globalThis as unknown as { WebApp?: unknown }).WebApp } catch {}
+    try { delete (window as unknown as { WebApp?: unknown }).WebApp } catch {}
+    try { delete (navigator as unknown as { share?: unknown }).share } catch {}
     const adapter = {
       platform: 'max' as const,
       mode: 'max' as const,
@@ -268,6 +278,10 @@ describe('MAX client transport instrumentation', () => {
   it('fallback transport is explicitly observable', async () => {
     const { maxShareTransport } = await import('@/platform/share/ShareTransport')
     vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ ok: false, error: 'max_failure' }), { status: 502 })))
+    // Pure fallback: no MAX bridge, no navigator.share — isolates text/clipboard path.
+    try { delete (globalThis as unknown as { WebApp?: unknown }).WebApp } catch {}
+    try { delete (window as unknown as { WebApp?: unknown }).WebApp } catch {}
+    try { delete (navigator as unknown as { share?: unknown }).share } catch {}
     const adapter = {
       platform: 'max' as const,
       mode: 'max' as const,

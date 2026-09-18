@@ -5,7 +5,7 @@ import { render, fireEvent, waitFor } from '@testing-library/react'
 import { signMaxInitData } from '../../api/_lib/maxInitData'
 import * as maxApi from '../../api/_lib/maxApi'
 import * as maxMedia from '../../api/_lib/maxMedia'
-import { maxShareTransport } from '@/platform/share/ShareTransport'
+import { maxShareTransport, telegramShareTransport } from '@/platform/share/ShareTransport'
 import { ShareButton } from '@/features/share/ShareButton'
 import { deliverCompletedResultForPlatform } from '@/features/share/deliver'
 import { music90sQuiz } from '@/content/quizzes/music90s/quiz'
@@ -330,5 +330,233 @@ describe('MAX ShareButton readiness — fallback-ready never stuck', () => {
     )
     const btn = container.querySelector('[data-testid="share-button"]') as HTMLButtonElement
     expect(btn.disabled).toBe(true)
+  })
+})
+
+describe('MAX fallback single native share — one click → one native mechanism', () => {
+  function makeAnalytics() {
+    const events: { event: string; payload: Record<string, unknown> }[] = []
+    const analytics = {
+      track: (event: string, payload: Record<string, unknown> = {}) => {
+        events.push({ event, payload })
+      },
+      updateContext: () => undefined,
+      trackOnce: (event: string, payload: Record<string, unknown> = {}) => {
+        events.push({ event, payload })
+      },
+    }
+    return { analytics: analytics as any, events }
+  }
+
+  function count(events: { event: string }[], name: string): number {
+    return events.filter((e) => e.event === name).length
+  }
+
+  function setWebApp(mock: any | undefined) {
+    if (mock === undefined) {
+      try { delete (globalThis as any).WebApp } catch {}
+      try { delete (window as any).WebApp } catch {}
+    } else {
+      ;(globalThis as any).WebApp = mock
+      ;(window as any).WebApp = mock
+    }
+  }
+
+  function setNavigatorShare(mock: any | undefined) {
+    if (mock === undefined) {
+      try { delete (navigator as any).share } catch {}
+    } else {
+      Object.defineProperty(navigator, 'share', { value: mock, configurable: true, writable: true })
+    }
+  }
+
+  function setClipboard(mock: any | undefined) {
+    if (mock === undefined) {
+      try { delete (navigator as any).clipboard } catch {}
+    } else {
+      Object.defineProperty(navigator, 'clipboard', { value: mock, configurable: true, writable: true })
+    }
+  }
+
+  function fallbackArgs(analytics: any) {
+    const result = music90sQuiz.results.find((r) => r.id === 'm90_disco')!
+    return {
+      adapter: maxAdapter(),
+      analytics,
+      quizId: 'music90s',
+      resultId: 'm90_disco',
+      result,
+      score: 12,
+      total: 18,
+      quizTitle: music90sQuiz.title,
+      completionId: 'cid_fallback_single',
+      forceFallback: true as const,
+    }
+  }
+
+  beforeEach(() => {
+    vi.restoreAllMocks()
+    maxShareTransport.clearCache()
+    vi.stubEnv('VITE_MAX_BOT_USERNAME', 'test_max_bot')
+    vi.stubEnv('VITE_TELEGRAM_BOT_USERNAME', 'tginteractivebot')
+    vi.stubEnv('VITE_TELEGRAM_APP_SHORT_NAME', 'app')
+    // forceFallback path must never hit network prepare
+    vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('prepare must not be called in forceFallback path') }) as any)
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+    maxShareTransport.clearCache()
+    setWebApp(undefined)
+    setNavigatorShare(undefined)
+    vi.unstubAllGlobals()
+    vi.unstubAllEnvs()
+  })
+
+  it('Case A — MAX bridge success: 1 bridge call, 0 navigator.share, outcome native', async () => {
+    const { analytics, events } = makeAnalytics()
+    const shareMaxContent = vi.fn()
+    setWebApp({ initData: 'x', initDataUnsafe: {}, platform: 'android', version: '1', shareMaxContent })
+    const navShare = vi.fn(async () => {})
+    setNavigatorShare(navShare)
+    const writeText = vi.fn(async () => {})
+    setClipboard({ writeText })
+
+    const outcome = await maxShareTransport.shareResult(fallbackArgs(analytics))
+
+    expect(outcome).toBe('native')
+    expect(shareMaxContent).toHaveBeenCalledTimes(1)
+    expect(shareMaxContent.mock.calls[0]?.[0]).toHaveProperty('link')
+    expect(shareMaxContent.mock.calls[0]?.[0]).not.toHaveProperty('mid')
+    expect(navShare).not.toHaveBeenCalled()
+    expect(writeText).not.toHaveBeenCalled()
+    expect(count(events, 'max_share_fallback_text')).toBe(1)
+    expect(count(events, 'max_share_bridge_invoked')).toBe(1)
+    expect(count(events, 'share_fallback_native')).toBe(1)
+    expect(count(events, 'max_share_picker_opened')).toBe(0)
+    expect(count(events, 'share_fallback_clipboard')).toBe(0)
+  })
+
+  it('Case B — MAX bridge throws: falls through to navigator.share once', async () => {
+    const { analytics, events } = makeAnalytics()
+    const shareMaxContent = vi.fn(() => { throw new Error('bridge boom') })
+    setWebApp({ initData: 'x', initDataUnsafe: {}, platform: 'android', version: '1', shareMaxContent })
+    const navShare = vi.fn(async () => {})
+    setNavigatorShare(navShare)
+    const writeText = vi.fn(async () => {})
+    setClipboard({ writeText })
+
+    const outcome = await maxShareTransport.shareResult(fallbackArgs(analytics))
+
+    expect(shareMaxContent).toHaveBeenCalledTimes(1)
+    expect(navShare).toHaveBeenCalledTimes(1)
+    // navigator.share success follows current native-fallback semantics
+    expect(outcome).toBe('fallback')
+    expect(count(events, 'share_fallback_native')).toBe(1)
+    // failed invocation must not emit success bridge event
+    expect(count(events, 'max_share_bridge_invoked')).toBe(0)
+    expect(count(events, 'max_share_fallback_text')).toBe(1)
+  })
+
+  it('Case C — no MAX bridge: navigator.share once', async () => {
+    const { analytics, events } = makeAnalytics()
+    setWebApp(undefined)
+    const navShare = vi.fn(async () => {})
+    setNavigatorShare(navShare)
+    const writeText = vi.fn(async () => {})
+    setClipboard({ writeText })
+
+    const outcome = await maxShareTransport.shareResult(fallbackArgs(analytics))
+
+    expect(navShare).toHaveBeenCalledTimes(1)
+    expect(outcome).toBe('fallback')
+    expect(count(events, 'share_fallback_native')).toBe(1)
+    expect(count(events, 'max_share_bridge_invoked')).toBe(0)
+    expect(count(events, 'share_fallback_clipboard')).toBe(0)
+  })
+
+  it('Case D — bridge and navigator unavailable: clipboard fallback once', async () => {
+    const { analytics, events } = makeAnalytics()
+    setWebApp(undefined)
+    setNavigatorShare(undefined)
+    const writeText = vi.fn(async () => {})
+    setClipboard({ writeText })
+
+    const outcome = await maxShareTransport.shareResult(fallbackArgs(analytics))
+
+    expect(outcome).toBe('fallback')
+    expect(writeText).toHaveBeenCalledTimes(1)
+    expect(count(events, 'share_fallback_clipboard')).toBe(1)
+    expect(count(events, 'share_fallback_native')).toBe(0)
+    expect(count(events, 'max_share_bridge_invoked')).toBe(0)
+  })
+
+  it('Case E — Telegram regression: bridge present but Telegram path never uses it', async () => {
+    const { analytics, events } = makeAnalytics()
+    const shareMaxContent = vi.fn()
+    setWebApp({ initData: 'x', initDataUnsafe: {}, platform: 'android', version: '1', shareMaxContent })
+    const navShare = vi.fn(async () => {})
+    setNavigatorShare(navShare)
+    const writeText = vi.fn(async () => {})
+    setClipboard({ writeText })
+    const result = music90sQuiz.results.find((r) => r.id === 'm90_disco')!
+    const telegramBrowserAdapter: any = {
+      platform: 'browser',
+      mode: 'browser',
+      getStartParam: () => null,
+      getInitDataRaw: () => 'init_raw',
+      getUser: () => null,
+      haptic: () => {},
+    }
+
+    const outcome = await telegramShareTransport.shareResult({
+      adapter: telegramBrowserAdapter,
+      analytics,
+      quizId: 'music90s',
+      resultId: 'm90_disco',
+      result,
+      score: 12,
+      total: 18,
+      quizTitle: music90sQuiz.title,
+    })
+
+    expect(outcome).toBe('fallback')
+    expect(shareMaxContent).not.toHaveBeenCalled()
+    expect(navShare).toHaveBeenCalledTimes(1)
+    expect(count(events, 'max_share_bridge_invoked')).toBe(0)
+    expect(count(events, 'max_share_picker_opened')).toBe(0)
+  })
+
+  it('ShareButton stays idle (Бросить вызов) after fallback bridge native, no Скопировано', async () => {
+    const result = music90sQuiz.results.find((r) => r.id === 'm90_disco')!
+    const shareMaxContent = vi.fn()
+    setWebApp({ initData: 'x', initDataUnsafe: {}, platform: 'android', version: '1', shareMaxContent })
+    const navShare = vi.fn(async () => {})
+    setNavigatorShare(navShare)
+
+    const { container } = render(
+      React.createElement(ShareButton, {
+        quizId: 'music90s',
+        resultId: 'm90_disco',
+        shareCta: 'Бросить вызов',
+        shareCtaIntro: 'intro',
+        score: 12,
+        total: 18,
+        quizTitle: music90sQuiz.title,
+        result,
+        adapter: maxAdapter(),
+        completionId: 'cid_fallback_btn',
+        maxMid: null,
+        maxPending: false,
+        maxReadiness: 'fallback-ready',
+      }),
+    )
+    const btn = container.querySelector('[data-testid="share-button"]') as HTMLButtonElement
+    await fireEvent.click(btn)
+    await waitFor(() => expect(shareMaxContent).toHaveBeenCalledTimes(1))
+    expect(navShare).not.toHaveBeenCalled()
+    await waitFor(() => expect(container.querySelector('[data-testid="share-status"]')?.textContent).toBe('idle'))
+    expect(btn.textContent).toContain('Бросить вызов')
+    expect(btn.textContent).not.toContain('Скопировано')
   })
 })
