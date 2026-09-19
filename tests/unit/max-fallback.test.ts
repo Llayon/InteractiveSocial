@@ -147,6 +147,13 @@ describe('MAX ShareButton readiness — fallback-ready never stuck', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
     maxShareTransport.clearCache()
+    // Hermetic: fallbackShare needs a usable MAX deep link to reach the
+    // bridge. CI has no .env.local (git-ignored), so without this stub the
+    // bridge is skipped and the test degrades to clipboard (red in CI,
+    // green locally). Same convention as the block below.
+    vi.stubEnv('VITE_MAX_BOT_USERNAME', 'test_max_bot')
+    vi.stubEnv('VITE_TELEGRAM_BOT_USERNAME', 'tginteractivebot')
+    vi.stubEnv('VITE_TELEGRAM_APP_SHORT_NAME', 'app')
   })
   afterEach(() => {
     vi.restoreAllMocks()
@@ -154,6 +161,7 @@ describe('MAX ShareButton readiness — fallback-ready never stuck', () => {
     try { delete (globalThis as any).WebApp } catch {}
     try { delete (window as any).WebApp } catch {}
     vi.unstubAllGlobals()
+    vi.unstubAllEnvs()
   })
 
   it('preparing → disabled, label Готовим карточку…', () => {
