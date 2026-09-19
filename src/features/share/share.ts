@@ -1,7 +1,7 @@
 import type { Analytics } from '@/analytics/analytics'
 import type { AnalyticsEvent } from '@/analytics/events'
 import type { Result } from '@/features/quiz/schema'
-import type { TelegramAdapter } from '@/platform/telegram'
+import type { TelegramAdapter, TelegramShareResult } from '@/platform/telegram'
 export interface PrepareShareOk {
   ok: true
   preparedId: string
@@ -160,7 +160,18 @@ async function fallbackShare(
   return 'fallback'
 }
 
-export type ShareOutcome = 'native' | 'fallback' | 'failed'
+export type ShareOutcome = 'native' | 'opened' | 'fallback' | 'cancelled' | 'failed'
+
+function normalizeLegacyResult(
+  raw: TelegramShareResult | 'sent' | 'failed' | 'unsupported',
+): TelegramShareResult {
+  if (typeof raw === 'string') {
+    if (raw === 'sent') return { status: 'sent', signal: 'callback' }
+    if (raw === 'unsupported') return { status: 'unsupported', reason: 'client_version', signal: 'version' }
+    return { status: 'failed', reason: 'UNKNOWN_ERROR', signal: 'callback' }
+  }
+  return raw
+}
 
 /**
  * Full share pipeline:
@@ -261,8 +272,9 @@ export async function shareResult(options: {
     })
     return fallbackShare(quizId, v2StartParam, quizTitle, total, result, score, onAnalytics)
   }
-  const outcome = await telegram.shareMessage(prepared.preparedId)
-  if (outcome === 'sent') {
+  const rawOutcome = await telegram.shareMessage(prepared.preparedId)
+  const outcome = normalizeLegacyResult(rawOutcome)
+  if (outcome.status === 'sent') {
     analytics.track('share_success', {
       quiz_id: quizId,
       result_id: resultId,
@@ -271,7 +283,16 @@ export async function shareResult(options: {
     return 'native'
   }
 
-  if (outcome === 'unsupported') {
+  if (outcome.status === 'cancelled') {
+    analytics.track('share_cancelled', {
+      quiz_id: quizId,
+      result_id: resultId,
+      reason: 'USER_DECLINED',
+    })
+    return 'cancelled'
+  }
+
+  if (outcome.status === 'unsupported') {
     // Client cannot open the native sheet at all — degrade to web share.
     analytics.track('share_native_failed', {
       quiz_id: quizId,
@@ -294,15 +315,16 @@ export async function shareResult(options: {
     )
   }
 
+  const reason = outcome.status === 'failed' ? outcome.reason : 'share_message_failed'
   analytics.track('share_native_failed', {
     quiz_id: quizId,
     result_id: resultId,
-    reason: 'share_message_failed',
+    reason,
   })
   analytics.track('share_failed', {
     quiz_id: quizId,
     result_id: resultId,
-    reason: 'share_message_failed',
+    reason,
   })
   return 'failed'
 }

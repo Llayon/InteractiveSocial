@@ -1,5 +1,17 @@
 // Re-export neutral types for new code; keep telegram path as BC facade
-export type { TelegramAdapter, TelegramMode, TelegramUser, HapticStyle, MiniAppAdapter, MiniAppUser, PlatformKind } from './types.js'
+export type {
+  TelegramAdapter,
+  TelegramMode,
+  TelegramUser,
+  HapticStyle,
+  MiniAppAdapter,
+  MiniAppUser,
+  PlatformKind,
+  TelegramShareResult,
+  TelegramShareFailedReason,
+  TelegramShareSignal,
+  TelegramLegacyShareStatus,
+} from './types.js'
 export { detectPlatform as detectTelegramMode } from '../detect.js'
 export { createPlatformAdapter as createTelegramAdapter } from '../factory.js'
 

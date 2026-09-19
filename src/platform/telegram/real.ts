@@ -1,20 +1,15 @@
-import {
-  init,
-  off,
-  on,
-  postEvent,
-  retrieveLaunchParams,
-} from '@tma.js/sdk'
+import { init, off, on, postEvent, retrieveLaunchParams } from '@tma.js/sdk'
 import { readStartParamFromUrl } from './mock.js'
-import type { TelegramAdapter, TelegramUser } from './types.js'
+import type { TelegramAdapter, TelegramShareResult, TelegramUser } from './types.js'
 
 interface WebAppLike {
   version?: string
   ready?: () => void
   expand?: () => void
   shareMessage?: (id: string, cb?: (payload?: unknown) => void) => void
-  onEvent?: (type: string, cb: () => void) => void
-  offEvent?: (type: string, cb: () => void) => void
+  onEvent?: (type: string, cb: (payload?: unknown) => void) => void
+  offEvent?: (type: string, cb: (payload?: unknown) => void) => void
+  openTelegramLink?: (url: string) => void
   HapticFeedback?: {
     impactOccurred?: (style: string) => void
     notificationOccurred?: (type: string) => void
@@ -48,7 +43,37 @@ function parseUserFromInitData(raw: string): TelegramUser | null {
   }
 }
 
-const SHARE_TIMEOUT_MS = 20_000
+export const SHARE_TIMEOUT_MS = 20_000
+export const SHARE_CALLBACK_GRACE_MS = 400
+
+type DocumentedShareFailedError =
+  | 'UNSUPPORTED'
+  | 'MESSAGE_EXPIRED'
+  | 'MESSAGE_SEND_FAILED'
+  | 'USER_DECLINED'
+  | 'UNKNOWN_ERROR'
+
+const DOCUMENTED_SHARE_ERRORS: ReadonlySet<string> = new Set([
+  'UNSUPPORTED',
+  'MESSAGE_EXPIRED',
+  'MESSAGE_SEND_FAILED',
+  'USER_DECLINED',
+  'UNKNOWN_ERROR',
+])
+
+/** Extract only documented Telegram shareMessageFailed error values. */
+function normalizeShareFailedError(payload: unknown): DocumentedShareFailedError | undefined {
+  if (typeof payload === 'string') {
+    return DOCUMENTED_SHARE_ERRORS.has(payload) ? (payload as DocumentedShareFailedError) : undefined
+  }
+  if (payload !== null && typeof payload === 'object' && 'error' in payload) {
+    const err = (payload as { error?: unknown }).error
+    if (typeof err === 'string' && DOCUMENTED_SHARE_ERRORS.has(err)) {
+      return err as DocumentedShareFailedError
+    }
+  }
+  return undefined
+}
 
 /**
  * Fallback initData extraction. retrieveLaunchParams() may fail or return an
@@ -161,94 +186,115 @@ export function createRealTelegram(): TelegramAdapter {
      */
     /**
      * Telegram WebApp.shareMessage(preparedId) contract (Bot API 8.0+):
-     *  - The bridge has two flavours, sometimes both:
-     *    (a) CALLBACK with a single boolean argument (modern, callback-first):
-     *        shareMessage(id, (ok: boolean) => void). true means the
-     *        native share sheet was opened successfully; false means the
-     *        user dismissed or the sheet was rejected.
-     *    (b) EVENT-based: shareMessageSent / shareMessageFailed (older docs);
-     *        share_message_sent / share_message_failed also seen on some clients;
-     *        prepared_message_sent / prepared_message_failed is the newest alias.
-     *    The callback argument is NOT a { ok: boolean } object — it is a raw
-     *    boolean. We must not assume an object shape. Older clients that do not
-     *    support callback-first fall back to events only.
-     *  - Either signal (true callback OR shareMessageSent event) settles the
-     *    promise as sent. A false callback OR shareMessageFailed event settles
-     *    as failed. A timeout also settles as failed.
-     *  - unsupported is reserved for clients that explicitly do not implement
-     *    shareMessage at all (no function, or version < 8).
+     * Official events are authoritative:
+     *  - shareMessageSent → sent
+     *  - shareMessageFailed {error} → cancelled (USER_DECLINED),
+     *    unsupported (UNSUPPORTED) or failed (MESSAGE_EXPIRED,
+     *    MESSAGE_SEND_FAILED, UNKNOWN_ERROR).
+     * Callback boolean means successful send when true; false carries no
+     * reason — we hold a short grace window for a failure event before
+     * settling as callback_false. Never guess USER_DECLINED from false.
      */
-    shareMessage(preparedId: string): Promise<'sent' | 'failed' | 'unsupported'> {
+    shareMessage(preparedId: string): Promise<TelegramShareResult> {
       const webApp = getWebApp()
 
       const version = webApp?.version
       if (version) {
         const parsed = Number.parseFloat(version)
         if (!Number.isNaN(parsed) && parsed < 8) {
-          return Promise.resolve('unsupported')
+          return Promise.resolve({ status: 'unsupported', reason: 'client_version', signal: 'version' })
         }
       }
 
-      type UntypedOn = (type: string, handler: () => void) => void
-      const onEvent = on as unknown as UntypedOn
-      const offEvent = off as unknown as UntypedOn
-
-      // Hoist finish/listeners so the raw-bridge fallback (no shareMessage fn)
-      // and the main path share the same settle logic.
-      let settleResolve: (v: 'sent' | 'failed') => void = () => undefined
+      let settleResolve: (v: TelegramShareResult) => void = () => undefined
       let settled = false
       let timer: ReturnType<typeof setTimeout> | null = null
+      let graceTimer: ReturnType<typeof setTimeout> | null = null
       let listeners: Array<{ off: () => void }> = []
-      const finish = (outcome: 'sent' | 'failed') => {
-        if (settled) return
-        settled = true
+      let cleaned = false
+
+      const cleanup = () => {
+        if (cleaned) return
+        cleaned = true
         if (timer !== null) clearTimeout(timer)
+        if (graceTimer !== null) clearTimeout(graceTimer)
         for (const { off } of listeners) {
           try { off() } catch { /* non-critical */ }
         }
+        listeners = []
+      }
+
+      const finish = (outcome: TelegramShareResult) => {
+        if (settled) return
+        settled = true
+        cleanup()
         settleResolve(outcome)
+      }
+
+      const handleSent = () => finish({ status: 'sent', signal: 'event' })
+
+      const handleFailed = (payload?: unknown) => {
+        const err = normalizeShareFailedError(payload)
+        if (err === 'USER_DECLINED') {
+          finish({ status: 'cancelled', reason: 'USER_DECLINED', signal: 'event' })
+        } else if (err === 'UNSUPPORTED') {
+          finish({ status: 'unsupported', reason: 'UNSUPPORTED', signal: 'event' })
+        } else if (err === 'MESSAGE_EXPIRED' || err === 'MESSAGE_SEND_FAILED' || err === 'UNKNOWN_ERROR') {
+          finish({ status: 'failed', reason: err, signal: 'event' })
+        } else {
+          finish({ status: 'failed', reason: 'UNKNOWN_ERROR', signal: 'event' })
+        }
       }
 
       const registerListeners = (): Array<{ off: () => void }> => {
         const ls: Array<{ off: () => void }> = []
-        const onSent = () => finish('sent')
-        const onFailed = () => finish('failed')
-        for (const name of [
-          'shareMessageSent',
-          'shareMessageFailed',
-          'share_message_sent',
-          'share_message_failed',
-          'prepared_message_sent',
-          'prepared_message_failed',
-        ]) {
-          const handler =
-            name === 'shareMessageSent' ||
-            name === 'share_message_sent' ||
-            name === 'prepared_message_sent'
-              ? onSent
-              : onFailed
-          try {
-            onEvent(name, handler)
-            ls.push({ off: () => offEvent(name, handler) })
-          } catch {
-            /* event type unknown to this bridge version — skip */
+        // Primary: official WebApp bridge events (authoritative).
+        try {
+          const wa = getWebApp()
+          if (wa && typeof wa.onEvent === 'function' && typeof wa.offEvent === 'function') {
+            const onSent: (payload?: unknown) => void = () => handleSent()
+            const onFailed: (payload?: unknown) => void = (p) => handleFailed(p)
+            wa.onEvent('shareMessageSent', onSent)
+            ls.push({ off: () => wa.offEvent?.('shareMessageSent', onSent) })
+            wa.onEvent('shareMessageFailed', onFailed)
+            ls.push({ off: () => wa.offEvent?.('shareMessageFailed', onFailed) })
           }
-        }
+        } catch { /* bridge without onEvent — fall through to compat */ }
+        // Best-effort compat: low-level @tma.js aliases (some clients only).
+        try {
+          type UntypedOn = (type: string, handler: (p?: unknown) => void) => void
+          const tmaOn = on as unknown as UntypedOn
+          const tmaOff = off as unknown as UntypedOn
+          const aliases: Array<{ name: string; sent: boolean }> = [
+            { name: 'share_message_sent', sent: true },
+            { name: 'share_message_failed', sent: false },
+            { name: 'prepared_message_sent', sent: true },
+            { name: 'prepared_message_failed', sent: false },
+          ]
+          for (const { name, sent } of aliases) {
+            const handler = sent
+              ? (_p?: unknown) => handleSent()
+              : (p?: unknown) => handleFailed(p)
+            try {
+              tmaOn(name, handler)
+              ls.push({ off: () => tmaOff(name, handler) })
+            } catch { /* unknown event — skip */ }
+          }
+        } catch { /* tma bridge unavailable */ }
         return ls
       }
 
-      const promise = new Promise<'sent' | 'failed'>((resolve) => {
+      const promise = new Promise<TelegramShareResult>((resolve) => {
         settleResolve = resolve
-        timer = setTimeout(() => finish('failed'), SHARE_TIMEOUT_MS)
+        timer = setTimeout(() => finish({ status: 'failed', reason: 'timeout', signal: 'timeout' }), SHARE_TIMEOUT_MS)
       })
 
       if (typeof webApp?.shareMessage !== 'function') {
-        // Official script unavailable — raw bridge call as a last resort.
         try {
           const post = postEvent as unknown as (method: string, params?: unknown) => void
           post('web_app_share_message', { msg_id: preparedId })
         } catch {
-          finish('failed')
+          finish({ status: 'failed', reason: 'exception', signal: 'exception' })
         }
         listeners = registerListeners()
         return promise
@@ -258,24 +304,51 @@ export function createRealTelegram(): TelegramAdapter {
       try {
         const fn = webApp.shareMessage
         if (fn.length >= 2) {
-          // Callback-first (Bot API 8+): the callback argument is a raw
-          // boolean — NOT a { ok: boolean } object. A callback fired with
-          // no arguments (some iOS Telegram versions) is treated as
-          // ambiguous and resolved via the event listener or timeout,
-          // not optimistically marked sent.
           fn.call(webApp, preparedId, (ok: unknown) => {
-            if (ok === true) finish('sent')
-            else if (ok === false) finish('failed')
+            if (settled) return
+            if (ok === true) {
+              finish({ status: 'sent', signal: 'callback' })
+            } else if (ok === false) {
+              // No reason attached — hold a grace window for a failure event.
+              if (graceTimer !== null) clearTimeout(graceTimer)
+              graceTimer = setTimeout(() => {
+                finish({ status: 'failed', reason: 'callback_false', signal: 'callback' })
+              }, SHARE_CALLBACK_GRACE_MS)
+            }
             // ok === undefined: let the event listener or timeout decide.
           })
         } else {
-          // Single-arg legacy signature: no callback, rely on events.
           fn.call(webApp, preparedId)
         }
       } catch {
-        finish('failed')
+        finish({ status: 'failed', reason: 'exception', signal: 'exception' })
       }
       return promise
+    },
+    openTelegramLink(url: string): boolean {
+      try {
+        const wa = getWebApp()
+        if (wa && typeof wa.openTelegramLink === 'function') {
+          wa.openTelegramLink(url)
+          return true
+        }
+        try {
+          const post = postEvent as unknown as (method: string, params?: unknown) => void
+          post('web_app_open_tg_link', { path_full: url })
+          return true
+        } catch {
+          return false
+        }
+      } catch {
+        return false
+      }
+    },
+    getTelegramVersion(): string | undefined {
+      try {
+        return getWebApp()?.version
+      } catch {
+        return undefined
+      }
     },
   }
 }

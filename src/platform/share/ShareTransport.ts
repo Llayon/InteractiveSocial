@@ -2,11 +2,12 @@ import type { Analytics } from '@/analytics/analytics'
 import type { AnalyticsEvent } from '@/analytics/events'
 import type { Result } from '@/features/quiz/schema'
 import type { MiniAppAdapter } from '@/platform/types'
+import type { TelegramAdapter, TelegramShareResult } from '@/platform/telegram/types'
 import { prepareShareMessage } from '@/features/share/share'
 import { buildCurrentPlatformDeepLink } from '@/platform/deeplink'
 import { getMaxWebApp } from '@/platform/max/bridge'
 
-export type ShareOutcome = 'native' | 'fallback' | 'failed'
+export type ShareOutcome = 'native' | 'opened' | 'fallback' | 'cancelled' | 'failed'
 
 /**
  * Explicit MAX share readiness — replaces ambiguous maxMid/maxPending pair.
@@ -94,7 +95,10 @@ async function fallbackShare(
   try {
     console.info(`[max-share] transport=fallback_text platform=${platform} quizId=${quizId} resultId=${result.id} score=${score ?? 'n/a'} total=${total ?? 'n/a'}`)
   } catch {}
-  onAnalytics?.('max_share_fallback_text', { quiz_id: quizId, result_id: result.id, platform, ...(score !== undefined ? { score } : {}), ...(total !== undefined ? { total } : {}) })
+  // max_share_fallback_text is MAX-only — never pollute the MAX funnel with Telegram events.
+  if (platform === 'max') {
+    onAnalytics?.('max_share_fallback_text', { quiz_id: quizId, result_id: result.id, platform, ...(score !== undefined ? { score } : {}), ...(total !== undefined ? { total } : {}) })
+  }
   onAnalytics?.('share_fallback_text', { quiz_id: quizId, result_id: result.id, platform }) // legacy compat
 
   // Prefer native MAX text share if available and platform is max.
@@ -140,6 +144,117 @@ async function fallbackShare(
   return 'fallback'
 }
 
+// --- Telegram helpers ---
+
+/** Normalize legacy string results to the structured contract. */
+export function normalizeTelegramShareResult(
+  raw: TelegramShareResult | 'sent' | 'failed' | 'unsupported',
+): TelegramShareResult {
+  if (typeof raw === 'string') {
+    if (raw === 'sent') return { status: 'sent', signal: 'callback' }
+    if (raw === 'unsupported') return { status: 'unsupported', reason: 'client_version', signal: 'version' }
+    return { status: 'failed', reason: 'UNKNOWN_ERROR', signal: 'callback' }
+  }
+  return raw
+}
+
+function buildTelegramShareCopy(
+  quizId: string,
+  v2StartParam: string | null,
+  quizTitle: string | undefined,
+  total: number | undefined,
+  result: Result,
+  score?: number,
+): { url: string; text: string; usable: boolean } {
+  const built = buildQuizLaunchLink(quizId, v2StartParam, 'telegram')
+  const text =
+    score === undefined || total === undefined || !quizTitle
+      ? `«${result.title}» — ${result.presentation.shareQuote}`
+      : `Я набрала ${score}/${total} в тесте «${quizTitle}».\n${result.presentation.shareQuote}`
+  if (built.usable) return { url: built.url, text, usable: true }
+  // Local/E2E without VITE_TELEGRAM_BOT_USERNAME: fall back to origin so the
+  // in-Telegram share link still has a usable URL (never empty).
+  try {
+    const { origin, pathname } = window.location
+    const param = v2StartParam ?? `quiz_${quizId}`
+    return { url: `${origin}${pathname}?startapp=${encodeURIComponent(param)}`, text, usable: true }
+  } catch {
+    return { url: built.url, text, usable: false }
+  }
+}
+
+/** Official Telegram share-link format: https://t.me/share/url?url=...&text=... */
+export function buildTelegramShareUrl(url: string, text: string): string {
+  return `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`
+}
+
+/**
+ * Telegram fallback chain (one click → at most one fallback mechanism):
+ *   openTelegramLink(t.me/share/url...) → navigator.share → clipboard.
+ * Returns 'opened' when a chooser was invoked (delivery NOT confirmed),
+ * 'fallback' for clipboard, 'failed' when nothing usable.
+ */
+async function telegramFallbackChain(args: {
+  adapter: MiniAppAdapter
+  analytics: Analytics
+  quizId: string
+  resultId: string
+  result: Result
+  score?: number
+  total?: number
+  quizTitle?: string
+  v2StartParam: string | null
+}): Promise<'opened' | 'fallback' | 'failed'> {
+  const { adapter, analytics, quizId, resultId, result, score, total, quizTitle, v2StartParam } = args
+  const { url, text, usable } = buildTelegramShareCopy(quizId, v2StartParam, quizTitle, total, result, score)
+
+  const onAnalytics = (event: AnalyticsEvent, payload: Record<string, unknown>) =>
+    analytics.track(event, { ...payload, platform: 'telegram' })
+  onAnalytics('share_fallback_text', { quiz_id: quizId, result_id: resultId })
+
+  // 1. In-Telegram share link — preferred inside Mini Apps.
+  const tele = adapter as unknown as TelegramAdapter
+  if (usable && typeof tele.openTelegramLink === 'function') {
+    try {
+      const shareUrl = buildTelegramShareUrl(url, text)
+      const invoked = tele.openTelegramLink(shareUrl)
+      if (invoked) {
+        onAnalytics('telegram_share_fallback_opened', {
+          quiz_id: quizId,
+          result_id: resultId,
+          transport: 'openTelegramLink',
+        })
+        return 'opened'
+      }
+    } catch {
+      /* fall through to navigator.share */
+    }
+  }
+
+  // 2. System share sheet.
+  if (usable && typeof navigator.share === 'function') {
+    try {
+      await navigator.share({ title: result.title, text, url })
+      onAnalytics('share_fallback_native', { quiz_id: quizId, result_id: resultId })
+      return 'opened'
+    } catch {
+      /* user cancelled or unavailable — fall through to clipboard */
+    }
+  }
+
+  // 3. Clipboard (truthful "Скопировано" path).
+  try {
+    if (typeof navigator.clipboard?.writeText === 'function') {
+      await navigator.clipboard.writeText(usable ? `${text}\n${url}` : text)
+      onAnalytics('share_fallback_clipboard', { quiz_id: quizId, result_id: resultId })
+      return 'fallback'
+    }
+  } catch {
+    /* clipboard unavailable */
+  }
+  return 'failed'
+}
+
 // --- Telegram transport ---
 
 class TelegramShareTransport implements ShareTransport {
@@ -155,47 +270,107 @@ class TelegramShareTransport implements ShareTransport {
     completionId?: string
   }): Promise<ShareOutcome> {
     const { adapter, analytics, quizId, resultId, result, score, total, quizTitle } = options
+    const startedAt = Date.now()
     const v2StartParam = (() => {
       const raw = adapter.getStartParam?.() ?? null
       return typeof raw === 'string' && /^s2_[a-z0-9]{1,12}_[a-z0-9]{1,12}_\d{1,15}$/.test(raw) ? raw : null
     })()
-    const onAnalytics = (event: AnalyticsEvent, payload: Record<string, unknown>) => analytics.track(event, { ...payload, platform: 'telegram' })
+
+    const telegramVersion = (() => {
+      try {
+        return (adapter as unknown as TelegramAdapter).getTelegramVersion?.()
+      } catch {
+        return undefined
+      }
+    })()
+    const elapsed = () => Date.now() - startedAt
 
     analytics.track('share_click', { quiz_id: quizId, result_id: resultId, platform: 'telegram', ...(score === undefined ? {} : { score }) })
 
     if (adapter.platform === 'browser') {
-      const outcome = await fallbackShare(quizId, v2StartParam, quizTitle, total, result, 'telegram', score, onAnalytics)
-      analytics.track('share_failed', { quiz_id: quizId, result_id: resultId, reason: 'native_unsupported', platform: 'telegram' })
+      const outcome = await telegramFallbackChain({ adapter, analytics, quizId, resultId, result, score, total, quizTitle, v2StartParam })
+      if (outcome === 'failed') {
+        analytics.track('share_failed', { quiz_id: quizId, result_id: resultId, reason: 'native_unsupported', platform: 'telegram' })
+      }
       return outcome
     }
 
     const prepared = await prepareShareMessage(quizId, resultId, adapter.getInitDataRaw(), score)
     if (!prepared.ok) {
       analytics.track('share_prepare_failed', { quiz_id: quizId, result_id: resultId, reason: prepared.code, platform: 'telegram' })
-      analytics.track('share_failed', { quiz_id: quizId, result_id: resultId, reason: `prepare_${prepared.code}`, platform: 'telegram' })
-      return fallbackShare(quizId, v2StartParam, quizTitle, total, result, 'telegram', score, onAnalytics)
+      const outcome = await telegramFallbackChain({ adapter, analytics, quizId, resultId, result, score, total, quizTitle, v2StartParam })
+      if (outcome === 'failed') {
+        analytics.track('share_failed', { quiz_id: quizId, result_id: resultId, reason: `prepare_${prepared.code}`, platform: 'telegram' })
+      }
+      return outcome
     }
 
     // telegram.shareMessage is on TelegramAdapter only
-    const teleAdapter = adapter as unknown as { shareMessage?: (id: string) => Promise<'sent' | 'failed' | 'unsupported'> }
+    const teleAdapter = adapter as unknown as TelegramAdapter
     if (typeof teleAdapter.shareMessage !== 'function') {
-      analytics.track('share_native_failed', { quiz_id: quizId, result_id: resultId, reason: 'share_unsupported_client', platform: 'telegram' })
-      analytics.track('share_failed', { quiz_id: quizId, result_id: resultId, reason: 'share_unsupported_client', platform: 'telegram' })
-      return fallbackShare(quizId, v2StartParam, quizTitle, total, result, 'telegram', score, onAnalytics)
+      analytics.track('share_native_failed', {
+        quiz_id: quizId,
+        result_id: resultId,
+        reason: 'share_unsupported_client',
+        signal: 'version',
+        ...(telegramVersion ? { telegram_version: telegramVersion } : {}),
+        elapsed_ms: elapsed(),
+        platform: 'telegram',
+      })
+      const outcome = await telegramFallbackChain({ adapter, analytics, quizId, resultId, result, score, total, quizTitle, v2StartParam })
+      if (outcome === 'failed') {
+        analytics.track('share_failed', { quiz_id: quizId, result_id: resultId, reason: 'share_unsupported_client', platform: 'telegram' })
+      }
+      return outcome
     }
-    const outcome = await teleAdapter.shareMessage(prepared.preparedId)
-    if (outcome === 'sent') {
+    let raw: TelegramShareResult | 'sent' | 'failed' | 'unsupported'
+    try {
+      raw = await teleAdapter.shareMessage(prepared.preparedId)
+    } catch {
+      raw = { status: 'failed', reason: 'exception', signal: 'exception' }
+    }
+    const outcome = normalizeTelegramShareResult(raw)
+
+    if (outcome.status === 'sent') {
       analytics.track('share_success', { quiz_id: quizId, result_id: resultId, platform: 'telegram', ...(score === undefined ? {} : { score }) })
       return 'native'
     }
-    if (outcome === 'unsupported') {
-      analytics.track('share_native_failed', { quiz_id: quizId, result_id: resultId, reason: 'share_unsupported_client', platform: 'telegram' })
-      analytics.track('share_failed', { quiz_id: quizId, result_id: resultId, reason: 'share_unsupported_client', platform: 'telegram' })
-      return fallbackShare(quizId, v2StartParam, quizTitle, total, result, 'telegram', score, onAnalytics)
+    if (outcome.status === 'cancelled') {
+      // User closed the native chooser — never open a second dialog.
+      analytics.track('share_cancelled', { quiz_id: quizId, result_id: resultId, reason: 'USER_DECLINED', platform: 'telegram' })
+      return 'cancelled'
     }
-    analytics.track('share_native_failed', { quiz_id: quizId, result_id: resultId, reason: 'share_message_failed', platform: 'telegram' })
-    analytics.track('share_failed', { quiz_id: quizId, result_id: resultId, reason: 'share_message_failed', platform: 'telegram' })
-    return 'failed'
+    if (outcome.status === 'unsupported') {
+      analytics.track('share_native_failed', {
+        quiz_id: quizId,
+        result_id: resultId,
+        reason: outcome.reason,
+        signal: outcome.signal,
+        ...(telegramVersion ? { telegram_version: telegramVersion } : {}),
+        elapsed_ms: elapsed(),
+        platform: 'telegram',
+      })
+      const fb = await telegramFallbackChain({ adapter, analytics, quizId, resultId, result, score, total, quizTitle, v2StartParam })
+      if (fb === 'failed') {
+        analytics.track('share_failed', { quiz_id: quizId, result_id: resultId, reason: outcome.reason, platform: 'telegram' })
+      }
+      return fb
+    }
+    // Technical failure — exact reason preserved, then in-Telegram fallback.
+    analytics.track('share_native_failed', {
+      quiz_id: quizId,
+      result_id: resultId,
+      reason: outcome.reason,
+      signal: outcome.signal,
+      ...(telegramVersion ? { telegram_version: telegramVersion } : {}),
+      elapsed_ms: elapsed(),
+      platform: 'telegram',
+    })
+    const fb = await telegramFallbackChain({ adapter, analytics, quizId, resultId, result, score, total, quizTitle, v2StartParam })
+    if (fb === 'failed') {
+      analytics.track('share_failed', { quiz_id: quizId, result_id: resultId, reason: outcome.reason, platform: 'telegram' })
+    }
+    return fb
   }
 }
 

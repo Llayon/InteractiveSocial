@@ -520,7 +520,10 @@ describe('MAX fallback single native share — one click → one native mechanis
       quizTitle: music90sQuiz.title,
     })
 
-    expect(outcome).toBe('fallback')
+    // Telegram reliability pass: system-sheet success is 'opened' (chooser
+    // invoked, delivery unconfirmed), not clipboard 'fallback'. MAX bridge
+    // must still never be touched from the Telegram path.
+    expect(outcome).toBe('opened')
     expect(shareMaxContent).not.toHaveBeenCalled()
     expect(navShare).toHaveBeenCalledTimes(1)
     expect(count(events, 'max_share_bridge_invoked')).toBe(0)

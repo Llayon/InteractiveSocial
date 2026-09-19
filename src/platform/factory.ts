@@ -19,9 +19,22 @@ export function createPlatformAdapter(mode: PlatformKind = detectPlatform()): Mi
   }
   if (mode === 'mock') {
     const params = new URLSearchParams(window.location.search)
+    const shareParam = params.get('share')
+    const shareMode =
+      shareParam === 'cancelled' || shareParam === 'declined'
+        ? ('cancelled' as const)
+        : shareParam === 'message_send_failed' || shareParam === 'send_failed'
+          ? ('message_send_failed' as const)
+          : shareParam === 'unsupported'
+            ? ('unsupported' as const)
+            : shareParam === 'fail'
+              ? ('failed' as const)
+              : undefined
     return createMockTelegram({
       startParam: params.get('tgWebAppStartParam') ?? params.get('startapp'),
       failShare: params.get('share') === 'fail',
+      ...(shareMode ? { shareMode } : {}),
+      ...(shareMode === 'message_send_failed' ? { withShareLinkFallback: true } : {}),
     })
   }
   switch (mode) {

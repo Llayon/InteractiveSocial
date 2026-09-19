@@ -102,6 +102,14 @@ export function ShareButton({
       setStatus('idle')
       return
     }
+    // Telegram truthful UX:
+    // - native (confirmed sent) → "Отправлено ✓"
+    // - opened (fallback chooser invoked, delivery unconfirmed) → idle CTA
+    // - cancelled (user closed native chooser) → idle CTA, never a second dialog
+    if (!isMax && (outcome === 'opened' || outcome === 'cancelled')) {
+      setStatus('idle')
+      return
+    }
     setStatus(outcome)
   }, [platformAdapter, quizId, resultId, score, total, quizTitle, result, completionId, isMax, maxNotReady, maxFallbackReady])
 
@@ -118,6 +126,7 @@ export function ShareButton({
       if (isMax) return shareCta // MAX must never show "Отправлено ✓"
       return 'Отправлено ✓'
     }
+    if (status === 'opened' || status === 'cancelled') return shareCta
     if (status === 'fallback') return 'Скопировано — отправьте получателю'
     if (status === 'failed') return 'Не получилось — попробовать ещё раз'
     return shareCta

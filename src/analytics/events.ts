@@ -26,6 +26,8 @@ export type AnalyticsEvent =
   | 'challenge_feedback'
   | 'share_success'
   | 'share_failed'
+  | 'share_cancelled'
+  | 'telegram_share_fallback_opened'
   | 'share_prepare_failed'
   | 'share_native_failed'
   | 'share_fallback_native'
