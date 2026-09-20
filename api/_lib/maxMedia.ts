@@ -215,10 +215,10 @@ export async function createMaxImageAttachment(
     console.info(`[max-media] phase=upload-request asset=${assetKey} host=${host} version=${version}`)
     const uploadUrlRes = await maxGetUploadUrl(token, 'image')
     if (uploadUrlRes.ok && uploadUrlRes.url) {
-      console.info(`[max-media] phase=upload asset=${assetKey} host=${host} version=${version} upload_host=${getHost(uploadUrlRes.url)}`)
+      console.info(`[max-media] phase=upload asset=${assetKey} host=${host} version=${version} upload_host=${getHost(uploadUrlRes.url)} transport=default`)
       const uploadRes = await maxUploadFile(uploadUrlRes.url, token, fetched.bytes, `${assetKey}.jpg`, fetched.contentType)
       if (uploadRes.ok && uploadUrlRes.url && uploadRes.token) {
-        console.info(`[max-media] phase=upload-success asset=${assetKey} host=${host} version=${version} via=token`)
+        console.info(`[max-media] phase=upload-success asset=${assetKey} host=${host} version=${version} via=token upload_host=${getHost(uploadUrlRes.url)} transport=default`)
         return { attachment: { type: 'image', payload: { token: uploadRes.token } }, via: 'token', preflight }
       }
       // Some image uploads return token via URL query? Handle fallback: if upload succeeded but token in URL, extract?

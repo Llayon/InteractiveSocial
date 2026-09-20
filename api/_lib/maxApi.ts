@@ -16,7 +16,6 @@
 
 import fs from 'node:fs'
 import path from 'node:path'
-import https from 'node:https'
 import * as undici from 'undici'
 
 const MAX_API_BASE = 'https://platform-api2.max.ru'
@@ -140,53 +139,155 @@ function getPemCa(): string | null {
   return null
 }
 
-function buildScopedFetchOptions(): RequestInit & { dispatcher?: unknown; agent?: unknown } {
-  const ca = getPemCa()
-  if (!ca) return {}
+/**
+ * Transport policy split (MAX media upload hardening).
+ *
+ * - 'max-api': requests to the canonical MAX API host. May use
+ *   undici.fetch + undici.Agent with the scoped custom CA.
+ * - 'default': everything else (iu.oneme.ru, fu.oneme.ru, *.okcdn.ru,
+ *   Vercel asset URLs, arbitrary external hosts). Plain transport only —
+ *   the MAX CA dispatcher must NEVER reach these hosts, and an npm-undici
+ *   Agent must NEVER be passed to the global fetch.
+ */
+export type MaxFetchPolicy = 'max-api' | 'default'
+
+/** Canonical MAX API hostname, derived from MAX_API_BASE (never hard-coded twice). */
+export function getMaxApiHost(): string {
   try {
-    // Try undici Dispatcher first (Node 20+ fetch uses undici)
-    try {
-      const undiciAgent = undici as unknown as { Agent: new (opts: unknown) => unknown }
-      const dispatcher = new undiciAgent.Agent({ connect: { ca } })
-      return { dispatcher } as unknown as RequestInit
-    } catch {
-      // Fallback to https.Agent
-      // https imported statically
-      const agent = new https.Agent({ ca })
-      return { agent } as unknown as RequestInit
-    }
+    return new URL(MAX_API_BASE).hostname.toLowerCase()
   } catch {
-    return {}
+    return 'platform-api2.max.ru'
   }
 }
 
-async function fetchWithTimeout(
+export function getFetchPolicy(url: string): MaxFetchPolicy {
+  try {
+    const host = new URL(String(url)).hostname.toLowerCase()
+    return host === getMaxApiHost() ? 'max-api' : 'default'
+  } catch {
+    return 'default'
+  }
+}
+
+/** Hostname only — never log query strings, tokens, or full URLs. */
+function safeHost(url: string): string {
+  try {
+    return new URL(String(url)).hostname
+  } catch {
+    return 'invalid_url'
+  }
+}
+
+/** Explicit test seam: vitest stubs global fetch, so the undici branch is
+ *  production-only. Deterministic per environment — never a silent
+ *  mid-request fallback between implementations. */
+function isTestTransport(): boolean {
+  return Boolean(process.env.VITEST) || Boolean((globalThis as unknown as { __vitest_worker__?: unknown }).__vitest_worker__)
+}
+
+/** Single source of truth for "would this runtime use undici for MAX API". */
+function shouldUseUndiciForMaxApi(): boolean {
+  if (isTestTransport()) return false
+  return getPemCa() !== null
+}
+
+/** Transport label for operation logs — truthful per above decision. */
+function maxApiTransportLabel(): 'max-api' | 'default' {
+  return shouldUseUndiciForMaxApi() ? 'max-api' : 'default'
+}
+
+/**
+ * Build the scoped undici dispatcher for MAX API only.
+ * Returns undefined when no custom CA is configured (plain fetch path).
+ * The dispatcher is an npm-undici Agent and is ONLY ever passed to
+ * undici.fetch — never to the global fetch.
+ */
+export function buildMaxApiDispatcher(): unknown {
+  const ca = getPemCa()
+  if (!ca) return undefined
+  try {
+    const AgentCtor = (undici as unknown as { Agent?: new (opts: unknown) => unknown }).Agent
+    if (typeof AgentCtor !== 'function') return undefined
+    return new AgentCtor({ connect: { ca } })
+  } catch {
+    return undefined
+  }
+}
+
+function logTransportError(url: string, transport: string, timeoutMs: number, error: unknown): void {
+  const msg = error instanceof Error ? error.message.slice(0, 200) : String(error).slice(0, 200)
+  const cause = (error as unknown as { cause?: unknown })?.cause
+  const causeMsg = cause
+    ? cause instanceof Error
+      ? cause.message.slice(0, 150)
+      : String(cause).slice(0, 150)
+    : 'none'
+  const aborted = error instanceof Error && error.name === 'AbortError'
+  console.warn(
+    `[max] operation=transport_fetch host=${safeHost(url)} transport=${transport} status=network_error aborted=${aborted} timeout_ms=${timeoutMs} error=${msg} cause=${causeMsg}`,
+  )
+}
+
+/**
+ * MAX API transport: undici.fetch + scoped dispatcher. No fallback to the
+ * global fetch — on failure we log (hostname only) and rethrow so callers
+ * classify network_error. The dispatcher is always created by the same
+ * undici package that performs the fetch.
+ */
+export async function fetchViaMaxApi(
   url: string,
-  init: RequestInit & { dispatcher?: unknown; agent?: unknown },
+  init: RequestInit,
   timeoutMs: number,
+  dispatcher: unknown,
 ): Promise<Response> {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), timeoutMs)
   try {
-    const scoped = buildScopedFetchOptions()
-    // Merge scoped CA options into fetch init; dispatcher/agent aren't standard yet
-    const merged = { ...scoped, ...init, signal: controller.signal } as unknown as RequestInit & { dispatcher?: unknown; agent?: unknown }
-    // Prefer undici fetch with dispatcher when CA is present; otherwise global fetch.
-    // In Vitest, use global fetch so vi.stubGlobal('fetch', ...) works.
-    const ca = getPemCa()
-    const isVitest = Boolean(process.env.VITEST) || Boolean((globalThis as unknown as { __vitest_worker__?: unknown }).__vitest_worker__)
-    if (ca && Object.keys(scoped).length > 0 && !isVitest) {
-      try {
-        const undiciFetch = undici as unknown as { fetch: typeof fetch }
-        if (undiciFetch && typeof undiciFetch.fetch === 'function') {
-          return await undiciFetch.fetch(url, merged as RequestInit)
-        }
-      } catch {}
-    }
-    return await fetch(url, merged as RequestInit)
+    const undiciFetch = (undici as unknown as { fetch?: typeof fetch }).fetch
+    if (typeof undiciFetch !== 'function') throw new Error('undici.fetch unavailable')
+    return await undiciFetch(url, { ...init, dispatcher, signal: controller.signal } as unknown as RequestInit)
+  } catch (error) {
+    logTransportError(url, 'undici', timeoutMs, error)
+    throw error
   } finally {
     clearTimeout(timer)
   }
+}
+
+/**
+ * Default transport for all non-MAX-API hosts: plain globalThis.fetch.
+ * Any dispatcher/agent smuggled into init is stripped defensively —
+ * foreign dispatchers (e.g. npm-undici Agent) break the global fetch
+ * with "invalid onRequestStart method".
+ */
+export async function fetchViaDefault(url: string, init: RequestInit, timeoutMs: number): Promise<Response> {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
+  const { dispatcher: _dropDispatcher, agent: _dropAgent, ...clean } = (init ?? {}) as Record<string, unknown>
+  void _dropDispatcher
+  void _dropAgent
+  try {
+    return await globalThis.fetch(url, { ...clean, signal: controller.signal } as RequestInit)
+  } catch (error) {
+    logTransportError(url, 'default', timeoutMs, error)
+    throw error
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
+async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: number): Promise<Response> {
+  const policy = getFetchPolicy(url)
+  if (policy === 'max-api' && shouldUseUndiciForMaxApi()) {
+    const dispatcher = buildMaxApiDispatcher()
+    // Dispatcher construction can theoretically fail even with CA present;
+    // plain global fetch is the compatible no-CA path (never a foreign
+    // dispatcher handed to the wrong fetch).
+    if (dispatcher !== undefined) {
+      return fetchViaMaxApi(url, init, timeoutMs, dispatcher)
+    }
+  }
+  return fetchViaDefault(url, init, timeoutMs)
 }
 
 function safeLog(operation: string, status: number | string, ok: unknown, extra?: string): void {
@@ -340,7 +441,7 @@ export async function maxSendMessage(
       'messages',
       'network_error',
       error,
-      `quizId=${opts?.quizId ?? 'n/a'} resultId=${opts?.resultId ?? 'n/a'}`,
+      `quizId=${opts?.quizId ?? 'n/a'} resultId=${opts?.resultId ?? 'n/a'} transport=${maxApiTransportLabel()}`,
     )
     return { ok: false, status: 0, errorCode: 'network_error', errorMessage: error instanceof Error ? error.message.slice(0, 200) : String(error).slice(0, 200) }
   }
@@ -366,14 +467,14 @@ export async function maxSendMessage(
     }
   }
   if (!ok) {
-    const extra = `quizId=${opts?.quizId ?? 'n/a'} resultId=${opts?.resultId ?? 'n/a'} mid=${parsed.mid ? 'present' : 'none'} code=${errorCode ?? 'n/a'} msg=${errorMessage ?? text.slice(0, 150)}`
+    const extra = `quizId=${opts?.quizId ?? 'n/a'} resultId=${opts?.resultId ?? 'n/a'} mid=${parsed.mid ? 'present' : 'none'} code=${errorCode ?? 'n/a'} msg=${errorMessage ?? text.slice(0, 150)} transport=${maxApiTransportLabel()}`
     safeLog('messages', response.status, ok, extra)
   } else {
     safeLog(
       'messages',
       response.status,
       ok,
-      `quizId=${opts?.quizId ?? 'n/a'} resultId=${opts?.resultId ?? 'n/a'} mid=${parsed.mid ? 'present' : 'none'}`,
+      `quizId=${opts?.quizId ?? 'n/a'} resultId=${opts?.resultId ?? 'n/a'} mid=${parsed.mid ? 'present' : 'none'} transport=${maxApiTransportLabel()}`,
     )
   }
   return { ok, mid: parsed.mid, status: response.status, raw: json, errorCode, errorMessage }
@@ -408,7 +509,7 @@ export async function maxGetUploadUrl(
       timeoutMs,
     )
   } catch (error) {
-    safeErrorLog('uploads', 'network_error', error, `type=${type}`)
+    safeErrorLog('uploads', 'network_error', error, `type=${type} transport=${maxApiTransportLabel()}`)
     return { ok: false, status: 0, errorCode: 'network_error', errorMessage: error instanceof Error ? error.message.slice(0, 200) : String(error).slice(0, 200) }
   }
   const text = await response.text().catch(() => '')
@@ -426,16 +527,16 @@ export async function maxGetUploadUrl(
       if (typeof j.code === 'string') code = j.code.slice(0, 80)
       if (typeof j.message === 'string') msg = j.message.slice(0, 200)
     }
-    safeLog('uploads', response.status, false, `type=${type} code=${code ?? 'n/a'} msg=${msg ?? text.slice(0, 120)}`)
+    safeLog('uploads', response.status, false, `type=${type} code=${code ?? 'n/a'} msg=${msg ?? text.slice(0, 120)} transport=${maxApiTransportLabel()}`)
     return { ok: false, status: response.status, raw: json ?? text, errorCode: code, errorMessage: msg ?? text.slice(0, 200) }
   }
   const j = json as Record<string, unknown>
   const uploadUrl = typeof j.url === 'string' ? j.url : undefined
   if (!uploadUrl) {
-    safeLog('uploads', response.status, false, `type=${type} missing url`)
+    safeLog('uploads', response.status, false, `type=${type} missing url transport=${maxApiTransportLabel()}`)
     return { ok: false, status: response.status, raw: json }
   }
-  safeLog('uploads', response.status, true, `type=${type} url_host=${(() => { try { return new URL(uploadUrl).host } catch { return 'invalid' } })()}`)
+  safeLog('uploads', response.status, true, `type=${type} url_host=${(() => { try { return new URL(uploadUrl).host } catch { return 'invalid' } })()} transport=${maxApiTransportLabel()}`)
   return { ok: true, url: uploadUrl, status: response.status, raw: json }
 }
 
@@ -464,7 +565,7 @@ export async function maxUploadFile(
       timeoutMs,
     )
   } catch (error) {
-    safeErrorLog('upload', 'network_error', error, `file=${filename}`)
+    safeErrorLog('upload', 'network_error', error, `file=${filename} upload_host=${safeHost(uploadUrl)} transport=default`)
     return { ok: false, status: 0, errorCode: 'network_error', errorMessage: error instanceof Error ? error.message.slice(0, 200) : String(error).slice(0, 200) }
   }
   const text = await response.text().catch(() => '')
@@ -482,20 +583,20 @@ export async function maxUploadFile(
       if (typeof j.code === 'string') code = j.code.slice(0, 80)
       if (typeof j.message === 'string') msg = j.message.slice(0, 200)
     }
-    safeLog('upload', response.status, false, `file=${filename} code=${code ?? 'n/a'} msg=${msg ?? text.slice(0, 120)}`)
+    safeLog('upload', response.status, false, `file=${filename} upload_host=${safeHost(uploadUrl)} code=${code ?? 'n/a'} msg=${msg ?? text.slice(0, 120)} transport=default`)
     return { ok: false, status: response.status, raw: json ?? text, errorCode: code, errorMessage: msg ?? text.slice(0, 200) }
   }
   const j = json as Record<string, unknown>
   const fileToken = typeof j.token === 'string' ? j.token : undefined
   if (!fileToken) {
-    safeLog('upload', response.status, false, `file=${filename} missing token`)
+    safeLog('upload', response.status, false, `file=${filename} upload_host=${safeHost(uploadUrl)} missing token transport=default`)
     return { ok: false, status: response.status, raw: json }
   }
-  safeLog('upload', response.status, true, `file=${filename} token_present`)
+  safeLog('upload', response.status, true, `file=${filename} upload_host=${safeHost(uploadUrl)} token_present transport=default`)
   return { ok: true, token: fileToken, status: response.status, raw: json }
 }
 
-// Re-export fetchWithTimeout and CA helpers for media preflight reuse
+// Re-export fetch helpers for media preflight reuse
 export { fetchWithTimeout, getPemCa }
 
 export const MAX_API_BASE_URL = MAX_API_BASE
