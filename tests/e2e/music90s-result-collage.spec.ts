@@ -1,18 +1,40 @@
 import { expect, test } from './fixtures'
+import { questions as music90Questions } from '../../src/content/quizzes/music90s/quiz'
 
-const CORRECT: Record<string, string> = {
-  m1: 'a', m2: 'b', m3: 'b', m4: 'a', m5: 'd', m6: 'c', m7: 'b', m8: 'b', m9: 'c',
-  m10: 'b', m11: 'b', m12: 'b', m13: 'a', m14: 'b', m15: 'a', m16: 'b', m17: 'b', m18: 'b',
-}
+// Correct answers built from the production bank (m1..m42), never a
+// hand-maintained subset: the run samples 18 stratified questions, so the
+// helper must answer whatever is actually on screen.
+const CORRECT: Record<string, string> = Object.fromEntries(
+  music90Questions.map((q) => {
+    if (!q.correctAnswerId) throw new Error(`Bank question ${q.id} has no correctAnswerId`)
+    return [q.id, q.correctAnswerId] as const
+  }),
+)
 
 async function answerMusicWithScore(page: import('@playwright/test').Page, correctCount: number) {
-  for (let i = 1; i <= 18; i++) {
-    const qid = `m${i}`
-    const wantCorrect = i <= correctCount
-    const chosen = wantCorrect ? CORRECT[qid] : (['a','b','c','d'].find(id => id !== CORRECT[qid]) ?? 'a')
+  for (let i = 0; i < 18; i++) {
+    // Sampling-aware: read the real question id — the bank (42) is sampled
+    // per attempt, so m1..m18 order can never be assumed.
+    const question = page.getByTestId('quiz-question')
+    const qid = await question.getAttribute('data-question-id')
+    if (!qid) throw new Error('Missing data-question-id on current question')
+    const correct = CORRECT[qid]
+    if (!correct) throw new Error(`Unknown question: ${qid}`)
+
+    const wantCorrect = i < correctCount
+    let chosen = correct
+    if (!wantCorrect) {
+      const ids = await page
+        .getByTestId('answer-option')
+        .evaluateAll((els) => els.map((el) => el.getAttribute('data-answer-id')))
+      const wrong = ids.find((id) => id && id !== correct)
+      if (!wrong) throw new Error(`No wrong option for question: ${qid}`)
+      chosen = wrong
+    }
+
     await page.locator(`[data-answer-id="${chosen}"]`).first().click()
-    if (i < 18) {
-      await expect(page.getByTestId('progress')).toHaveText(`${String(i+1).padStart(2,'0')} / 18`, { timeout: 3000 })
+    if (i < 17) {
+      await expect(page.getByTestId('progress')).toHaveText(`${String(i + 2).padStart(2, '0')} / 18`, { timeout: 3000 })
     }
   }
 }
